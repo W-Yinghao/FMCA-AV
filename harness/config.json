@@ -1,0 +1,15 @@
+{
+  "max_gpus": 4,
+  "allowed_gpu_ids": [],
+  "mode": "slurm",
+  "runs_dir": "runs",
+  "stop_grace_seconds": 30,
+  "poll_seconds": 5,
+  "omp_num_threads": 1,
+  "slurm_args": [],
+  "slurm_partitions": {
+    "cpu": ["CPU"],
+    "default_gpu": ["V100", "V100-32GB", "A100", "L40S", "H100"],
+    "imagenet_gpu": ["A100", "L40S", "H100"]
+  }
+}

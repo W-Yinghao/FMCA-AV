@@ -1,0 +1,9 @@
+hostname: nodecpu05
+python_executable: /home/infres/yinwang/anaconda3/bin/python3
+python_version: 3.9.13
+scheduler: direct
+slurm_job_id: 924528
+cuda_visible_devices: 
+project_path: /home/infres/yinwang/FMCA-AV
+pytorch: {"error": "ModuleNotFoundError: No module named 'torch'", "installed": false}
+gpus: []

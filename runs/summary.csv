@@ -1,0 +1,8 @@
+run_id,name,state,requested_gpus,actual_gpu_ids,created_at,start_time,end_time,duration,exit_code,failure_reason,retry_from
+20260807-025006_accept-cpu-success,accept-cpu-success,SUCCEEDED,0,,2026-08-07T02:50:06+02:00,2026-08-07T02:50:06+02:00,2026-08-07T02:50:08+02:00,00:00:02,0,,
+20260807-025015_accept-cpu-fail,accept-cpu-fail,FAILED,0,,2026-08-07T02:50:15+02:00,2026-08-07T02:50:15+02:00,2026-08-07T02:50:15+02:00,00:00:00,2,command exited with code 2,
+20260807-025019_accept-cpu-fail,accept-cpu-fail,FAILED,0,,2026-08-07T02:50:19+02:00,2026-08-07T02:50:19+02:00,2026-08-07T02:50:19+02:00,00:00:00,2,command exited with code 2,20260807-025015_accept-cpu-fail
+20260807-025033_accept-stop-target,accept-stop-target,STOPPED,0,,2026-08-07T02:50:33+02:00,2026-08-07T02:50:33+02:00,2026-08-07T02:50:39+02:00,00:00:06,-15,stopped by operator,
+20260807-025050_accept-stale-repair,accept-stale-repair,FAILED,0,,2026-08-07T02:50:50+02:00,2026-08-07T02:50:50+02:00,2026-08-07T02:51:00+02:00,00:00:10,,stale active state repaired: process 1399750 is not alive,
+20260807-025212_accept-cpu-env,accept-cpu-env,SUCCEEDED,0,,2026-08-07T02:52:12+02:00,2026-08-07T02:52:13+02:00,2026-08-07T02:52:13+02:00,00:00:00,0,,
+20260807-025605_accept-slurm-cpu,accept-slurm-cpu,SUCCEEDED,0,,2026-08-07T02:56:05+02:00,2026-08-07T02:56:24+02:00,2026-08-07T02:56:24+02:00,00:00:00,0,,

@@ -1,0 +1,1 @@
+python3 -c 'import time; print("cpu-start", flush=True); time.sleep(2); print("cpu-done")'

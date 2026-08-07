@@ -1,0 +1,1 @@
+python3 -c 'import os; assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""; print("slurm-cpu-ok")'

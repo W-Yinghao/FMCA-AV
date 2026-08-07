@@ -1,0 +1,11 @@
+# The paper itself stays outside this code/results repository.
+ssl_paper.pdf
+
+# Generated Python cache files.
+__pycache__/
+*.py[cod]
+
+# Temporary editor and operating-system files.
+*.swp
+*~
+.DS_Store

@@ -1,0 +1,155 @@
+WARNING: failed to clean up stale arg0 temp dirs: Directory not empty (os error 39)
+Codex Doctor v0.146.0 · linux-x86_64
+
+Notes
+   ↑ updates      0.146.1 available (current 0.146.0)
+   ⚠ rollouts     242 active files · 1.26 GB on disk
+─────────────────────────────────────────────────────────────
+
+Environment
+  ✓ system       C
+      os                       AlmaLinux 10.2.0 [64-bit]
+      OS language              C
+      LANG                     C.UTF-8
+      VISUAL                   not set
+      EDITOR                   not set
+  ✓ runtime      standalone (unix, package /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl, bin /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/bin, resources /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-resources, path /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-path)
+      version                  0.146.0
+      install method           standalone (unix, package /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl, bin /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/bin, resources /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-resources, path /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-path)
+      commit                   unknown
+      executable               ~/.codex/packages/standa…wn-linux-musl/bin/codex
+  ✓ install      consistent
+      context                  standalone (unix, package /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl, bin /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/bin, resources /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-resources, path /home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-path)
+      managed by               npm: no · bun: no · pnpm: no · package root —
+      PATH entries (2)         ~/.local/bin/codex
+                               ~/.local/bin/codex
+  ✓ search       file exists (bundled, `/home/infres/yinwang/.codex/packages/standalone/releases/0.146.0-x86_64-unknown-linux-musl/codex-path/rg`)
+      search command           ~/.codex/packages/standa…inux-musl/codex-path/rg
+      search provider          bundled
+      search command readiness file exists
+  ✓ git          git version 2.52.0
+      selected git             /usr/bin/git
+      version                  git version 2.52.0
+      exec path                /usr/libexec/git-core
+      repo detected            false
+      PATH entries (1)         /usr/bin/git
+  ✓ terminal     unknown · TERM=xterm-256color
+      terminal                 unknown
+      TERM                     xterm-256color
+      stdin is terminal        true
+      stdout is terminal       false
+      stderr is terminal       false
+      terminal size            280x70
+      color output             disabled (--no-color)
+      effective locale         C.UTF-8
+      SSH_TTY                  present
+      SSH_CONNECTION           present
+      SSH_CLIENT               present
+  ✓ title        default · project FMCA-AV
+      title source             default
+      title items              activity, project-name
+      activity item            true
+      project source           cwd
+      project value            FMCA-AV
+  ✓ state        databases healthy
+      CODEX_HOME               ~/.codex (dir)
+      log dir                  ~/.codex/log (dir)
+      sqlite home              ~/.codex (dir)
+      state DB                 ~/.codex/state_5.sqlite (file) · integrity ok
+      log DB                   ~/.codex/logs_2.sqlite (file) · integrity ok
+      goals DB                 ~/.codex/goals_1.sqlite (file) · integrity ok
+      memories DB              ~/.codex/memories_1.sqlite (file) · integrity ok
+      active rollouts          242 files · 1.26 GB (avg 5.34 MB)
+      archived rollouts        0 files · 0 B (avg 0 B)
+      thread history DB        ~/.codex/thread_history_1.sqlite (missing)
+      thread history DB integrity skipped (missing)
+      standalone release cache 3 entries in /home/infres/yinwang/.codex/packages/standalone/releases
+  ✓ threads      rollout files and state DB thread inventory agree
+      default model provider   openai
+      rollout DB active files  242
+      rollout DB archived files 0
+      rollout DB scan errors   0
+      rollout DB malformed file names 0
+      rollout DB scan cap reached false
+      rollout DB rows          242
+      rollout DB active rows   242
+      rollout DB archived rows 0
+      rollout DB missing active rows 0
+      rollout DB missing archived rows 0
+      rollout DB stale rows    0
+      rollout DB archive mismatches 0
+      rollout DB duplicate rollout thread ids 0
+      rollout DB duplicate DB paths 0
+      rollout DB model providers openai=242
+      rollout DB sources       subagent:thread_spawn=191, cli=23, vscode=15, subagent:other=10, unknown=3
+
+Configuration
+  ✓ config       loaded
+      model                    gpt-5.6-sol · openai
+      cwd                      ~/FMCA-AV
+      config.toml              ~/.codex/config.toml
+      config.toml parse        ok
+      MCP servers              0
+      feature flags            38 enabled · 0 overridden
+      enabled flags            shell_tool, unified_exec, shell_snapshot, code_mode_host, terminal_resize_reflow, sqlite, hooks, enable_request_compression, multi_agent, apps, tool_search_always_defer_mcp_tools, tool_suggest, plugins, in_app_browser, in_app_updates, browser_use, browser_use_full_cdp_access, browser_use_external, computer_use, remote_plugin, plugin_sharing, image_generation, resize_all_images, item_ids, skill_mcp_dependency_install, skill_search, mentions_v2, steer, guardian_approval, goals, collaboration_modes, tool_call_mcp_elicitation, auth_elicitation, personality, fast_mode, tui_app_server, remote_compaction_v2, workspace_dependencies
+  ✓ auth         auth is configured
+      auth storage mode        File
+      auth file                ~/.codex/auth.json
+      stored auth mode         chatgpt
+      stored API key           false
+      stored ChatGPT tokens    true
+      stored agent identity    false
+  ✓ mcp          no MCP servers configured
+  ✓ sandbox      restricted fs + restricted network · approval OnRequest
+      approval policy          OnRequest
+      filesystem sandbox       restricted
+      network sandbox          restricted
+      linux helper             ~/.codex/tmp/arg0/codex-…zRJ/codex-linux-sandbox
+      execve wrapper helper    ~/.codex/tmp/arg0/codex-…RJ/codex-execve-wrapper
+
+Updates
+  ✓ updates      update configuration is locally consistent
+      startup update check     true
+      update action            standalone installer
+      version cache            ~/.codex/version.json
+      cached latest version    0.146.0
+      last checked at          2026-08-05 13:38 UTC
+      latest version           0.146.1
+      latest version status    newer version is available
+
+Connectivity
+  ✓ network      no proxy env vars
+      proxy env vars           none
+  ✓ websocket    connected (HTTP 101 Switching Protocols) · 15s timeout
+      model provider           openai
+      provider name            OpenAI
+      wire API                 responses
+      supports websockets      true
+      proxy env vars           none
+      connect timeout          15000 ms
+      auth mode                chatgpt
+      endpoint                 wss://chatgpt.com/backend-api/<redacted>
+      DNS                      2 IPv4, 2 IPv6, first IPv6
+      handshake result         HTTP 101 Switching Protocols
+      reasoning header         false
+      models etag present      true
+      server model present     false
+  ✓ reachability active provider endpoints are reachable over HTTP
+      reachability mode        ChatGPT auth
+      ChatGPT base URL         https://chatgpt.com/backend-api/ reachable (HTTP 403)
+
+Background Server
+  ○ app-server   not running (ephemeral mode)
+      daemon state dir         ~/.codex/app-server-daemon
+      settings                 ~/.codex/app-server-daemon/settings.json (missing)
+      pid file                 ~/.codex/app-server-daemon/app-server.pid (missing)
+      update-loop pid file     ~/.codex/app-server-daem…/app-server-updater.pid (missing)
+      control socket           ~/.codex/app-server-cont…app-server-control.sock
+      status                   not running
+      mode                     ephemeral
+
+─────────────────────────────────────────────────────────────
+17 ok · 1 idle · 2 notes · 0 warn · 0 fail ok
+
+--summary compact output           --all expand truncated lists
+--json redacted report
