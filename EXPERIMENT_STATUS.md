@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 01:45 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 01:54 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -32,6 +32,19 @@ Published correction commits:
 
 ## Completed post-fix results
 
+### E0/E1 exact and operator recovery
+
+The complete versioned E0/E1 input set and renderer finished successfully:
+
+- primary Gaussian suite: Slurm `930444`;
+- high-resource Gaussian extension, 420 records: Slurm `930422`;
+- exact discrete channels: Slurm `930446`;
+- nonlinear toy recovery: Slurm `930447`;
+- finite-sample recovery: Slurm `930448`;
+- combined recovery renderer: Slurm `930459`.
+
+The resulting CSV/SVG/caption assets are under `results/postfix/20260809_scientific_correctness_v1/e1/`. The combined Gaussian table has 26 dimension/sample-size rows, the nonlinear table has 15 rows, and the discrete table has 7 family rows. No pre-fix input is accepted by the renderer.
+
 ### E1 estimator baselines
 
 Slurm job `930423` completed successfully. It evaluated 450 conditions covering linear CCA, Hermite operator features, validation-tuned Nyström, random-Fourier KICA, and normalized HSIC. The post-fix aggregation contains 45 method/correlation/sample-size rows:
@@ -44,7 +57,6 @@ The renderer itself ran through Slurm as job `930431` and completed with exit co
 
 ## Active post-fix work
 
-- E1 high-resource Gaussian recovery: Slurm CPU job `930422`.
 - CIFAR-10/CIFAR-100 TSD severity and image data-processing controls: six one-GPU V100 jobs occupied the full GPU budget at this snapshot. Each newly completed source run records the corrected version and evaluates the held-out spectrum with full-matrix SVD.
 - Formal matched-budget SSL: watcher run `20260809-013422_formal-ssl-postfix-state-machine` uses the independent state file `results/orchestration/formal_ssl_postfix_state.json`. It is waiting for capacity and starts from action zero; it cannot consume a legacy state or checkpoint.
 
