@@ -7,14 +7,27 @@ from collections import defaultdict
 import csv
 from html import escape
 import json
+import os
 from pathlib import Path
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
+
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
+
 
 def main() -> int:
-    candidates = sorted(Path("runs").glob("*/artifacts/e1_estimator_baselines.json"), key=lambda path: path.stat().st_mtime)
+    candidates = []
+    for path in Path("runs").glob("*/artifacts/e1_estimator_baselines.json"):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION:
+            candidates.append(path)
+    candidates.sort(key=lambda path: path.stat().st_mtime)
     if not candidates:
-        raise FileNotFoundError("no E1 estimator-baseline artifact")
+        raise FileNotFoundError("no post-fix E1 estimator-baseline artifact")
     source = candidates[-1]
     records = json.loads(source.read_text(encoding="utf-8"))["records"]
     grouped: dict[tuple[str, float, int], list[dict[str, object]]] = defaultdict(list)
@@ -35,11 +48,12 @@ def main() -> int:
             "normalized_hsic_median": statistics.median(hsic) if hsic else "",
             "test_normalized_hsic_median": statistics.median(test_hsic) if test_hsic else "",
         })
-    output = Path("results/e1"); output.mkdir(parents=True, exist_ok=True)
+    output = RESULTS_ROOT / "e1"; output.mkdir(parents=True, exist_ok=True)
     fields = list(rows[0])
     temporary = output / "estimator_baselines.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader(); writer.writerows(rows)
     temporary.replace(output / "estimator_baselines.csv")
     plotted = [row for row in rows if row["spectrum_mae_median"] != "" and float(row["rho"]) == 0.6]
     methods = sorted({str(row["method"]) for row in plotted}); sizes = sorted({int(row["samples"]) for row in plotted})
@@ -66,12 +80,13 @@ def main() -> int:
         svg.append(f'<text x="{x:.1f}" y="{top+chart_h+20}" text-anchor="middle" class="l">{size}</text>')
     svg.append('</svg>')
     temporary = output / "estimator_baselines.svg.tmp"; temporary.write_text("".join(svg), encoding="utf-8"); temporary.replace(output / "estimator_baselines.svg")
-    caption = ("E1 Gaussian estimator controls: linear CCA, exact Hermite features, validation-tuned RBF Nyström, "
+    caption = ("Post-fix E1 Gaussian estimator controls: linear CCA, exact Hermite features, validation-tuned RBF Nyström, "
                "random-Fourier KICA approximation, and normalized HSIC. Bandwidth/ridge selection uses an independent "
                "validation split. Primary spectrum errors use the requested-size training split; separate 10,000-sample "
                "test diagnostics are retained in the CSV. Source: " + str(source) + "\n")
     temporary = output / "estimator_baselines_caption.txt.tmp"; temporary.write_text(caption, encoding="utf-8"); temporary.replace(output / "estimator_baselines_caption.txt")
-    print(json.dumps({"rows": len(rows), "source": str(source)}, indent=2))
+    print(json.dumps({"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+                      "rows": len(rows), "source": str(source), "output": str(output)}, indent=2))
     return 0
 
 
