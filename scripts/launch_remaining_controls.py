@@ -12,6 +12,7 @@ import time
 from scripts.launch_e9_layer_randomization_wave import main as layer_randomization_main
 from scripts.launch_random_label_sanity_wave import main as random_label_main
 from scripts.launch_e7_image_data_processing_chain import main as image_chain_main
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -31,6 +32,7 @@ def completed_high_resource_gaussian() -> bool:
             continue
         parameters = dict(payload.get("parameters", {}))
         if (status.get("state") == "SUCCEEDED"
+                and payload.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
                 and int(parameters.get("replicates", 0)) >= 20
                 and str(parameters.get("sample_sizes", "")) == "20000"
                 and len(payload.get("records", [])) >= 420):
@@ -101,6 +103,7 @@ def run_estimator_baselines() -> None:
         except (OSError, json.JSONDecodeError):
             continue
         if (status.get("state") == "SUCCEEDED"
+                and payload.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
                 and int(dict(payload.get("parameters", {})).get("replicates", 0)) >= 10
                 and len(payload.get("records", [])) >= 450):
             return

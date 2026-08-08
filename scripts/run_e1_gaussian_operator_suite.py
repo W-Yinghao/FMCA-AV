@@ -11,7 +11,7 @@ from pathlib import Path
 
 import torch
 
-from fmca_av.operators import fit_spectral_calibration
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, fit_spectral_calibration
 
 
 def channel_matrix(case: str, dimension: int, generator: torch.Generator) -> torch.Tensor:
@@ -109,7 +109,11 @@ def main() -> int:
                         "estimated_eigenvalues": estimate.tolist(),
                         "ground_truth_eigenvalues": true_eigenvalues.tolist(),
                     })
-    payload = {"parameters": vars(args), "records": records}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "parameters": vars(args),
+        "records": records,
+    }
     output = (
         Path(args.output) if args.output else
         Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "e1_high_resource_gaussian.json"

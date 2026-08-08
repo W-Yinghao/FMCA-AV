@@ -12,7 +12,7 @@ import time
 
 import torch
 
-from fmca_av.operators import fit_spectral_calibration
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, fit_spectral_calibration
 
 
 def hermite(values: torch.Tensor, dimension: int) -> torch.Tensor:
@@ -150,6 +150,7 @@ def main() -> int:
                                 "test_spectrum_mae": None, "test_spectrum_relative_l1": None,
                                 "test_trace_error": None})
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "parameters": vars(args), "selection": "maximize top-8 validation trace on an independent validation split",
         "estimation_protocol": "primary spectrum is estimated from the requested-size training split",
         "test_protocol": "independent 10,000-sample test split is reported only as an out-of-sample diagnostic",
