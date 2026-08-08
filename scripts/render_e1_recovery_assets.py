@@ -9,11 +9,17 @@ import csv
 from html import escape
 import json
 import math
+import os
 from pathlib import Path
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 PALETTE = ("#2855a6", "#d14b3f", "#20854e", "#7a4aa8", "#d18b16", "#327b8e", "#854b3f")
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
 
 
 def line_panel(x: float, y: float, width: float, height: float, title: str, x_label: str, y_label: str, series: dict[str, list[tuple[float, float]]]) -> str:
@@ -43,16 +49,25 @@ def bar_panel(x: float, y: float, width: float, height: float, values: list[tupl
 
 def write_csv(path: Path, rows: list[dict]) -> None:
     fields = list(rows[0]) if rows else ["empty"]; temporary = path.with_suffix(path.suffix + ".tmp")
-    with temporary.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+    with temporary.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader(); writer.writerows(rows)
     temporary.replace(path)
 
 
+def versioned_records(path: str) -> list[dict[str, object]]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing pre-fix E1 input: {path}")
+    return list(payload["records"])
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--gaussian", required=True); parser.add_argument("--gaussian-extra", action="append", default=[]); parser.add_argument("--nonlinear", required=True); parser.add_argument("--discrete", required=True); parser.add_argument("--finite-sample", default=""); parser.add_argument("--output-dir", default="results/e1")
+    parser = argparse.ArgumentParser(); parser.add_argument("--gaussian", required=True); parser.add_argument("--gaussian-extra", action="append", default=[]); parser.add_argument("--nonlinear", required=True); parser.add_argument("--discrete", required=True); parser.add_argument("--finite-sample", default=""); parser.add_argument("--output-dir", default=str(RESULTS_ROOT / "e1"))
     args = parser.parse_args(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
-    gaussian = json.loads(Path(args.gaussian).read_text(encoding="utf-8"))["records"]; nonlinear = json.loads(Path(args.nonlinear).read_text(encoding="utf-8"))["records"]; discrete = json.loads(Path(args.discrete).read_text(encoding="utf-8"))["records"]
+    gaussian = versioned_records(args.gaussian); nonlinear = versioned_records(args.nonlinear); discrete = versioned_records(args.discrete)
     for extra in args.gaussian_extra:
-        gaussian.extend(json.loads(Path(extra).read_text(encoding="utf-8"))["records"])
+        gaussian.extend(versioned_records(extra))
     grouped = defaultdict(list)
     for record in gaussian: grouped[(int(record["dimension"]), int(record["samples"]))].append(record)
     gaussian_rows = []
@@ -73,7 +88,7 @@ def main() -> int:
     write_csv(output / "gaussian_recovery.csv", gaussian_rows); write_csv(output / "nonlinear_recovery.csv", nonlinear_rows); write_csv(output / "exact_discrete_channels.csv", discrete_rows)
     finite_rows = []
     if args.finite_sample:
-        finite_records = json.loads(Path(args.finite_sample).read_text(encoding="utf-8"))["records"]
+        finite_records = versioned_records(args.finite_sample)
         finite_grouped = defaultdict(list)
         for record in finite_records: finite_grouped[(str(record["family"]), int(record["samples"]))].append(record)
         for (family, samples), records in sorted(finite_grouped.items()):
@@ -92,7 +107,7 @@ def main() -> int:
     for row in nonlinear_rows: nonlinear_series[str(row["family"])].append((float(row["samples"]), float(row["top16_spectrum_mae_median"])))
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760"><style>.axis{stroke:#222;stroke-width:1.4}.grid{stroke:#ddd}.title{font:600 15px sans-serif}.label{font:13px sans-serif}.tick{font:10px sans-serif;fill:#333}</style>', line_panel(10, 10, 535, 360, "Gaussian spectrum recovery", "samples", "median spectrum MAE", spectrum), line_panel(555, 10, 535, 360, "Gaussian subspace recovery", "samples", "median projector error", projector), line_panel(10, 385, 535, 360, "Nonlinear toy recovery", "samples", "median top-16 spectrum MAE", nonlinear_series), bar_panel(555, 385, 535, 360, [(row["family"], float(row["trace_dependence_median"])) for row in discrete_rows]), '</svg>']
     temporary = output / "exact_operator_recovery.svg.tmp"; temporary.write_text("".join(svg), encoding="utf-8"); temporary.replace(output / "exact_operator_recovery.svg")
-    caption = "E0/E1 exact and learned operator recovery. Curves aggregate all preregistered noise/view/case replicates by median at each sample size, including the predeclared high-dimensional N=20,000 diagnostic extension; the discrete panel reports exact nonconstant dependence spectra summarized by family. finite_sample_recovery.csv adds 20-repeat empirical spectrum, subspace, and density-ratio errors at three sample sizes for the four decisive finite-channel families. Claim IDs: E0/E1/C1. Sources: " + ", ".join(value for value in (args.gaussian, *args.gaussian_extra, args.nonlinear, args.discrete, args.finite_sample) if value) + "\n"
+    caption = "Post-fix E0/E1 exact and learned operator recovery. Every input carries the required scientific-correctness version. Curves aggregate all preregistered noise/view/case replicates by median at each sample size, including the predeclared high-dimensional N=20,000 diagnostic extension; the discrete panel reports exact nonconstant dependence spectra summarized by family. finite_sample_recovery.csv adds 20-repeat empirical spectrum, subspace, and density-ratio errors at three sample sizes for the four decisive finite-channel families. Claim IDs: E0/E1/C1. Sources: " + ", ".join(value for value in (args.gaussian, *args.gaussian_extra, args.nonlinear, args.discrete, args.finite_sample) if value) + "\n"
     temporary = output / "exact_operator_recovery_caption.txt.tmp"; temporary.write_text(caption, encoding="utf-8"); temporary.replace(output / "exact_operator_recovery_caption.txt")
     print(json.dumps({"gaussian_rows": len(gaussian_rows), "nonlinear_rows": len(nonlinear_rows), "discrete_rows": len(discrete_rows), "output_dir": str(output)}, indent=2)); return 0
 
