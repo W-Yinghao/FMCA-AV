@@ -1,0 +1,31 @@
+{
+  "experiment": {"name": "shapes3d-fmca-av-lightning-smoke", "family": "vision_ssl"},
+  "seed": 20260862,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "shapes3d",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/factors",
+    "n_calibration": 5000, "n_val": 5000, "n_test": 10000,
+    "num_views": 2, "batch_size": 128, "num_workers": 4,
+    "augmentation": {
+      "size": 64, "min_scale": 0.5, "max_scale": 1.0,
+      "color_jitter_probability": 0.8, "color_jitter_strength": 0.5,
+      "grayscale_probability": 0.2, "gaussian_blur_probability": 0.2,
+      "horizontal_flip_probability": 0.5,
+      "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]
+    }
+  },
+  "model": {
+    "backbone": "resnet18_cifar", "backbone_width": 64,
+    "feature_dim": 128, "head_hidden_dims": [512], "activation": "gelu",
+    "parent_feature_source": "g", "parent_aggregation": "mean", "centered": true
+  },
+  "objective": {"name": "trace", "ridge": 0.001, "logdet_margin": 0.000001},
+  "optimizer": {"name": "sgd", "learning_rate": 0.03, "momentum": 0.9, "weight_decay": 0.0001, "scheduler": "cosine"},
+  "trainer": {
+    "accelerator": "gpu", "devices": 1, "strategy": "auto", "max_epochs": 1,
+    "max_steps": 32, "limit_val_batches": 8, "precision": "32-true",
+    "gradient_clip_val": 1.0, "deterministic": true, "log_every_n_steps": 20,
+    "enable_progress_bar": false
+  }
+}

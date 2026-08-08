@@ -1,0 +1,8 @@
+family,trace_dependence_median,conditions
+asymmetric_cycle,9.640000000000015,3
+binary_symmetric,0.7249999999999996,6
+block,0.8099999999999994,5
+erasure,2.250000000000001,5
+near_identity,14.996800170666667,3
+near_independent,0.0007500749999999991,4
+qary_symmetric,3.4190476190476202,12

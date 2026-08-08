@@ -1,0 +1,11 @@
+{
+  "python": "3.9.25",
+  "python_base": "/home/infres/yinwang/anaconda3/envs/icml/bin/python",
+  "experiment_python": "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python",
+  "pytorch": "2.8.0+cu128",
+  "torchvision": "0.23.0",
+  "lightning": "2.6.0",
+  "pycocotools": "2.0.10",
+  "environment_policy": "reuse the server CUDA-enabled PyTorch build; do not install or replace PyTorch",
+  "hashes_recorded": false
+}

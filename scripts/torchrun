@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec /projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python \
+  -m torch.distributed.run "$@"

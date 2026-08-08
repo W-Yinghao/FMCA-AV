@@ -1,0 +1,53 @@
+{
+  "experiment": {"name": "stl10-fmca-av-smoke", "family": "vision_ssl"},
+  "seed": 20260842,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "stl10",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/stl10",
+    "include_unlabeled": true,
+    "n_calibration": 5000,
+    "n_val": 5000,
+    "num_views": 2,
+    "batch_size": 128,
+    "num_workers": 6,
+    "augmentation": {
+      "size": 96,
+      "eval_resize": 96,
+      "min_scale": 0.08,
+      "color_jitter_probability": 0.8,
+      "color_jitter_strength": 0.5,
+      "grayscale_probability": 0.2,
+      "gaussian_blur_probability": 0.5,
+      "horizontal_flip_probability": 0.5,
+      "mean": [0.4467, 0.4398, 0.4066],
+      "std": [0.2603, 0.2566, 0.2713]
+    }
+  },
+  "model": {
+    "backbone": "resnet18_cifar",
+    "backbone_width": 64,
+    "feature_dim": 128,
+    "head_hidden_dims": [512],
+    "activation": "gelu",
+    "parent_feature_source": "g",
+    "parent_aggregation": "mean",
+    "centered": true
+  },
+  "objective": {"name": "trace", "ridge": 0.001, "logdet_margin": 0.000001},
+  "optimizer": {
+    "name": "sgd", "learning_rate": 0.03, "momentum": 0.9,
+    "weight_decay": 0.0001, "scheduler": "cosine"
+  },
+  "trainer": {
+    "accelerator": "gpu", "devices": 1, "strategy": "auto", "max_epochs": 5,
+    "precision": "32-true", "gradient_clip_val": 1.0, "deterministic": true,
+    "log_every_n_steps": 20, "enable_progress_bar": false
+  },
+  "probe": {
+    "n_val": 500, "batch_size": 256, "num_workers": 4,
+    "learning_rate": 0.1, "momentum": 0.9, "weight_decay": 0.0,
+    "max_epochs": 20, "accelerator": "gpu", "devices": 1,
+    "precision": "32-true", "log_every_n_steps": 20, "enable_progress_bar": false
+  }
+}

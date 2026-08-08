@@ -1,0 +1,6 @@
+dataset,method,suite,runs,mean_accuracy,std_accuracy,ci95_half_width
+cifar10,,cifar10-c,4,0.5534081578947367,0.040889844493873305,0.04007204760399584
+cifar100,,cifar100-c,1,0.3131757894736842,0.0,0.0
+imagenet1k,,imagenet-a,1,0.00013333333333333334,0.0,0.0
+imagenet1k,,imagenet-c,1,0.0012741052631578948,0.0,0.0
+imagenet1k,,imagenet-r,1,0.0,0.0,0.0

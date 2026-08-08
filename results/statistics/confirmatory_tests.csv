@@ -1,0 +1,7 @@
+claim_family,experiment,dataset,metric,contrast,paired_n,pair_ids,paired_difference_mean,paired_difference_std,bootstrap_ci95_low,bootstrap_ci95_high,cohens_dz,hedges_gz,exact_sign_flip_p,holm_adjusted_p,confirmatory_ready
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus first (views=2),3,1;2;3,2.0831298828125,0.5241421885742686,1.4797821044921875,2.4260787963867188,3.9743602560955265,2.271063003483158,0.25,1.0,True
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus deepsets (views=2),3,1;2;3,8.677688598632812,2.6666802151844333,5.9814605712890625,11.313804626464844,3.254116691315627,1.8594952521803583,0.25,1.0,True
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus concat (views=2),3,1;2;3,3.175994873046875,0.6247256556507295,2.4992141723632812,3.730621337890625,5.083823346007267,2.9050419120041524,0.25,1.0,True
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus first (views=8),3,1;2;3,4.0833892822265625,0.3413054372473701,3.8045883178710938,4.464019775390625,11.964032320021373,6.836589897155069,0.25,1.0,True
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus deepsets (views=8),3,1;2;3,6.2369130452473955,0.7314741721806819,5.4844818115234375,6.945453643798828,8.526497971423675,4.872284555099243,0.25,1.0,True
+C2,E4-aggregation,cifar10,validation_dependence_score,mean minus concat (views=8),3,1;2;3,5.307139078776042,0.9088783708648046,4.450462341308594,6.260490417480469,5.839218149427694,3.3366960853872536,0.25,1.0,True

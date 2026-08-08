@@ -1,0 +1,1 @@
+E5 matched-view frozen linear-probe and weighted-kNN results. Error bars are normal-approximation 95% confidence intervals over frozen confirmatory seeds; all successful screening and formal runs remain in the raw table. Claim IDs: E5/C3.

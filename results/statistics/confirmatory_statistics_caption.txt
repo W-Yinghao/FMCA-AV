@@ -1,0 +1,1 @@
+Paired confirmatory comparisons use frozen seed pairs. Differences are reference minus comparator, with deterministic seed bootstrap intervals, paired Cohen/Hedges effect sizes, exact two-sided sign-flip tests, and Holm correction within each claim family. Rows with fewer than three pairs are retained but marked not confirmatory-ready.

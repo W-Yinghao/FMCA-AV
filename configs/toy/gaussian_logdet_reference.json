@@ -1,0 +1,44 @@
+{
+  "experiment": {
+    "name": "gaussian-reference-logdet",
+    "family": "gaussian_1d"
+  },
+  "seed": 20260811,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dimension": 1,
+    "n_train": 65536,
+    "n_calibration": 32768,
+    "n_val": 16384,
+    "n_test": 32768,
+    "noise_variance": 1.0,
+    "num_views": 8,
+    "batch_size": 1024,
+    "num_workers": 4
+  },
+  "model": {
+    "feature_dim": 8,
+    "hidden_dims": [128, 128],
+    "activation": "gelu",
+    "centered": true
+  },
+  "objective": {
+    "name": "logdet",
+    "ridge": 0.001,
+    "logdet_margin": 0.000001
+  },
+  "optimizer": {
+    "learning_rate": 0.0003,
+    "weight_decay": 0.000001
+  },
+  "trainer": {
+    "accelerator": "gpu",
+    "devices": 1,
+    "max_epochs": 100,
+    "precision": "32-true",
+    "deterministic": true,
+    "log_every_n_steps": 10,
+    "enable_progress_bar": false
+  }
+}
+

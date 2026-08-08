@@ -1,0 +1,101 @@
+{
+  "action_index": 2,
+  "chain_runs": [
+    "20260807-091000_imagenet-formal-state-machine",
+    "20260807-091015_imagenet-formal-state-machine",
+    "20260807-091740_imagenet-formal-state-machine",
+    "20260807-093630_imagenet-formal-state-machine",
+    "20260807-094640_imagenet-formal-state-machine",
+    "20260807-135904_imagenet-formal-state-machine",
+    "20260807-135904_imagenet-formal-state-machine",
+    "20260807-135904_imagenet-formal-state-machine",
+    "20260807-174405_imagenet-formal-chain-step-000",
+    "20260807-191914_imagenet-formal-chain-step-001",
+    "20260807-192445_imagenet-formal-chain-step-001",
+    "20260807-191914_imagenet-formal-chain-step-001",
+    "20260807-192445_imagenet-formal-chain-step-001",
+    "20260807-193127_imagenet-formal-chain-step-001",
+    "20260807-193659_imagenet-formal-chain-step-002",
+    "20260807-235116_imagenet-formal-chain-step-002",
+    "20260807-235553_imagenet-formal-chain-step-002",
+    "20260807-235745_imagenet-formal-chain-step-002",
+    "20260807-235746_imagenet-formal-chain-step-000",
+    "20260808-000247_imagenet-formal-chain-step-001",
+    "20260808-001208_imagenet-formal-chain-step-001",
+    "20260808-001209_imagenet-formal-chain-step-001",
+    "20260808-001240_imagenet-formal-chain-step-002",
+    "20260808-022543_imagenet-formal-chain-step-002",
+    "20260808-024910_imagenet-formal-chain-step-002"
+  ],
+  "completed": [
+    {
+      "action": {
+        "gpus": 1,
+        "kind": "ddp"
+      },
+      "run_id": "20260807-235745_e10-cifar10-ddp1-100step-scaling-recovered",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "gpus": 2,
+        "kind": "ddp"
+      },
+      "run_id": "20260808-001209_e10-cifar10-ddp2-100step-scaling-recovered",
+      "state": "SUCCEEDED"
+    }
+  ],
+  "current_action": null,
+  "current_attempt": 0,
+  "current_infrastructure_attempt": 0,
+  "current_retry_from": "",
+  "current_run": "",
+  "deferred": {
+    "action": "single-node L40S DDP4 scaling",
+    "reason": "canceled by operator policy: per-task maximum reduced from four GPUs to two; aggregate harness capacity remains four",
+    "run_id": "20260808-001240_e10-cifar10-ddp4-100step-scaling-recovered",
+    "state": "CANCELED_BY_POLICY"
+  },
+  "dependency": "20260807-073411_recover-interrupted-e3-tsd-coco-v2",
+  "dependency_complete": true,
+  "deferred_imagenet": {
+    "action_index": 2,
+    "reason": "operator requested all ImageNet-1K experiments run after the remaining non-ImageNet work",
+    "run_id": "20260808-024910_imagenet1k-fmca_av-seed-20267001-epoch-25",
+    "state": "DEFERRED",
+    "successor_run": "20260808-024910_imagenet-formal-chain-step-002"
+  },
+  "final_train_runs": {},
+  "last_checkpoints": {},
+  "probe_checkpoints": {},
+  "rescheduled": [
+    {
+      "from_profile": "h100",
+      "reason": "H100-only estimated start moved to 2026-08-08T22:49:10+02:00; broadened to H100/A100 without changing training semantics",
+      "run_id": "20260808-022542_imagenet1k-fmca_av-seed-20267001-epoch-25",
+      "state": "STOPPED_BEFORE_START",
+      "to_profile": "imagenet_ddp"
+    }
+  ],
+  "state": "DEFERRED",
+  "successor_run": "20260808-024910_imagenet-formal-chain-step-002",
+  "superseded_scaling": [
+    {
+      "action": {
+        "gpus": 1,
+        "kind": "ddp"
+      },
+      "run_id": "20260807-174405_e10-cifar10-ddp1-100step-scaling-recovered",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "gpus": 2,
+        "kind": "ddp"
+      },
+      "run_id": "20260807-193127_e10-cifar10-ddp2-100step-scaling-recovered",
+      "state": "SUCCEEDED"
+    }
+  ],
+  "superseded_scaling_reason": "per-task policy now permits only 1/2-GPU scaling; historical four-GPU attempts are audit-only"
+}

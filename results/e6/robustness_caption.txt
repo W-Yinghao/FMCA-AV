@@ -1,0 +1,1 @@
+E6 clean/corruption/OOD results. The summary and figure report mean and normal-approximation 95% CI over independent seeds. ImageNet-C mCE uses the canonical 15-corruption AlexNet normalization; four extra corruptions are retained separately. Legacy CIFAR-C runs without a stored clean score report unnormalized mean corruption error only.

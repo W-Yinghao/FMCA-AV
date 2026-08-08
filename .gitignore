@@ -9,3 +9,13 @@ __pycache__/
 *.swp
 *~
 .DS_Store
+
+# Runtime state and run artifacts stay on the experiment server.  Aggregated,
+# publication-sized result tables and figures belong under results/ instead.
+/runs/
+/harness/state/jobs.json
+/harness/state/harness.lock
+*.ckpt
+*.pth
+*.pt
+*.log

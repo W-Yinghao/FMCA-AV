@@ -1,0 +1,359 @@
+{
+  "action_index": 21,
+  "chain_runs": [
+    "20260807-091004_formal-ssl-state-machine",
+    "20260807-091811_formal-ssl-state-machine",
+    "20260807-094011_formal-ssl-state-machine",
+    "20260807-094640_formal-ssl-state-machine",
+    "20260807-100057_formal-ssl-state-machine",
+    "20260807-135904_formal-ssl-state-machine",
+    "20260807-135904_formal-ssl-state-machine",
+    "20260807-135904_formal-ssl-state-machine",
+    "20260807-135904_formal-ssl-state-machine",
+    "20260807-220809_formal-ssl-state-machine",
+    "20260808-041945_formal-ssl-chain-step-0004",
+    "20260808-061309_formal-ssl-chain-refill",
+    "20260808-062812_formal-ssl-chain-step-0008",
+    "20260808-080818_formal-ssl-chain-step-0009",
+    "20260808-143155_formal-ssl-chain-refill-local-state",
+    "20260808-151702_formal-ssl-chain-step-0013",
+    "20260808-162708_formal-ssl-chain-step-0014",
+    "20260808-183821_formal-ssl-chain-step-0015",
+    "20260808-183822_formal-ssl-chain-step-0017",
+    "20260808-201540_formal-ssl-chain-step-0017",
+    "20260808-201612_formal-ssl-chain-step-0019",
+    "20260808-202644_formal-ssl-chain-step-0020",
+    "20260808-214544_formal-ssl-chain-step-0020",
+    "20260808-214615_formal-ssl-chain-step-0021"
+  ],
+  "completed": [
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av:20280001",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280001,
+        "seed_index": 1,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-041443_formal-cifar10-fmca_av-v2-seed1-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av:20280002",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280002,
+        "seed_index": 2,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-041443_formal-cifar10-fmca_av-v2-seed2-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av:20280003",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280003,
+        "seed_index": 3,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-041444_formal-cifar10-fmca_av-v2-seed3-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av:20280004",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280004,
+        "seed_index": 4,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-041944_formal-cifar10-fmca_av-v2-seed4-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av:20280005",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280005,
+        "seed_index": 5,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-061810_formal-cifar10-fmca_av-v2-seed5-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av:20280001",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280001,
+        "seed_index": 1,
+        "target": 200,
+        "views": 8
+      },
+      "run_id": "20260808-062310_formal-cifar10-fmca_av-v8-seed1-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av:20280003",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280003,
+        "seed_index": 3,
+        "target": 200,
+        "views": 8
+      },
+      "run_id": "20260808-062812_formal-cifar10-fmca_av-v8-seed3-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av:20280002",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280002,
+        "seed_index": 2,
+        "target": 200,
+        "views": 8
+      },
+      "run_id": "20260808-062811_formal-cifar10-fmca_av-v8-seed2-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av:20280004",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280004,
+        "seed_index": 4,
+        "target": 200,
+        "views": 8
+      },
+      "run_id": "20260808-080818_formal-cifar10-fmca_av-v8-seed4-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_matched_head:20280001",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280001,
+        "seed_index": 1,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-143157_formal-cifar10-fmca_av_matched_head-v2-seed1-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_matched_head:20280002",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280002,
+        "seed_index": 2,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-150701_formal-cifar10-fmca_av_matched_head-v2-seed2-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_matched_head:20280003",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280003,
+        "seed_index": 3,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-151702_formal-cifar10-fmca_av_matched_head-v2-seed3-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_matched_head:20280004",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280004,
+        "seed_index": 4,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-162707_formal-cifar10-fmca_av_matched_head-v2-seed4-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_matched_head:20280005",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280005,
+        "seed_index": 5,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-183821_formal-cifar10-fmca_av_matched_head-v2-seed5-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av:20280005",
+        "kind": "train",
+        "method": "fmca_av",
+        "seed": 20280005,
+        "seed_index": 5,
+        "target": 200,
+        "views": 8
+      },
+      "run_id": "20260808-143156_formal-cifar10-fmca_av-v8-seed5-epoch-200",
+      "state": "SUCCEEDED"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:2:fmca_av_deepsets:20280001",
+        "kind": "train",
+        "method": "fmca_av_deepsets",
+        "seed": 20280001,
+        "seed_index": 1,
+        "target": 200,
+        "views": 2
+      },
+      "run_id": "20260808-214615_formal-cifar10-fmca_av_deepsets-v2-seed1-epoch-200",
+      "state": "SUCCEEDED"
+    }
+  ],
+  "current_runs": [
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av_matched_head:20280001",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280001,
+        "seed_index": 1,
+        "target": 200,
+        "views": 8
+      },
+      "attempt": 1,
+      "infrastructure_attempt": 0,
+      "run_id": "20260808-183822_formal-cifar10-fmca_av_matched_head-v8-seed1-epoch-200"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av_matched_head:20280002",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280002,
+        "seed_index": 2,
+        "target": 200,
+        "views": 8
+      },
+      "attempt": 1,
+      "infrastructure_attempt": 0,
+      "run_id": "20260808-183822_formal-cifar10-fmca_av_matched_head-v8-seed2-epoch-200"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av_matched_head:20280003",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280003,
+        "seed_index": 3,
+        "target": 200,
+        "views": 8
+      },
+      "attempt": 1,
+      "infrastructure_attempt": 0,
+      "run_id": "20260808-201611_formal-cifar10-fmca_av_matched_head-v8-seed3-epoch-200"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av_matched_head:20280004",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280004,
+        "seed_index": 4,
+        "target": 200,
+        "views": 8
+      },
+      "attempt": 1,
+      "infrastructure_attempt": 0,
+      "run_id": "20260808-201612_formal-cifar10-fmca_av_matched_head-v8-seed4-epoch-200"
+    },
+    {
+      "action": {
+        "dataset": "cifar10",
+        "key": "cifar10:8:fmca_av_matched_head:20280005",
+        "kind": "train",
+        "method": "fmca_av_matched_head",
+        "seed": 20280005,
+        "seed_index": 5,
+        "target": 200,
+        "views": 8
+      },
+      "attempt": 1,
+      "infrastructure_attempt": 0,
+      "run_id": "20260808-202644_formal-cifar10-fmca_av_matched_head-v8-seed5-epoch-200"
+    }
+  ],
+  "dependencies": [
+    "20260807-062346_launch-e4-aggregation-ablation-wave",
+    "20260807-065037_launch-e5-cifar10-matched-views-screening",
+    "20260807-060445_launch-cross-dataset-baseline-wave-fixed"
+  ],
+  "dependencies_complete": true,
+  "last_checkpoints": {
+    "cifar10:2:fmca_av:20280001": "/home/infres/yinwang/FMCA-AV/runs/20260808-041443_formal-cifar10-fmca_av-v2-seed1-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av:20280002": "/home/infres/yinwang/FMCA-AV/runs/20260808-041443_formal-cifar10-fmca_av-v2-seed2-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av:20280003": "/home/infres/yinwang/FMCA-AV/runs/20260808-041444_formal-cifar10-fmca_av-v2-seed3-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av:20280004": "/home/infres/yinwang/FMCA-AV/runs/20260808-041944_formal-cifar10-fmca_av-v2-seed4-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av:20280005": "/home/infres/yinwang/FMCA-AV/runs/20260808-061810_formal-cifar10-fmca_av-v2-seed5-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_deepsets:20280001": "/home/infres/yinwang/FMCA-AV/runs/20260808-214615_formal-cifar10-fmca_av_deepsets-v2-seed1-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_matched_head:20280001": "/home/infres/yinwang/FMCA-AV/runs/20260808-143157_formal-cifar10-fmca_av_matched_head-v2-seed1-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_matched_head:20280002": "/home/infres/yinwang/FMCA-AV/runs/20260808-150701_formal-cifar10-fmca_av_matched_head-v2-seed2-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_matched_head:20280003": "/home/infres/yinwang/FMCA-AV/runs/20260808-151702_formal-cifar10-fmca_av_matched_head-v2-seed3-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_matched_head:20280004": "/home/infres/yinwang/FMCA-AV/runs/20260808-162707_formal-cifar10-fmca_av_matched_head-v2-seed4-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:2:fmca_av_matched_head:20280005": "/home/infres/yinwang/FMCA-AV/runs/20260808-183821_formal-cifar10-fmca_av_matched_head-v2-seed5-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:8:fmca_av:20280001": "/home/infres/yinwang/FMCA-AV/runs/20260808-062310_formal-cifar10-fmca_av-v8-seed1-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:8:fmca_av:20280002": "/home/infres/yinwang/FMCA-AV/runs/20260808-062811_formal-cifar10-fmca_av-v8-seed2-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:8:fmca_av:20280003": "/home/infres/yinwang/FMCA-AV/runs/20260808-062812_formal-cifar10-fmca_av-v8-seed3-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:8:fmca_av:20280004": "/home/infres/yinwang/FMCA-AV/runs/20260808-080818_formal-cifar10-fmca_av-v8-seed4-epoch-200/artifacts/checkpoints/last.ckpt",
+    "cifar10:8:fmca_av:20280005": "/home/infres/yinwang/FMCA-AV/runs/20260808-143156_formal-cifar10-fmca_av-v8-seed5-epoch-200/artifacts/checkpoints/last.ckpt"
+  },
+  "retry_queue": [],
+  "state": "RUNNING",
+  "successor_run": "20260808-214615_formal-ssl-chain-step-0021"
+}

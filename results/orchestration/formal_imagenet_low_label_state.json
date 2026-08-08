@@ -1,0 +1,15 @@
+{
+  "action_index": 0,
+  "chain_runs": [
+    "20260807-113350_formal-imagenet1k-low-label-state-machine",
+    "20260807-113350_formal-imagenet1k-low-label-state-machine",
+    "20260807-220730_formal-imagenet1k-low-label-state-machine"
+  ],
+  "completed": [],
+  "current_runs": [],
+  "pretrain_complete": false,
+  "pretrain_state": "/home/infres/yinwang/FMCA-AV/results/orchestration/imagenet_formal_state.json",
+  "retry_queue": [],
+  "source_checkpoints": {},
+  "state": "RUNNING"
+}

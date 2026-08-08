@@ -1,0 +1,36 @@
+{
+  "chain_runs": [
+    "20260807-092702_launch-formal-downstream",
+    "20260807-093830_launch-formal-downstream",
+    "20260807-100355_launch-formal-downstream",
+    "20260807-100355_launch-formal-downstream",
+    "20260807-220729_launch-formal-downstream",
+    "20260808-005122_launch-formal-downstream",
+    "20260808-214545_launch-formal-downstream"
+  ],
+  "deferred_imagenet_controls": {
+    "reason": "operator requested all ImageNet experiments after non-ImageNet work",
+    "stopped_run": "20260808-134047_imagenet100-supervised-random-labels-32step",
+    "watcher": "20260807-220939_remaining-e7-e9-controls"
+  },
+  "deferred_imagenet_low_label_baselines": {
+    "completed_non_imagenet_records": 40,
+    "reason": "operator requested all ImageNet experiments after non-ImageNet work",
+    "stopped_watcher": "20260807-220727_launch-e6-baseline-low-label-wave"
+  },
+  "deferred_imagenet_tsd": {
+    "non_imagenet_watcher": "20260808-151333_continue-crossscale-tsd-after-recovery",
+    "reason": "operator requested all ImageNet experiments after non-ImageNet work",
+    "stopped_watcher": "20260807-221041_continue-crossscale-tsd-after-recovery"
+  },
+  "factor_run": "20260808-134210_full-factor-probes",
+  "finalizer_run": "",
+  "imagenet_low_label_run": "",
+  "localization_run": "",
+  "matched_compute_run": "",
+  "post_ssl_run": "",
+  "remaining_controls_run": "20260807-174219_remaining-e7-e9-controls",
+  "remaining_non_imagenet_run": "20260808-134317_remaining-non-imagenet-controls",
+  "state": "RUNNING",
+  "transfer_run": ""
+}

@@ -1,0 +1,10 @@
+{
+  "curve_rows": 1152,
+  "runs": [
+    "20260807-063700_dsprites-spectral-factor-probe-smoke",
+    "20260807-063701_shapes3d-spectral-factor-probe-smoke",
+    "20260807-063702_smallnorb-spectral-factor-probe-smoke",
+    "20260807-063703_mpi3d_toy-spectral-factor-probe-smoke"
+  ],
+  "summary_rows": 24
+}

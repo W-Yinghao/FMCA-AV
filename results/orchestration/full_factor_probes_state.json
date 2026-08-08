@@ -1,0 +1,976 @@
+{
+  "chain_runs": [
+    "20260808-134210_full-factor-probes"
+  ],
+  "extra_trainings": [
+    {
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed": 20273502,
+      "seed_index": 2,
+      "train_run": "20260808-134711_e7-mpi3d_realistic-stability-seed2-full"
+    },
+    {
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed": 20273503,
+      "seed_index": 3,
+      "train_run": "20260808-135212_e7-mpi3d_realistic-stability-seed3-full"
+    },
+    {
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed": 20273512,
+      "seed_index": 2,
+      "train_run": "20260808-135713_e7-mpi3d_real-stability-seed2-full"
+    },
+    {
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed": 20273513,
+      "seed_index": 3,
+      "train_run": "20260808-140213_e7-mpi3d_real-stability-seed3-full"
+    }
+  ],
+  "sources": [
+    {
+      "channel": "default",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-061652_dsprites-lightning-32step-smoke"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-060741_shapes3d-lightning-32step-smoke"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-061654_smallnorb-lightning-32step-smoke"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-061243_mpi3d_toy-lightning-32step-smoke"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-063825_e7-dsprites-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-063826_e7-dsprites-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-063827_e7-dsprites-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-064329_e7-dsprites-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-102908_e7-dsprites-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 1,
+      "train_run": "20260807-102908_e7-dsprites-noise-32step"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-130521_e7-shapes3d-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-132523_e7-shapes3d-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-133023_e7-shapes3d-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-133524_e7-shapes3d-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-163144_e7-shapes3d-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 1,
+      "train_run": "20260807-163144_e7-shapes3d-noise-32step"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-163645_e7-smallnorb-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-164146_e7-smallnorb-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-165647_e7-smallnorb-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-181154_e7-smallnorb-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-191159_e7-smallnorb-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 1,
+      "train_run": "20260807-224655_e7-smallnorb-noise-32step"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-225156_e7-mpi3d_toy-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-225657_e7-mpi3d_toy-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-230157_e7-mpi3d_toy-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-230658_e7-mpi3d_toy-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-231159_e7-mpi3d_toy-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 1,
+      "train_run": "20260807-231700_e7-mpi3d_toy-noise-32step"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260807-232200_e7-mpi3d_realistic-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260808-002126_e7-mpi3d_realistic-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260808-002127_e7-mpi3d_realistic-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260808-015259_e7-mpi3d_realistic-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260808-015300_e7-mpi3d_realistic-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 1,
+      "train_run": "20260808-015801_e7-mpi3d_realistic-noise-32step"
+    },
+    {
+      "channel": "crop",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-015801_e7-mpi3d_real-crop-32step"
+    },
+    {
+      "channel": "color",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-020302_e7-mpi3d_real-color-32step"
+    },
+    {
+      "channel": "rotation",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-020302_e7-mpi3d_real-rotation-32step"
+    },
+    {
+      "channel": "blur",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-020803_e7-mpi3d_real-blur-32step"
+    },
+    {
+      "channel": "grayscale",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-020803_e7-mpi3d_real-grayscale-32step"
+    },
+    {
+      "channel": "noise",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 1,
+      "train_run": "20260808-021304_e7-mpi3d_real-noise-32step"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 2,
+      "train_run": "20260807-103405_e7-dsprites-stability-seed2"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/dsprites_smoke.json",
+      "dataset": "dsprites",
+      "seed_index": 3,
+      "train_run": "20260807-103405_e7-dsprites-stability-seed3"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 2,
+      "train_run": "20260807-124415_e7-shapes3d-stability-seed2"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/shapes3d_smoke.json",
+      "dataset": "shapes3d",
+      "seed_index": 3,
+      "train_run": "20260807-125916_e7-shapes3d-stability-seed3"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 2,
+      "train_run": "20260807-125916_e7-smallnorb-stability-seed2"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/smallnorb_smoke.json",
+      "dataset": "smallnorb",
+      "seed_index": 3,
+      "train_run": "20260807-130417_e7-smallnorb-stability-seed3"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 2,
+      "train_run": "20260807-131418_e7-mpi3d_toy-stability-seed2"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_toy_smoke.json",
+      "dataset": "mpi3d_toy",
+      "seed_index": 3,
+      "train_run": "20260807-131918_e7-mpi3d_toy-stability-seed3"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 2,
+      "train_run": "20260808-134711_e7-mpi3d_realistic-stability-seed2-full"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_realistic_smoke.json",
+      "dataset": "mpi3d_realistic",
+      "seed_index": 3,
+      "train_run": "20260808-135212_e7-mpi3d_realistic-stability-seed3-full"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 2,
+      "train_run": "20260808-135713_e7-mpi3d_real-stability-seed2-full"
+    },
+    {
+      "channel": "default",
+      "config": "configs/ssl/mpi3d_real_smoke.json",
+      "dataset": "mpi3d_real",
+      "seed_index": 3,
+      "train_run": "20260808-140213_e7-mpi3d_real-stability-seed3-full"
+    }
+  ],
+  "state": "SUCCEEDED",
+  "submitted": [
+    {
+      "key": "dsprites:default:seed1",
+      "run_id": "20260808-141215_full-factor-dsprites-default-seed1",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-061652_dsprites-lightning-32step-smoke"
+      }
+    },
+    {
+      "key": "shapes3d:default:seed1",
+      "run_id": "20260808-141716_full-factor-shapes3d-default-seed1",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-060741_shapes3d-lightning-32step-smoke"
+      }
+    },
+    {
+      "key": "smallnorb:default:seed1",
+      "run_id": "20260808-141716_full-factor-smallnorb-default-seed1",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-061654_smallnorb-lightning-32step-smoke"
+      }
+    },
+    {
+      "key": "mpi3d_toy:default:seed1",
+      "run_id": "20260808-142217_full-factor-mpi3d_toy-default-seed1",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-061243_mpi3d_toy-lightning-32step-smoke"
+      }
+    },
+    {
+      "key": "dsprites:crop:seed1",
+      "run_id": "20260808-142218_full-factor-dsprites-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-063825_e7-dsprites-crop-32step"
+      }
+    },
+    {
+      "key": "dsprites:color:seed1",
+      "run_id": "20260808-142719_full-factor-dsprites-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-063826_e7-dsprites-color-32step"
+      }
+    },
+    {
+      "key": "dsprites:rotation:seed1",
+      "run_id": "20260808-142719_full-factor-dsprites-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-063827_e7-dsprites-rotation-32step"
+      }
+    },
+    {
+      "key": "dsprites:blur:seed1",
+      "run_id": "20260808-162230_full-factor-dsprites-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-064329_e7-dsprites-blur-32step"
+      }
+    },
+    {
+      "key": "dsprites:grayscale:seed1",
+      "run_id": "20260808-165233_full-factor-dsprites-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-102908_e7-dsprites-grayscale-32step"
+      }
+    },
+    {
+      "key": "dsprites:noise:seed1",
+      "run_id": "20260808-165734_full-factor-dsprites-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 1,
+        "train_run": "20260807-102908_e7-dsprites-noise-32step"
+      }
+    },
+    {
+      "key": "shapes3d:crop:seed1",
+      "run_id": "20260808-170235_full-factor-shapes3d-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-130521_e7-shapes3d-crop-32step"
+      }
+    },
+    {
+      "key": "shapes3d:color:seed1",
+      "run_id": "20260808-170736_full-factor-shapes3d-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-132523_e7-shapes3d-color-32step"
+      }
+    },
+    {
+      "key": "shapes3d:rotation:seed1",
+      "run_id": "20260808-170736_full-factor-shapes3d-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-133023_e7-shapes3d-rotation-32step"
+      }
+    },
+    {
+      "key": "shapes3d:blur:seed1",
+      "run_id": "20260808-171237_full-factor-shapes3d-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-133524_e7-shapes3d-blur-32step"
+      }
+    },
+    {
+      "key": "shapes3d:grayscale:seed1",
+      "run_id": "20260808-171238_full-factor-shapes3d-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-163144_e7-shapes3d-grayscale-32step"
+      }
+    },
+    {
+      "key": "shapes3d:noise:seed1",
+      "run_id": "20260808-171739_full-factor-shapes3d-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 1,
+        "train_run": "20260807-163144_e7-shapes3d-noise-32step"
+      }
+    },
+    {
+      "key": "smallnorb:crop:seed1",
+      "run_id": "20260808-171739_full-factor-smallnorb-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-163645_e7-smallnorb-crop-32step"
+      }
+    },
+    {
+      "key": "smallnorb:color:seed1",
+      "run_id": "20260808-172240_full-factor-smallnorb-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-164146_e7-smallnorb-color-32step"
+      }
+    },
+    {
+      "key": "smallnorb:rotation:seed1",
+      "run_id": "20260808-172240_full-factor-smallnorb-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-165647_e7-smallnorb-rotation-32step"
+      }
+    },
+    {
+      "key": "smallnorb:blur:seed1",
+      "run_id": "20260808-172741_full-factor-smallnorb-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-181154_e7-smallnorb-blur-32step"
+      }
+    },
+    {
+      "key": "smallnorb:grayscale:seed1",
+      "run_id": "20260808-172742_full-factor-smallnorb-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-191159_e7-smallnorb-grayscale-32step"
+      }
+    },
+    {
+      "key": "smallnorb:noise:seed1",
+      "run_id": "20260808-173243_full-factor-smallnorb-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 1,
+        "train_run": "20260807-224655_e7-smallnorb-noise-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:crop:seed1",
+      "run_id": "20260808-173243_full-factor-mpi3d_toy-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-225156_e7-mpi3d_toy-crop-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:color:seed1",
+      "run_id": "20260808-173744_full-factor-mpi3d_toy-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-225657_e7-mpi3d_toy-color-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:rotation:seed1",
+      "run_id": "20260808-173744_full-factor-mpi3d_toy-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-230157_e7-mpi3d_toy-rotation-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:blur:seed1",
+      "run_id": "20260808-174246_full-factor-mpi3d_toy-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-230658_e7-mpi3d_toy-blur-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:grayscale:seed1",
+      "run_id": "20260808-174246_full-factor-mpi3d_toy-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-231159_e7-mpi3d_toy-grayscale-32step"
+      }
+    },
+    {
+      "key": "mpi3d_toy:noise:seed1",
+      "run_id": "20260808-174747_full-factor-mpi3d_toy-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 1,
+        "train_run": "20260807-231700_e7-mpi3d_toy-noise-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:crop:seed1",
+      "run_id": "20260808-174747_full-factor-mpi3d_realistic-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260807-232200_e7-mpi3d_realistic-crop-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:color:seed1",
+      "run_id": "20260808-175248_full-factor-mpi3d_realistic-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260808-002126_e7-mpi3d_realistic-color-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:rotation:seed1",
+      "run_id": "20260808-175249_full-factor-mpi3d_realistic-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260808-002127_e7-mpi3d_realistic-rotation-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:blur:seed1",
+      "run_id": "20260808-175749_full-factor-mpi3d_realistic-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260808-015259_e7-mpi3d_realistic-blur-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:grayscale:seed1",
+      "run_id": "20260808-175750_full-factor-mpi3d_realistic-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260808-015300_e7-mpi3d_realistic-grayscale-32step"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:noise:seed1",
+      "run_id": "20260808-180251_full-factor-mpi3d_realistic-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 1,
+        "train_run": "20260808-015801_e7-mpi3d_realistic-noise-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:crop:seed1",
+      "run_id": "20260808-180251_full-factor-mpi3d_real-crop-seed1",
+      "source": {
+        "channel": "crop",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-015801_e7-mpi3d_real-crop-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:color:seed1",
+      "run_id": "20260808-180752_full-factor-mpi3d_real-color-seed1",
+      "source": {
+        "channel": "color",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-020302_e7-mpi3d_real-color-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:rotation:seed1",
+      "run_id": "20260808-180752_full-factor-mpi3d_real-rotation-seed1",
+      "source": {
+        "channel": "rotation",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-020302_e7-mpi3d_real-rotation-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:blur:seed1",
+      "run_id": "20260808-181253_full-factor-mpi3d_real-blur-seed1",
+      "source": {
+        "channel": "blur",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-020803_e7-mpi3d_real-blur-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:grayscale:seed1",
+      "run_id": "20260808-181253_full-factor-mpi3d_real-grayscale-seed1",
+      "source": {
+        "channel": "grayscale",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-020803_e7-mpi3d_real-grayscale-32step"
+      }
+    },
+    {
+      "key": "mpi3d_real:noise:seed1",
+      "run_id": "20260808-181254_full-factor-mpi3d_real-noise-seed1",
+      "source": {
+        "channel": "noise",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 1,
+        "train_run": "20260808-021304_e7-mpi3d_real-noise-32step"
+      }
+    },
+    {
+      "key": "dsprites:default:seed2",
+      "run_id": "20260808-181754_full-factor-dsprites-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 2,
+        "train_run": "20260807-103405_e7-dsprites-stability-seed2"
+      }
+    },
+    {
+      "key": "dsprites:default:seed3",
+      "run_id": "20260808-181755_full-factor-dsprites-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/dsprites_smoke.json",
+        "dataset": "dsprites",
+        "seed_index": 3,
+        "train_run": "20260807-103405_e7-dsprites-stability-seed3"
+      }
+    },
+    {
+      "key": "shapes3d:default:seed2",
+      "run_id": "20260808-181755_full-factor-shapes3d-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 2,
+        "train_run": "20260807-124415_e7-shapes3d-stability-seed2"
+      }
+    },
+    {
+      "key": "shapes3d:default:seed3",
+      "run_id": "20260808-182256_full-factor-shapes3d-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/shapes3d_smoke.json",
+        "dataset": "shapes3d",
+        "seed_index": 3,
+        "train_run": "20260807-125916_e7-shapes3d-stability-seed3"
+      }
+    },
+    {
+      "key": "smallnorb:default:seed2",
+      "run_id": "20260808-182256_full-factor-smallnorb-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 2,
+        "train_run": "20260807-125916_e7-smallnorb-stability-seed2"
+      }
+    },
+    {
+      "key": "smallnorb:default:seed3",
+      "run_id": "20260808-182257_full-factor-smallnorb-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/smallnorb_smoke.json",
+        "dataset": "smallnorb",
+        "seed_index": 3,
+        "train_run": "20260807-130417_e7-smallnorb-stability-seed3"
+      }
+    },
+    {
+      "key": "mpi3d_toy:default:seed2",
+      "run_id": "20260808-182758_full-factor-mpi3d_toy-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 2,
+        "train_run": "20260807-131418_e7-mpi3d_toy-stability-seed2"
+      }
+    },
+    {
+      "key": "mpi3d_toy:default:seed3",
+      "run_id": "20260808-182758_full-factor-mpi3d_toy-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_toy_smoke.json",
+        "dataset": "mpi3d_toy",
+        "seed_index": 3,
+        "train_run": "20260807-131918_e7-mpi3d_toy-stability-seed3"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:default:seed2",
+      "run_id": "20260808-182758_full-factor-mpi3d_realistic-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 2,
+        "train_run": "20260808-134711_e7-mpi3d_realistic-stability-seed2-full"
+      }
+    },
+    {
+      "key": "mpi3d_realistic:default:seed3",
+      "run_id": "20260808-183259_full-factor-mpi3d_realistic-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_realistic_smoke.json",
+        "dataset": "mpi3d_realistic",
+        "seed_index": 3,
+        "train_run": "20260808-135212_e7-mpi3d_realistic-stability-seed3-full"
+      }
+    },
+    {
+      "key": "mpi3d_real:default:seed2",
+      "run_id": "20260808-183300_full-factor-mpi3d_real-default-seed2",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 2,
+        "train_run": "20260808-135713_e7-mpi3d_real-stability-seed2-full"
+      }
+    },
+    {
+      "key": "mpi3d_real:default:seed3",
+      "run_id": "20260808-183300_full-factor-mpi3d_real-default-seed3",
+      "source": {
+        "channel": "default",
+        "config": "configs/ssl/mpi3d_real_smoke.json",
+        "dataset": "mpi3d_real",
+        "seed_index": 3,
+        "train_run": "20260808-140213_e7-mpi3d_real-stability-seed3-full"
+      }
+    }
+  ]
+}

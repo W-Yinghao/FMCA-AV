@@ -1,15 +1,33 @@
 {
-  "max_gpus": 4,
+  "max_gpus": 6,
+  "max_gpus_per_job": 2,
   "allowed_gpu_ids": [],
   "mode": "slurm",
   "runs_dir": "runs",
   "stop_grace_seconds": 30,
-  "poll_seconds": 5,
+  "poll_seconds": 300,
+  "max_slurm_jobs": 25,
   "omp_num_threads": 1,
+  "slurm_cpu_task_cpus": 1,
+  "slurm_cpus_per_gpu": 16,
+  "slurm_profile_cpus_per_gpu": {
+    "v100": 8
+  },
+  "slurm_profile_environment": {
+    "l40s": {
+      "NCCL_P2P_DISABLE": "1",
+      "NCCL_IB_DISABLE": "1"
+    }
+  },
+  "workload_python": "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python",
   "slurm_args": [],
   "slurm_partitions": {
     "cpu": ["CPU"],
     "default_gpu": ["V100", "V100-32GB", "A100", "L40S", "H100"],
-    "imagenet_gpu": ["A100", "L40S", "H100"]
+    "imagenet_gpu": ["A100", "L40S", "H100"],
+    "imagenet_ddp_gpu": ["H100", "A100"],
+    "v100_gpu": ["V100"],
+    "l40s_gpu": ["L40S"],
+    "h100_gpu": ["H100"]
   }
 }

@@ -1,0 +1,142 @@
+{
+  "dataset_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV",
+  "hashes_recorded": false,
+  "datasets": [
+    {
+      "name": "CIFAR-10",
+      "root": "cifar10",
+      "source": "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+      "version": "Python archive",
+      "splits": ["train", "test"],
+      "license": "Upstream CIFAR terms"
+    },
+    {
+      "name": "CIFAR-100",
+      "root": "cifar100",
+      "source": "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz",
+      "version": "Python archive",
+      "splits": ["train", "test"],
+      "license": "Upstream CIFAR terms"
+    },
+    {
+      "name": "STL-10",
+      "root": "stl10",
+      "source": "https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
+      "version": "binary archive",
+      "splits": ["train", "unlabeled", "test"],
+      "license": "Upstream STL-10 terms"
+    },
+    {
+      "name": "Tiny ImageNet-200",
+      "root": "tiny-imagenet-200",
+      "source": "http://cs231n.stanford.edu/tiny-imagenet-200.zip",
+      "version": "CS231n release",
+      "splits": ["train", "val", "test"],
+      "license": "ImageNet-derived; upstream ImageNet terms"
+    },
+    {
+      "name": "dSprites",
+      "root": "factors/dsprites",
+      "source": "https://raw.githubusercontent.com/google-deepmind/dsprites-dataset/master/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz",
+      "version": "canonical NPZ",
+      "splits": ["deterministic factor grid; project-defined train/calibration/validation/test"],
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "3D Shapes",
+      "root": "factors/3dshapes",
+      "source": "https://storage.googleapis.com/3d-shapes/3dshapes.h5",
+      "version": "canonical HDF5",
+      "splits": ["deterministic factor grid; project-defined train/calibration/validation/test"],
+      "license": "Upstream DeepMind terms"
+    },
+    {
+      "name": "SmallNORB",
+      "root": "factors/smallnorb",
+      "source": "https://cs.nyu.edu/~yann/data/norb-v1.0-small",
+      "version": "norb-v1.0-small",
+      "splits": ["training", "testing"],
+      "license": "Upstream NYU SmallNORB terms"
+    },
+    {
+      "name": "MPI3D",
+      "root": "factors/mpi3d",
+      "source": "https://huggingface.co/datasets/waleedgondal/mpi3d/resolve/main",
+      "version": "toy, realistic, real NPZ releases",
+      "splits": ["project-defined train/calibration/validation/test per domain"],
+      "license": "Upstream MPI3D terms"
+    },
+    {
+      "name": "CIFAR-10-C",
+      "root": "robustness/cifar10-c",
+      "source": "https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1",
+      "version": "Zenodo record 2535967",
+      "splits": ["15 corruptions, severities 1-5"],
+      "license": "Upstream CIFAR-10-C terms"
+    },
+    {
+      "name": "CIFAR-100-C",
+      "root": "robustness/cifar100-c",
+      "source": "https://zenodo.org/records/3555552/files/CIFAR-100-C.tar?download=1",
+      "version": "Zenodo record 3555552",
+      "splits": ["15 corruptions, severities 1-5"],
+      "license": "Upstream CIFAR-100-C terms"
+    },
+    {
+      "name": "ImageNet-C",
+      "root": "robustness/imagenet-c",
+      "source": "https://zenodo.org/records/2235448",
+      "version": "blur, digital, noise, weather, extra archives",
+      "splits": ["corruption", "severity 1-5"],
+      "license": "ImageNet-derived; upstream ImageNet terms"
+    },
+    {
+      "name": "ImageNet-R",
+      "root": "robustness/imagenet-r",
+      "source": "https://people.eecs.berkeley.edu/~hendrycks/imagenet-r.tar",
+      "version": "author release",
+      "splits": ["evaluation"],
+      "license": "ImageNet-derived; upstream terms"
+    },
+    {
+      "name": "ImageNet-A",
+      "root": "robustness/imagenet-a",
+      "source": "https://people.eecs.berkeley.edu/~hendrycks/imagenet-a.tar",
+      "version": "author release",
+      "splits": ["evaluation"],
+      "license": "ImageNet-derived; upstream terms"
+    },
+    {
+      "name": "CUB-200-2011",
+      "root": "cub",
+      "source": "https://data.caltech.edu/records/65de6-vp158",
+      "version": "main archive plus segmentation archive w9d68-gec53",
+      "splits": ["official train", "official test"],
+      "license": "Caltech CUB terms"
+    },
+    {
+      "name": "PASCAL VOC",
+      "root": "voc",
+      "source": "http://host.robots.ox.ac.uk/pascal/VOC/",
+      "version": "VOC2007 trainval/test and VOC2012 trainval",
+      "splits": ["VOC2007 trainval", "VOC2007 test", "VOC2012 trainval", "VOC2012 segmentation val"],
+      "license": "PASCAL VOC terms"
+    },
+    {
+      "name": "COCO 2017",
+      "root": "coco",
+      "source": "http://images.cocodataset.org/",
+      "version": "2017 train/val images and instances annotations",
+      "splits": ["train2017", "val2017"],
+      "license": "COCO image-specific licenses and annotation terms"
+    },
+    {
+      "name": "ImageNet-1K / ILSVRC2012 CLS-LOC",
+      "root": "imagenet/ILSVRC",
+      "source": "existing authorized server copy from the official ImageNet/Kaggle competition distribution",
+      "version": "ILSVRC2012 train, val, devkit, localization labels/boxes",
+      "splits": ["train", "val", "ImageNet-100 fixed wnid subset from configs/data/imagenet100_wnids.txt"],
+      "license": "ImageNet terms; no redistribution"
+    }
+  ]
+}

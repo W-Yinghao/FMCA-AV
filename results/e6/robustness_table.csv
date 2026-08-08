@@ -1,0 +1,9 @@
+run_id,name,file,dataset,method,seed,suite,mean_accuracy,mce,relative_mce,clean_accuracy,ece,samples
+20260807-043056_cifar10-2view-5epoch-cifar10c-workers0,cifar10-2view-5epoch-cifar10c-workers0,cifar10c.json,cifar10,,,cifar10-c,0.5437242105263158,45.62757894736842,,,,
+20260807-045122_cifar100-20epoch-cifar100c,cifar100-20epoch-cifar100c,cifar100c.json,cifar100,,,cifar100-c,0.3131757894736842,68.68242105263158,,,,
+20260807-053140_cifar10-paper-concat-20epoch-cifar10c,cifar10-paper-concat-20epoch-cifar10c,cifar10c.json,cifar10,,,cifar10-c,0.49965368421052625,50.034631578947376,,,,
+20260807-054707_cifar10-gmean-matched-head-20epoch-cifar10c,cifar10-gmean-matched-head-20epoch-cifar10c,cifar10c.json,cifar10,,,cifar10-c,0.581933684210526,41.806631578947396,,,,
+20260807-054708_cifar10-raw-first-matched-head-20epoch-cifar10c,cifar10-raw-first-matched-head-20epoch-cifar10c,cifar10c.json,cifar10,,,cifar10-c,0.5883210526315787,41.16789473684213,,,,
+20260807-103915_imagenet1k-32step-imagenet-c-robustness-fixed,imagenet1k-32step-imagenet-c-robustness-fixed,imagenet_robustness.json,imagenet1k,,,imagenet-c,0.0012741052631578948,129.1832222805547,0.08026305096420416,0.0015,,
+20260807-103915_imagenet1k-32step-imagenet-r-robustness-fixed,imagenet1k-32step-imagenet-r-robustness-fixed,imagenet_robustness.json,imagenet1k,,,imagenet-r,0.0,,,,0.16478355217066906,30000.0
+20260807-104416_imagenet1k-32step-imagenet-a-robustness-fixed,imagenet1k-32step-imagenet-a-robustness-fixed,imagenet_robustness.json,imagenet1k,,,imagenet-a,0.00013333333333333334,,,,0.05860195796936752,7500.0

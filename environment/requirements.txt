@@ -1,0 +1,4 @@
+# PyTorch is deliberately absent: the project reuses the server's CUDA-enabled build.
+torchvision==0.23.0
+lightning==2.6.0
+pycocotools==2.0.10

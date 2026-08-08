@@ -1,0 +1,1 @@
+E4 parent aggregation, head-sharing, gradient-stop, and feature-source ablations. The CSV retains every successful run and its frozen validation dependence score, parameter count, and runtime. Claim IDs: E4/C2/C3.

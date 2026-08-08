@@ -1,0 +1,45 @@
+{
+  "experiment": {
+    "name": "finite-three-state-learning",
+    "family": "finite_channel"
+  },
+  "seed": 20260809,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "joint_probability": [
+      [0.24, 0.04, 0.02],
+      [0.04, 0.28, 0.08],
+      [0.02, 0.08, 0.20]
+    ],
+    "n_train": 32768,
+    "n_calibration": 32768,
+    "n_val": 16384,
+    "n_test": 32768,
+    "num_views": 8,
+    "batch_size": 1024,
+    "num_workers": 2
+  },
+  "model": {
+    "feature_dim": 2,
+    "centered": true
+  },
+  "objective": {
+    "name": "trace",
+    "ridge": 0.001,
+    "logdet_margin": 0.000001
+  },
+  "optimizer": {
+    "learning_rate": 0.003,
+    "weight_decay": 0.0
+  },
+  "trainer": {
+    "accelerator": "cpu",
+    "devices": 1,
+    "max_epochs": 50,
+    "precision": "32-true",
+    "deterministic": true,
+    "log_every_n_steps": 10,
+    "enable_progress_bar": false
+  }
+}
+
