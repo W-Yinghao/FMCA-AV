@@ -3,7 +3,7 @@
 import torch
 from torch import Tensor
 
-from .operators import FMCAMoments, whitened_cross_operator
+from .operators import FMCAMoments, regularized_covariance, whitened_cross_operator
 
 
 def trace_score(moments: FMCAMoments, ridge: float = 1e-3) -> Tensor:
@@ -15,12 +15,8 @@ def trace_score(moments: FMCAMoments, ridge: float = 1e-3) -> Tensor:
     r_f = moments.r_f.to(working_dtype)
     r_g = moments.r_g.to(working_dtype)
     p_fg = moments.p_fg.to(working_dtype)
-    dimension = r_f.shape[0]
-    identity = torch.eye(dimension, dtype=working_dtype, device=r_f.device)
-    scale_f = r_f.diagonal().abs().mean().detach().clamp_min(1.0)
-    scale_g = r_g.diagonal().abs().mean().detach().clamp_min(1.0)
-    regularized_f = r_f + (ridge * scale_f) * identity
-    regularized_g = r_g + (ridge * scale_g) * identity
+    regularized_f = regularized_covariance(r_f, ridge)
+    regularized_g = regularized_covariance(r_g, ridge)
     left = torch.linalg.solve(regularized_f, p_fg)
     right = torch.linalg.solve(regularized_g, p_fg.transpose(0, 1))
     return torch.trace(left @ right).to(output_dtype)

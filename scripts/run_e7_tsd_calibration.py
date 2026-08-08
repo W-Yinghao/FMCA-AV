@@ -11,7 +11,12 @@ from pathlib import Path
 
 import torch
 
-from fmca_av.operators import fit_spectral_calibration
+from fmca_av.operators import (
+    SCIENTIFIC_CORRECTNESS_VERSION,
+    clipped_logdet_from_eigenvalues,
+    evaluate_heldout_spectrum,
+    fit_spectral_calibration,
+)
 
 
 def hermite(values: torch.Tensor, dimension: int) -> torch.Tensor:
@@ -28,32 +33,36 @@ def exact_tsd(noise: float, dimension: int) -> float:
     return float(-torch.log1p(-values).sum())
 
 
-def estimate(noise: float, samples: int, views: int, dimension: int, seed: int) -> dict[str, float]:
+def estimate(noise: float, samples: int, views: int, dimension: int, seed: int) -> dict[str, object]:
     generator = torch.Generator().manual_seed(seed)
     x = torch.randn(samples, 1, generator=generator, dtype=torch.float64)
     y = x[:, None, :] + math.sqrt(noise) * torch.randn(samples, views, 1, generator=generator, dtype=torch.float64)
     f = hermite(x, dimension); g = hermite(y.reshape(-1, 1) / math.sqrt(1.0 + noise), dimension).reshape(samples, views, dimension)
     calibration = fit_spectral_calibration(f, g, ridge=1e-3, centered=True)
-    calibration_eigenvalues = calibration.eigenvalues.clamp(max=1.0 - 1e-7)
-    calibration_tsd = float(-torch.log1p(-calibration_eigenvalues).sum())
+    calibration_tsd_value, calibration_clipped = clipped_logdet_from_eigenvalues(
+        calibration.eigenvalues, margin=1e-7,
+    )
+    calibration_tsd = float(calibration_tsd_value)
     test_generator = torch.Generator().manual_seed(seed + 10_000_000)
     test_x = torch.randn(samples, 1, generator=test_generator, dtype=torch.float64)
     test_y = test_x[:, None, :] + math.sqrt(noise) * torch.randn(samples, views, 1, generator=test_generator, dtype=torch.float64)
     test_f = hermite(test_x, dimension); test_g = hermite(test_y.reshape(-1, 1) / math.sqrt(1.0 + noise), dimension).reshape(samples, views, dimension)
-    normalized_f = calibration.encode_f(test_f)
-    normalized_g = calibration.encode_g(test_g)
-    correlations = (normalized_f[:, None, :] * normalized_g).mean((0, 1))
-    raw_eigenvalues = correlations.square()
-    eigenvalues = raw_eigenvalues.clamp(max=1.0 - 1e-7)
-    tsd = float(-torch.log1p(-eigenvalues).sum())
+    heldout = evaluate_heldout_spectrum(test_f, test_g, calibration)
+    raw_eigenvalues = heldout.eigenvalues
+    tsd_value, clipped = clipped_logdet_from_eigenvalues(raw_eigenvalues, margin=1e-7)
+    tsd = float(tsd_value)
     truth = exact_tsd(noise, dimension)
     return {
         "heldout_tsd": tsd, "calibration_tsd": calibration_tsd,
         "train_test_gap": calibration_tsd - tsd,
         "exact_tsd": truth, "absolute_error": abs(tsd - truth),
-        "trace_dependence": float(eigenvalues.sum()),
+        "trace_dependence": float(raw_eigenvalues.sum()),
+        "heldout_singular_values": heldout.singular_values.tolist(),
+        "heldout_eigenvalues": raw_eigenvalues.tolist(),
+        "diagonal_correlation_diagnostic": heldout.diagonal_correlations.tolist(),
         "raw_largest_eigenvalue": float(raw_eigenvalues.max()),
-        "clipped_mode_count": int((raw_eigenvalues >= 1.0 - 1e-7).sum()),
+        "clipped_mode_count": clipped,
+        "calibration_clipped_mode_count": calibration_clipped,
     }
 
 
@@ -118,7 +127,14 @@ def main() -> int:
         cumulative_noise += increment
         values = estimate(cumulative_noise, 8192, 8, args.feature_dim, args.seed + 9_000_000 + stage)
         chain.append({"stage": stage, "incremental_noise": increment, "cumulative_noise": cumulative_noise, **values})
-    payload = {"parameters": vars(args), "calibration_summary": summaries, "data_processing_chain": chain, "records": records}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "heldout_spectral_method": "svdvals_of_full_canonical_cross_operator",
+        "parameters": vars(args),
+        "calibration_summary": summaries,
+        "data_processing_chain": chain,
+        "records": records,
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "e7_tsd_calibration.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")

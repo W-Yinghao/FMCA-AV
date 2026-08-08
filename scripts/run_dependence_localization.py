@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Quantitative spectral dependence-map localization and faithfulness evaluation."""
+"""Quantitative paired-canonical dependence localization and faithfulness."""
 
 from __future__ import annotations
 
@@ -20,11 +20,17 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from fmca_av.config import load_config
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, dependence_contribution_maps
 from fmca_av.vision_module import VisionFMCAAV
 
 
 MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+PRIMARY_DEPENDENCE_MAP = "absolute_dependence"
+DEPENDENCE_MAP_DEFINITION = (
+    "u=(f(x)-mean_f)@transform_f; v_p=(g(local_feature_p)-mean_g)@transform_g; "
+    "D(p)=sum_k singular_value_k*u_k*v_p,k; absolute_dependence=abs(D(p))"
+)
 
 
 def image_tensor(image: Image.Image, size: int, device: torch.device) -> Tensor:
@@ -99,17 +105,51 @@ def normalize_map(value: Tensor) -> Tensor:
     return value / value.max().clamp_min(1e-12)
 
 
+def normalize_signed_map(value: Tensor) -> Tensor:
+    return value / value.abs().max().clamp_min(1e-12)
+
+
+def parent_canonical_coordinates(
+    model: VisionFMCAAV,
+    calibration: dict[str, object],
+    inputs: Tensor,
+) -> Tensor:
+    """Run the checkpoint's actual backbone/aggregation/f-head parent path.
+
+    Localization provides one image rather than an augmented parent set.  The
+    image is therefore repeated to the configured view count before invoking
+    ``VisionFMCAAV.feature_maps``.  This preserves the checkpoint's real
+    parent aggregation (including concat or DeepSets) and f-head rather than
+    substituting g coordinates or an activation norm for u(x).
+    """
+
+    view_count = int(model.config["data"]["num_views"])
+    views = inputs.unsqueeze(1).expand(-1, view_count, -1, -1, -1).contiguous()
+    parent_view = inputs if model.parent_aggregator.mode == "raw" else None
+    f_features, _, _ = model.feature_maps(views, parent_view)
+    mean_f = calibration["mean_f"].to(device=inputs.device, dtype=f_features.dtype)
+    transform_f = calibration["transform_f"].to(device=inputs.device, dtype=f_features.dtype)
+    return (f_features - mean_f) @ transform_f
+
+
 def maps(model: VisionFMCAAV, calibration: dict[str, object], inputs: Tensor, modes: int) -> dict[str, Tensor]:
     spatial = feature_map(model.backbone, inputs)
     _, channels, height, width = spatial.shape
     local = spatial.permute(0, 2, 3, 1).reshape(-1, channels)
     g = model.g_head(local)
-    mean = calibration["mean_g"].to(inputs.device)
-    transform = calibration["transform_g"].to(inputs.device)
-    eigenvalues = calibration["eigenvalues"].to(inputs.device)
-    canonical = (g - mean) @ transform
-    count = min(modes, canonical.shape[1])
-    spectral = (canonical[:, :count].square() * eigenvalues[:count]).sum(dim=1).reshape(height, width)
+    mean = calibration["mean_g"].to(device=inputs.device, dtype=g.dtype)
+    transform = calibration["transform_g"].to(device=inputs.device, dtype=g.dtype)
+    singular_values = calibration["singular_values"].to(device=inputs.device, dtype=g.dtype)
+    local_canonical = (g - mean) @ transform
+    parent_canonical = parent_canonical_coordinates(model, calibration, inputs)
+    # Scientific definition used by every E9 localization/faithfulness claim:
+    # D(p) = sum_k s_k u_k(x) v_{p,k}(x).  abs(D) is the primary map.
+    contributions = dependence_contribution_maps(
+        parent_canonical, local_canonical, singular_values, modes=modes,
+    )
+    signed = contributions["signed_dependence"].reshape(height, width)
+    absolute = contributions["absolute_dependence"].reshape(height, width)
+    g_energy = contributions["g_energy_baseline"].reshape(height, width)
     activation = local.square().sum(dim=1).sqrt().reshape(height, width)
     y_grid, x_grid = torch.meshgrid(
         torch.linspace(-1.0, 1.0, height, device=inputs.device),
@@ -122,10 +162,12 @@ def maps(model: VisionFMCAAV, calibration: dict[str, object], inputs: Tensor, mo
     edge = F.interpolate(dx + dy, size=(height, width), mode="bilinear", align_corners=False)[0, 0]
     random = torch.rand(height, width, device=inputs.device)
     return {
-        "spectral": normalize_map(spectral),
-        "activation_norm": normalize_map(activation),
-        "center_gaussian": normalize_map(center),
-        "edge_gradient": normalize_map(edge),
+        "signed_dependence": normalize_signed_map(signed),
+        "absolute_dependence": normalize_map(absolute),
+        "g_energy_baseline": normalize_map(g_energy),
+        "activation": normalize_map(activation),
+        "center": normalize_map(center),
+        "edge": normalize_map(edge),
         "random": normalize_map(random),
     }
 
@@ -185,6 +227,15 @@ def localization_metrics(value: Tensor, foreground: Optional[Tensor], box) -> di
         cumulative_precision = labels.cumsum(0) / torch.arange(1, len(labels) + 1, device=labels.device, dtype=torch.float64)
         record["pixel_auprc"] = float((cumulative_precision * labels).sum() / labels.sum().clamp_min(1.0))
     return record
+
+
+def signed_map_diagnostics(value: Tensor) -> dict[str, float]:
+    return {
+        "minimum": float(value.min()),
+        "maximum": float(value.max()),
+        "mean": float(value.mean()),
+        "positive_fraction": float((value > 0).to(torch.float32).mean()),
+    }
 
 
 def faithfulness(model: VisionFMCAAV, inputs: Tensor, value: Tensor, generator: torch.Generator) -> dict[str, float]:
@@ -319,8 +370,12 @@ def main() -> int:
         with torch.inference_mode(): calculated = maps(model, calibration, inputs, args.modes)
         for name, low_resolution in calculated.items():
             full = upsample(low_resolution, original_shape)
-            per_sample["maps"][name] = localization_metrics(full, foreground, box)
-            if name == "spectral": per_sample["maps"][name].update(faithfulness(model, inputs, low_resolution, generator))
+            if name == "signed_dependence":
+                per_sample["maps"][name] = signed_map_diagnostics(full)
+            else:
+                per_sample["maps"][name] = localization_metrics(full, foreground, box)
+            if name == PRIMARY_DEPENDENCE_MAP:
+                per_sample["maps"][name].update(faithfulness(model, inputs, low_resolution, generator))
         records.append(per_sample)
     summary = {}
     for map_name in sorted({name for record in records for name in record["maps"]}):
@@ -334,6 +389,10 @@ def main() -> int:
         if accuracies:
             summary[map_name]["max_box_acc_iou50"], summary[map_name]["max_box_acc_quantile"] = max(accuracies)
     payload = {"dataset": args.dataset, "method": config["experiment"].get("method", "fmca_av"),
+               "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+               "dependence_map_version": "paired_f_g_s_v1",
+               "primary_localization_map": PRIMARY_DEPENDENCE_MAP,
+               "dependence_map_definition": DEPENDENCE_MAP_DEFINITION,
                "samples": len(records), "randomize_backbone": args.randomize_backbone,
                "randomize_from_stage": args.randomize_from_stage,
                "runtime_seconds": time.perf_counter() - started,

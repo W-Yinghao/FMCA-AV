@@ -42,7 +42,12 @@ from .data.small_vision import (
 from .lightning_module import GaussianFMCAAV
 from .knn import weighted_knn_accuracy, weighted_knn_accuracy_chunked
 from .finite_module import FiniteFMCAAV
-from .operators import calibration_to_state, fit_spectral_calibration
+from .operators import (
+    SCIENTIFIC_CORRECTNESS_VERSION,
+    calibration_to_state,
+    evaluate_heldout_spectrum,
+    fit_spectral_calibration,
+)
 from .probe_module import FineTuneClassifier, LinearProbe
 from .profiling import BatchTimingRecorder, ExecutedStepRecorder
 from .robustness import (
@@ -202,6 +207,7 @@ def train(args: argparse.Namespace) -> int:
             "gpu_name": torch.cuda.get_device_name() if torch.cuda.is_available() else "cpu",
         })
         result["spectral_convention"] = "eigenvalues are squared canonical singular values; constant mode removed by centering; ridge is relative to mean marginal variance"
+        result["scientific_correctness_version"] = SCIENTIFIC_CORRECTNESS_VERSION
         _write_json(run_dir / "train_result.json", result)
         _append_harness_metric({"stage": "train", **result})
         print(json.dumps(result, indent=2))
@@ -282,18 +288,21 @@ def evaluate(args: argparse.Namespace) -> int:
     model = _load_model(config, args.checkpoint, device)
     f_features, g_features = _collect_features(model, data.test_dataloader(), config, device)
     state = torch.load(args.calibration, map_location="cpu", weights_only=True)
-    centered_f = f_features.double() - state["mean_f"]
-    centered_g = g_features.double() - state["mean_g"]
-    normalized_f = centered_f @ state["transform_f"]
-    normalized_g = centered_g @ state["transform_g"]
-    # Paired test correlations use the same parent grouping as training.
-    empirical = (normalized_f.unsqueeze(1) * normalized_g).mean(dim=(0, 1))
-    empirical_eigenvalues = empirical.square()
+    heldout = evaluate_heldout_spectrum(f_features.double(), g_features.double(), state)
+    empirical = heldout.singular_values
+    empirical_eigenvalues = heldout.eigenvalues
     result = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "calibration_scientific_correctness_version": state.get(
+            "scientific_correctness_version", "pre_fix_unversioned",
+        ),
         "checkpoint": str(Path(args.checkpoint).resolve()),
         "calibration": str(Path(args.calibration).resolve()),
+        "heldout_spectral_method": "svdvals_of_full_canonical_cross_operator",
+        "test_canonical_cross_operator": heldout.cross_operator.tolist(),
         "test_empirical_singular_values": empirical.tolist(),
         "test_empirical_eigenvalues": empirical_eigenvalues.tolist(),
+        "test_diagonal_correlations": heldout.diagonal_correlations.tolist(),
     }
     if config["experiment"]["family"] == "gaussian_1d":
         truth = gaussian_product_eigenvalues(

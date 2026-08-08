@@ -12,6 +12,8 @@ import random
 import re
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 def atomic_text(path: Path, value: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True); temporary = path.with_suffix(path.suffix + ".tmp")
@@ -46,8 +48,13 @@ def main() -> int:
         run_id = result_path.parents[1].name
         status_path = result_path.parents[1] / "status.json"
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED": continue
-        payload = json.loads(result_path.read_text(encoding="utf-8")); summary = payload.get("summary", {})
-        preferred = "spectral" if "spectral" in summary else ("projector_energy" if "projector_energy" in summary else ("eigen_cam" if "eigen_cam" in summary else ""))
+        payload = json.loads(result_path.read_text(encoding="utf-8"))
+        # A post-fix paper table must never silently combine legacy g-only maps
+        # with the paired f/g dependence definition.
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        summary = payload.get("summary", {})
+        preferred = "absolute_dependence" if "absolute_dependence" in summary else ("spectral" if "spectral" in summary else ("projector_energy" if "projector_energy" in summary else ("eigen_cam" if "eigen_cam" in summary else "")))
         metrics = summary.get(preferred, {}) if preferred else {}
         sample_metrics: dict[str, list[float]] = {}
         for record in payload.get("records", []):
@@ -155,7 +162,7 @@ def main() -> int:
     with temporary.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=composition_fields); writer.writeheader(); writer.writerows(composition_rows)
     temporary.replace(output / "cnn_composition_table.csv")
-    caption = ("Quantitative E9 localization and faithfulness results from every successful harness run. "
+    caption = ("Quantitative E9 localization and faithfulness results. Post-fix FMCA-AV rows use the nonnegative absolute paired-canonical dependence contribution as the primary map. "
                "The raw table retains negative and randomized-backbone controls and reports top/random deletion-insertion cosine AUC; "
                "the summary reports seed dispersion and a deterministic hierarchical bootstrap that resamples seeds and images. cnn_composition_table.csv reports direct-vs-recursive "
                "stage-operator rank correlation, normalized L2, and top-region IoU under the stated residual-stage assumption.\n")
