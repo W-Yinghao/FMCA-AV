@@ -18,6 +18,7 @@ from .config import load_config
 from .data.cifar import CIFARDataModule, CIFARProbeDataModule
 from .data.imagenet import ImageNetDataModule, ImageNetProbeDataModule
 from .data.small_vision import SmallVisionDataModule, SmallVisionProbeDataModule
+from .operators import SCIENTIFIC_CORRECTNESS_VERSION
 from .probe_module import FineTuneClassifier, LinearProbe
 from .profiling import BatchTimingRecorder, ExecutedStepRecorder
 
@@ -121,6 +122,7 @@ def train(args: argparse.Namespace) -> int:
     training_duration = time.perf_counter() - training_started
     if trainer.is_global_zero:
         result = {
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
             "method": config["experiment"]["method"],
             "config_path": str(Path(args.config).resolve()),
             "dataset_name": str(config["data"]["dataset"]),
@@ -197,6 +199,7 @@ def linear_probe(args: argparse.Namespace) -> int:
     if trainer.is_global_zero:
         metrics = test_results[0]
         result = {
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
             "method": config["experiment"]["method"],
             "source_checkpoint": str(Path(args.checkpoint).resolve()),
             "probe_checkpoint": callback.best_model_path,
@@ -248,6 +251,7 @@ def fine_tune(args: argparse.Namespace) -> int:
     if trainer.is_global_zero:
         metrics = test_results[0]
         result = {
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
             "method": config["experiment"]["method"],
             "source_checkpoint": str(Path(args.checkpoint).resolve()),
             "finetune_checkpoint": callback.best_model_path,

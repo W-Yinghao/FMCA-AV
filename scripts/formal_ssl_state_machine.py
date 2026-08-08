@@ -15,6 +15,8 @@ try:
 except ModuleNotFoundError:
     from orchestration_retries import is_infrastructure_failure, retry_record
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
@@ -89,10 +91,19 @@ def actions() -> list[dict[str, object]]:
 
 
 def load_state(path: Path, dependencies: list[str]) -> dict[str, object]:
-    if path.is_file(): return json.loads(path.read_text(encoding="utf-8"))
+    if path.is_file():
+        state = json.loads(path.read_text(encoding="utf-8"))
+        recorded = state.get("scientific_correctness_version")
+        if recorded != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(
+                f"refusing legacy formal SSL state {path}: correctness version "
+                f"{recorded!r} != {SCIENTIFIC_CORRECTNESS_VERSION!r}"
+            )
+        return state
     return {"dependencies": dependencies, "dependencies_complete": False, "action_index": 0,
             "current_runs": [], "retry_queue": [], "last_checkpoints": {},
-            "completed": [], "chain_runs": [], "state": "RUNNING"}
+            "completed": [], "chain_runs": [], "state": "RUNNING",
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION}
 
 
 def save_state(path: Path, payload: dict[str, object]) -> None:
@@ -151,6 +162,12 @@ def last_checkpoint(run_id: str) -> str:
     result_path = Path("runs") / run_id / "artifacts" / "train_result.json"
     if result_path.is_file():
         payload = json.loads(result_path.read_text(encoding="utf-8"))
+        recorded = payload.get("scientific_correctness_version")
+        if recorded != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(
+                f"refusing pre-fix checkpoint from {run_id}: correctness version "
+                f"{recorded!r} != {SCIENTIFIC_CORRECTNESS_VERSION!r}"
+            )
         for field in ("last_checkpoint", "best_checkpoint"):
             value = payload.get(field)
             if value and Path(str(value)).is_file(): return str(value)
