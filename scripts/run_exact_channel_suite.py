@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 
 from fmca_av.analytic import finite_channel_spectrum
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 def symmetric_channel(states: int, error: float) -> torch.Tensor:
@@ -87,7 +88,11 @@ def main() -> int:
         records.append(record("near_independent", {"states": 16, "identity_strength": strength}, transition))
     for forward, backward in ((0.6, 0.1), (0.8, 0.05), (0.95, 0.01)):
         records.append(record("asymmetric_cycle", {"states": 16, "forward": forward, "backward": backward}, asymmetric_cycle(16, forward, backward)))
-    payload = {"records": records, "families": sorted({item["family"] for item in records})}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "records": records,
+        "families": sorted({item["family"] for item in records}),
+    }
     output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"); temporary.replace(output)

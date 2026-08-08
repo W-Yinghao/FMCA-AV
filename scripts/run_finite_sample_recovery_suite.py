@@ -12,6 +12,7 @@ from pathlib import Path
 import torch
 
 from fmca_av.analytic import finite_channel_spectrum
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from scripts.run_exact_channel_suite import asymmetric_cycle, block_channel, symmetric_channel
 
 
@@ -96,6 +97,7 @@ def main() -> int:
                 seed = args.seed + family_index * 100000 + samples * 10 + replicate
                 records.append(one_record(family, samples, replicate, seed))
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "parameters": vars(args), "sample_sizes": [500, 2000, 10000],
         "protocol": "empirical joint matrix with Jeffreys smoothing; exact truth is used only for held-out error reporting",
         "records": records,

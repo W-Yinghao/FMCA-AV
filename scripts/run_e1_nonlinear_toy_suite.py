@@ -12,6 +12,7 @@ from pathlib import Path
 import torch
 
 from fmca_av.analytic import finite_channel_spectrum
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 def generate(family: str, samples: int, noise: float, generator: torch.Generator) -> tuple[torch.Tensor, torch.Tensor, int]:
@@ -159,7 +160,12 @@ def main() -> int:
                         "effective_rank": int((estimate > 1e-5).sum()),
                         "leading_eigenvalues": estimate[:16].tolist(),
                     })
-    payload = {"parameters": vars(args), "references": references, "records": records}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "parameters": vars(args),
+        "references": references,
+        "records": records,
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "e1_nonlinear_toy.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
