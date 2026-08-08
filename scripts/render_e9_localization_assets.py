@@ -14,6 +14,10 @@ import statistics
 
 from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
+
 
 def atomic_text(path: Path, value: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True); temporary = path.with_suffix(path.suffix + ".tmp")
@@ -41,7 +45,7 @@ def hierarchical_interval(samples_by_run: list[list[float]], seed: int, replicat
 
 
 def main() -> int:
-    output = Path("results/e9"); rows = []; per_run_samples: dict[str, dict[str, list[float]]] = {}
+    output = RESULTS_ROOT / "e9"; rows = []; per_run_samples: dict[str, dict[str, list[float]]] = {}
     localization_paths = list(Path("runs").glob("*/artifacts/localization.json"))
     localization_paths += list(Path("runs").glob("*/artifacts/supervised_localization.json"))
     for result_path in sorted(localization_paths):

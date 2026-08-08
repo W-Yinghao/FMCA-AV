@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 METHODS = (
     "spectral_contrastive", "barlow_twins", "regular_fmca", "hfmca_style",
@@ -20,6 +22,9 @@ METHODS = (
 )
 DATASETS = ("tinyimagenet200", "imagenet100", "imagenet1k", "cifar100", "cifar10", "stl10")
 SOURCE_PATTERN = re.compile(r"/runs/([^/]+)/artifacts/")
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
 
 
 def read_json(path: Path) -> dict[str, object]:
@@ -62,6 +67,13 @@ def source_run(payload: dict[str, object]) -> str:
     value = str(payload.get("source_checkpoint") or payload.get("checkpoint") or "")
     match = SOURCE_PATTERN.search(value)
     return match.group(1) if match else ""
+
+
+def is_postfix_source(run_id: str) -> bool:
+    result_path = Path("runs") / run_id / "artifacts" / "train_result.json"
+    if not result_path.is_file():
+        return False
+    return read_json(result_path).get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
 
 
 def seed_label(name: str) -> str:
@@ -124,6 +136,7 @@ def main() -> int:
             path = run_dir / "artifacts" / filename
             if not path.is_file(): continue
             payload = read_json(path); source = source_run(payload); source_job = dict(jobs.get(source, {}))
+            if not is_postfix_source(source): continue
             source_duration = duration_seconds(source_job) if source_job else ""; source_gpus = int(source_job.get("requested_gpus", 0)) if source_job else 0
             rows.append({
                 "run_id": run_id, "source_run": source, "name": name, "dataset": dataset, "method": method,
@@ -134,9 +147,9 @@ def main() -> int:
             })
     fields = ["run_id", "source_run", "name", "dataset", "method", "views", "architecture", "aggregation", "protocol", "seed", "accuracy", "source_duration_seconds", "source_gpu_hours"]
     grouped = group_rows(rows); grouped_fields = ["dataset", "method", "views", "architecture", "aggregation", "protocol", "runs", "successful_metrics", "accuracy_mean", "accuracy_std", "accuracy_ci95_half_width", "source_gpu_hours_mean"]
-    output = Path("results/e5"); write_csv(output / "matched_ssl_runs.csv", rows, fields); write_csv(output / "matched_ssl_summary.csv", grouped, grouped_fields)
+    output = RESULTS_ROOT / "e5"; write_csv(output / "matched_ssl_runs.csv", rows, fields); write_csv(output / "matched_ssl_summary.csv", grouped, grouped_fields)
     atomic_text(output / "matched_ssl_accuracy.svg", svg_bars(grouped))
-    atomic_text(output / "matched_ssl_caption.txt", "E5 matched-view frozen linear-probe and weighted-kNN results. Error bars are normal-approximation 95% confidence intervals over frozen confirmatory seeds; all successful screening and formal runs remain in the raw table. Claim IDs: E5/C3.\n")
+    atomic_text(output / "matched_ssl_caption.txt", "Post-fix E5 matched-view frozen linear-probe and weighted-kNN results. Error bars are normal-approximation 95% confidence intervals over frozen confirmatory seeds; only source runs carrying the required scientific-correctness version are included. Claim IDs: E5/C3.\n")
     e4_rows = []
     for run_id, job_value in jobs.items():
         job = dict(job_value); name = str(job.get("name", ""))
@@ -145,12 +158,13 @@ def main() -> int:
         if not result_path.is_file(): continue
         request = read_json(Path("runs") / run_id / "request.json"); dataset, method, views, architecture, aggregation = labels(name, request)
         result = read_json(result_path)
+        if result.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION: continue
         e4_rows.append({"run_id": run_id, "name": name, "dataset": dataset, "views": views, "architecture": architecture,
                         "aggregation": aggregation, "best_validation_score": result.get("best_validation_score", ""),
                         "parameters": result.get("total_parameters", ""), "duration_seconds": duration_seconds(job)})
     e4_fields = ["run_id", "name", "dataset", "views", "architecture", "aggregation", "best_validation_score", "parameters", "duration_seconds"]
-    write_csv(Path("results/e4/aggregation_ablation.csv"), e4_rows, e4_fields)
-    atomic_text(Path("results/e4/aggregation_caption.txt"), "E4 parent aggregation, head-sharing, gradient-stop, and feature-source ablations. The CSV retains every successful run and its frozen validation dependence score, parameter count, and runtime. Claim IDs: E4/C2/C3.\n")
+    write_csv(RESULTS_ROOT / "e4/aggregation_ablation.csv", e4_rows, e4_fields)
+    atomic_text(RESULTS_ROOT / "e4/aggregation_caption.txt", "Post-fix E4 parent aggregation, head-sharing, gradient-stop, and feature-source ablations. Only runs carrying the required scientific-correctness version are included. Claim IDs: E4/C2/C3.\n")
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps({"stage": "render_e4_e5_assets", "e4_runs": len(e4_rows), "e5_rows": len(rows)}) + "\n")

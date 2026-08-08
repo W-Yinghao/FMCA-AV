@@ -11,8 +11,22 @@ from pathlib import Path
 import re
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 PATTERN = re.compile(r"tsd-(cifar10|cifar100|imagenet100)-([a-z]+)-level([0-9]+)-seed([0-9]+)")
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
+
+
+def read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def has_postfix_train_result(run_id: str) -> bool:
+    path = Path("runs") / run_id / "artifacts" / "train_result.json"
+    return path.is_file() and read_json(path).get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
 
 
 def atomic_text(path: Path, value: str) -> None:
@@ -28,13 +42,15 @@ def main() -> int:
         name = str(job.get("name", "")); match = PATTERN.search(name)
         if match and "utility-linear-probe" not in name:
             dataset, channel, level, seed_index = match.groups(); run_dir = Path("runs") / run_id
+            if not has_postfix_train_result(run_id): continue
             calibration_path = run_dir / "artifacts" / "calibration.json"
             evaluation_path = run_dir / "artifacts" / "evaluation.json"
             calibration_score: object = ""; heldout_tsd: object = ""; gap: object = ""; clipped_modes: object = ""
             if calibration_path.is_file():
                 calibration_score = json.loads(calibration_path.read_text(encoding="utf-8")).get("logdet_score", "")
             if evaluation_path.is_file():
-                eigenvalues = json.loads(evaluation_path.read_text(encoding="utf-8")).get("test_empirical_eigenvalues", [])
+                evaluation = read_json(evaluation_path)
+                eigenvalues = evaluation.get("test_empirical_eigenvalues", []) if evaluation.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION else []
                 if eigenvalues:
                     clipped_modes = sum(float(value) >= 1.0 - 1e-7 for value in eigenvalues)
                     heldout_tsd = sum(-math.log1p(-min(max(float(value), 0.0), 1.0 - 1e-7)) for value in eigenvalues)
@@ -54,7 +70,7 @@ def main() -> int:
             probe_run, accuracy = probe_by_source[source_run]; row["probe_run"] = probe_run
             row["probe_state"] = jobs[probe_run].get("state", ""); row["probe_accuracy"] = accuracy
     rows = sorted(source_rows.values(), key=lambda row: (str(row["dataset"]), str(row["channel"]), int(row["level"]), int(row["seed_index"])))
-    output = Path("results/e7"); output.mkdir(parents=True, exist_ok=True)
+    output = RESULTS_ROOT / "e7"; output.mkdir(parents=True, exist_ok=True)
     fields = ["dataset", "channel", "level", "seed_index", "source_run", "source_state",
               "dependence_score", "calibration_tsd", "heldout_tsd", "calibration_test_gap",
               "heldout_clipped_mode_count", "probe_run", "probe_state", "probe_accuracy"]
@@ -95,7 +111,10 @@ def main() -> int:
         status_path = calibration_path.parents[1] / "status.json"
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED":
             continue
-        payload = json.loads(calibration_path.read_text(encoding="utf-8")); feature_dim = dict(payload.get("parameters", {})).get("feature_dim", "")
+        payload = read_json(calibration_path)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        feature_dim = dict(payload.get("parameters", {})).get("feature_dim", "")
         for condition, values in sorted(dict(payload.get("calibration_summary", {})).items()):
             calibration_rows.append({"run_id": calibration_path.parents[1].name, "feature_dim": feature_dim,
                                      "condition": condition, **dict(values)})
@@ -115,11 +134,14 @@ def main() -> int:
     for manifest in sorted(Path("runs").glob("*/artifacts/image_chain_submitted.json")):
         for record in json.loads(manifest.read_text(encoding="utf-8")):
             source_run = str(record["run_id"]); probe_run = str(record.get("probe_run", ""))
+            if not has_postfix_train_result(source_run):
+                continue
             evaluation_path = Path("runs") / source_run / "artifacts" / "evaluation.json"
             probe_path = Path("runs") / probe_run / "artifacts" / "probe_result.json"
             heldout = ""; accuracy = ""; clipped = ""
             if evaluation_path.is_file():
-                eigenvalues = json.loads(evaluation_path.read_text(encoding="utf-8")).get("test_empirical_eigenvalues", [])
+                evaluation = read_json(evaluation_path)
+                eigenvalues = evaluation.get("test_empirical_eigenvalues", []) if evaluation.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION else []
                 if eigenvalues:
                     clipped = sum(float(value) >= 1.0 - 1e-7 for value in eigenvalues)
                     heldout = sum(-math.log1p(-min(max(float(value), 0.0), 1.0 - 1e-7)) for value in eigenvalues)
@@ -177,7 +199,7 @@ def main() -> int:
         svg.append(f'<text x="{margin+plot_w/2-80}" y="{height-20}" class="label">held-out dependence score</text><text x="10" y="{margin+plot_h/2}" class="label" transform="rotate(-90 10 {margin+plot_h/2})">linear-probe accuracy</text>')
     svg.append("</svg>"); atomic_text(output / "tsd_utility.svg", "".join(svg))
     atomic_text(output / "tsd_utility_caption.txt",
-                "E7 augmentation-severity held-out TSD and frozen linear-probe utility. Held-out TSD is recomputed from independent test eigenvalues; clipping counts and calibration-test gaps are explicit, and group tables include seed std/95% CI. All levels and failed/negative cells remain in the CSV. The analytic calibration table reports slope, R-squared, Spearman, absolute error, split-half test-retest reliability, monotonicity violations, and calibration-test gap; the chain table retains each cumulative data-processing stage.\n")
+                "Post-fix E7 augmentation-severity held-out TSD and frozen linear-probe utility. Only versioned full-matrix held-out spectra are included; clipping counts and calibration-test gaps are explicit, and group tables include seed std/95% CI. The analytic calibration table reports slope, R-squared, Spearman, absolute error, split-half test-retest reliability, monotonicity violations, and calibration-test gap; the chain table retains each cumulative data-processing stage.\n")
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps({"stage": "render_e7_tsd_assets", "sources": len(rows), "paired": len(plotted)}) + "\n")
