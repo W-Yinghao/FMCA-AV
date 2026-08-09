@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
 import subprocess
 import time
+
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -47,6 +50,18 @@ def save(state: dict[str, object]) -> None:
     temporary = STATE_PATH.with_suffix(STATE_PATH.suffix + ".tmp")
     temporary.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(STATE_PATH)
+
+
+def load_state(path: Path) -> dict[str, object]:
+    if path.is_file():
+        state = read(path)
+        if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy E3 ImageNet-100 state: {path}")
+        return state
+    return {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "state": "RUNNING", "chain_runs": [], "submitted": [],
+    }
 
 
 def refresh() -> None:
@@ -97,8 +112,13 @@ def wait_all(run_ids: list[str]) -> None:
             return
 
 
-def main() -> int:
-    state = read(STATE_PATH) if STATE_PATH.is_file() else {"state": "RUNNING", "chain_runs": [], "submitted": []}
+def main(argv: list[str] | None = None) -> int:
+    global STATE_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--state-file", default=str(STATE_PATH))
+    args = parser.parse_args(argv)
+    STATE_PATH = Path(args.state_file)
+    state = load_state(STATE_PATH)
     chain = list(state.get("chain_runs", []))
     current_chain_run = os.environ["FMCA_HARNESS_RUN_ID"]
     if current_chain_run not in chain: chain.append(current_chain_run)

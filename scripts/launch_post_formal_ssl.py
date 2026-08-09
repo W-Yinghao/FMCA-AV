@@ -12,6 +12,7 @@ def main() -> int:
     formal_state = "results/orchestration/formal_ssl_postfix_state.json"
     matched_state = f"results/orchestration/matched_compute_{SCIENTIFIC_CORRECTNESS_VERSION}.json"
     low_label_state = f"results/orchestration/formal_low_label_{SCIENTIFIC_CORRECTNESS_VERSION}.json"
+    imagenet100_e3_state = f"results/orchestration/e3_imagenet100_recheck_{SCIENTIFIC_CORRECTNESS_VERSION}.json"
     result = int(matched_compute_main([
         "--formal-state", formal_state, "--state-file", matched_state,
     ]))
@@ -20,7 +21,9 @@ def main() -> int:
     result = int(low_label_main([
         "--formal-state", formal_state, "--state-file", low_label_state,
     ]))
-    return result if result else int(imagenet100_numerics_main())
+    return result if result else int(imagenet100_numerics_main([
+        "--state-file", imagenet100_e3_state,
+    ]))
 
 
 if __name__ == "__main__":

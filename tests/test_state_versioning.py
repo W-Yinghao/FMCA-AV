@@ -13,6 +13,7 @@ from scripts.formal_imagenet_low_label_state_machine import load as load_imagene
 from scripts.formal_localization_state_machine import load as load_localization
 from scripts.formal_transfer_state_machine import load as load_transfer
 from scripts.launch_postfix_factor_suite import load_state as load_factor, plan as factor_plan
+from scripts.launch_e3_imagenet100_recheck import load_state as load_imagenet100_e3
 
 
 class StateVersioningTests(unittest.TestCase):
@@ -31,6 +32,7 @@ class StateVersioningTests(unittest.TestCase):
                 load_localization(root / "localization.json", "pretrain.json"),
                 load_imagenet_low_label(root / "lowlabel.json", "pretrain.json"),
                 load_factor(root / "factor.json"),
+                load_imagenet100_e3(root / "imagenet100-e3.json"),
             )
             for state in states:
                 self.assertEqual(
@@ -52,6 +54,11 @@ class StateVersioningTests(unittest.TestCase):
             factor_path.write_text(json.dumps({"state": "RUNNING"}), encoding="utf-8")
             with self.assertRaises(RuntimeError):
                 load_factor(factor_path)
+
+            e3_path = root / "legacy-imagenet100-e3.json"
+            e3_path.write_text(json.dumps({"state": "RUNNING"}), encoding="utf-8")
+            with self.assertRaises(RuntimeError):
+                load_imagenet100_e3(e3_path)
 
 
 if __name__ == "__main__":
