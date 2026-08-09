@@ -42,7 +42,7 @@ def measure(base: dict[str, object], condition: dict[str, object], warmup: int, 
         return {**condition, "status": "success", "seconds_per_step": mean, "encoded_images_per_second": batch * views / mean, "peak_memory_mb": torch.cuda.max_memory_allocated() / (1024 ** 2), "parameters": sum(parameter.numel() for parameter in model.parameters())}
     except torch.cuda.OutOfMemoryError as error:
         torch.cuda.empty_cache(); return {**condition, "status": "oom", "failure_reason": str(error)}
-    except RuntimeError as error:
+    except (RuntimeError, ValueError) as error:
         torch.cuda.empty_cache(); return {**condition, "status": "failed", "failure_reason": str(error)}
 
 
