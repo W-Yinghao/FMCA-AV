@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,7 @@ import subprocess
 import time
 
 from scripts import formal_ssl_state_machine as formal
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -46,7 +48,10 @@ def wait_formal() -> dict[str, object]:
     while True:
         time.sleep(POLL_SECONDS); refresh()
         if not FORMAL_STATE.is_file(): continue
-        payload = read(FORMAL_STATE); value = str(payload.get("state", "RUNNING"))
+        payload = read(FORMAL_STATE)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy formal SSL state: {FORMAL_STATE}")
+        value = str(payload.get("state", "RUNNING"))
         if value == "SUCCEEDED": return payload
         if value in {"FAILED", "STOPPED", "BLOCKED"}: raise RuntimeError(f"formal SSL state ended in {value}")
 
@@ -69,13 +74,27 @@ def submit(argv: list[str]) -> str:
 
 def checkpoint(run_id: str) -> str:
     payload = read(Path("runs") / run_id / "artifacts" / "train_result.json")
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy formal low-label checkpoint from {run_id}")
     value = payload.get("last_checkpoint") or payload.get("best_checkpoint")
     if not value or not Path(str(value)).is_file(): raise RuntimeError(f"formal low-label checkpoint missing for {run_id}")
     return str(value)
 
 
-def main() -> int:
-    state = read(STATE_PATH) if STATE_PATH.is_file() else {"state": "RUNNING", "chain_runs": [], "submitted": []}
+def main(argv: list[str] | None = None) -> int:
+    global FORMAL_STATE, STATE_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--formal-state", default=str(FORMAL_STATE))
+    parser.add_argument("--state-file", default=str(STATE_PATH))
+    args = parser.parse_args(argv)
+    FORMAL_STATE = Path(args.formal_state)
+    STATE_PATH = Path(args.state_file)
+    state = read(STATE_PATH) if STATE_PATH.is_file() else {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "state": "RUNNING", "chain_runs": [], "submitted": [],
+    }
+    if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy formal low-label state: {STATE_PATH}")
     chain = list(state.get("chain_runs", [])); current_chain_run = os.environ["FMCA_HARNESS_RUN_ID"]
     if current_chain_run not in chain: chain.append(current_chain_run)
     state["chain_runs"] = chain; state["state"] = "RUNNING"; save(state)
@@ -116,6 +135,8 @@ def main() -> int:
             if key not in existing:
                 probe_run = probe_runs[str(action["key"])]
                 probe_result = read(Path("runs") / probe_run / "artifacts" / "probe_result.json")
+                if probe_result.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+                    raise RuntimeError(f"refusing legacy probe for corruption evaluation: {probe_run}")
                 override = formal.evaluation_override(action)
                 corruption_root = f"/projects/EEG-foundation-model/yinghao/FMCA-AV/robustness/{dataset}-c"
                 run_id = submit([

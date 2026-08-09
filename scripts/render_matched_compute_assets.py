@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 from collections import defaultdict
 import csv
 from datetime import datetime
@@ -12,9 +13,12 @@ from pathlib import Path
 import re
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 STATE = Path("results/orchestration/matched_compute_state.json")
 RUN_PATTERN = re.compile(r"/runs/([^/]+)/artifacts/")
+DEFAULT_RESULTS_ROOT = Path(f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}")
 
 
 def read(path: Path) -> dict[str, object]:
@@ -31,6 +35,8 @@ def gpu_hours(run_id: str) -> float:
 
 def probe(run_id: str) -> tuple[float, str]:
     payload = read(Path("runs") / run_id / "artifacts" / "probe_result.json")
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy matched-compute probe {run_id}")
     checkpoint = str(payload.get("source_checkpoint") or payload.get("checkpoint") or "")
     match = RUN_PATTERN.search(checkpoint)
     return float(payload["test_accuracy"]), match.group(1) if match else ""
@@ -40,7 +46,7 @@ def write_csv(path: Path, rows: list[dict[str, object]], fields: list[str]) -> N
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     temporary.replace(path)
@@ -69,7 +75,14 @@ def svg(rows: list[dict[str, object]]) -> str:
 
 
 def main() -> int:
-    state = read(STATE)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--state-file", default=str(STATE))
+    parser.add_argument("--output-dir", default=str(DEFAULT_RESULTS_ROOT / "e5"))
+    args = parser.parse_args()
+    state_path = Path(args.state_file)
+    state = read(state_path)
+    if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy matched-compute state: {state_path}")
     if str(state.get("state")) != "SUCCEEDED":
         raise RuntimeError("matched-compute state is not SUCCEEDED")
     rows = []
@@ -90,7 +103,7 @@ def main() -> int:
             "v8_source_gpu_hours": gpu_hours(v8_source),
         })
     fields = list(rows[0]) if rows else ["key"]
-    output = Path("results/e5")
+    output = Path(args.output_dir)
     write_csv(output / "matched_compute_runs.csv", rows, fields)
     grouped: dict[tuple[object, ...], list[float]] = defaultdict(list)
     for row in rows:
@@ -109,7 +122,8 @@ def main() -> int:
     temporary = output / "matched_compute_accuracy.svg.tmp"
     temporary.write_text(svg(summaries), encoding="utf-8")
     temporary.replace(output / "matched_compute_accuracy.svg")
-    caption = ("Equal-encoded-view comparison of V=2 at the full epoch budget and V=8 at one quarter of that budget. "
+    caption = ("Post-fix equal-encoded-view comparison of V=2 at the full epoch budget and V=8 at one quarter of that budget. "
+               "Only state, probes, and source checkpoints carrying the current scientific-correctness version are accepted. "
                "Differences are paired by frozen seed index; GPU-hours are measured from the exact source checkpoint runs. Claim IDs: E5/C3.\n")
     temporary = output / "matched_compute_caption.txt.tmp"
     temporary.write_text(caption, encoding="utf-8")

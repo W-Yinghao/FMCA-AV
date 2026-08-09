@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,7 @@ import subprocess
 import time
 
 from scripts import formal_ssl_state_machine as formal
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -57,6 +59,8 @@ def wait_formal() -> dict[str, object]:
         if not FORMAL_STATE.is_file():
             continue
         payload = read(FORMAL_STATE)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy formal SSL state: {FORMAL_STATE}")
         value = str(payload.get("state", "RUNNING"))
         if value == "SUCCEEDED":
             return payload
@@ -79,6 +83,8 @@ def submit(name: str, gpus: int, profile: str, command: list[str]) -> str:
 
 def checkpoint(run_id: str) -> str:
     result = read(Path("runs") / run_id / "artifacts" / "train_result.json")
+    if result.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy matched-compute checkpoint from {run_id}")
     value = result.get("last_checkpoint") or result.get("best_checkpoint")
     if not value or not Path(str(value)).is_file():
         raise RuntimeError(f"matched-compute checkpoint missing for {run_id}")
@@ -92,10 +98,20 @@ def signature(action: dict[str, object]) -> tuple[object, ...]:
     )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    global FORMAL_STATE, STATE_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--formal-state", default=str(FORMAL_STATE))
+    parser.add_argument("--state-file", default=str(STATE_PATH))
+    args = parser.parse_args(argv)
+    FORMAL_STATE = Path(args.formal_state)
+    STATE_PATH = Path(args.state_file)
     state = read(STATE_PATH) if STATE_PATH.is_file() else {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "state": "RUNNING", "chain_runs": [], "tiny_continuations": [], "pairs": [],
     }
+    if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy matched-compute state: {STATE_PATH}")
     chain_runs = list(state.get("chain_runs", []))
     current_chain_run = os.environ["FMCA_HARNESS_RUN_ID"]
     if current_chain_run not in chain_runs: chain_runs.append(current_chain_run)
