@@ -14,7 +14,7 @@ from torch.profiler import profile, ProfilerActivity
 
 from fmca_av.config import load_config
 from fmca_av.objectives import fmca_score
-from fmca_av.operators import estimate_moments
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, estimate_moments
 from fmca_av.vision_module import VisionFMCAAV
 
 
@@ -54,7 +54,11 @@ def main() -> int:
         try: records.append({"status": "success", **measure(base, condition)})
         except (RuntimeError, ValueError) as error:
             torch.cuda.empty_cache(); records.append({"status": "failed", **condition, "failure_reason": str(error)})
-    payload = {"device": torch.cuda.get_device_name(), "conditions": records}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "device": torch.cuda.get_device_name(),
+        "conditions": records,
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "flops_profile.json"
     output.parent.mkdir(parents=True, exist_ok=True); temporary = output.with_suffix(output.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"); temporary.replace(output)

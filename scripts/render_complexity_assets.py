@@ -11,6 +11,24 @@ import math
 from pathlib import Path
 import re
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
+
+DEFAULT_RESULTS_ROOT = Path(
+    f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}"
+)
+
+
+def read_versioned_payload(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    recorded = payload.get("scientific_correctness_version")
+    if recorded != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise ValueError(
+            f"refusing pre-fix or mismatched E10 input {path}: "
+            f"{recorded!r} != {SCIENTIFIC_CORRECTNESS_VERSION!r}"
+        )
+    return payload
+
 
 def coordinates(values: list[float], start: float, extent: float, logarithmic: bool = True) -> list[float]:
     transformed = [math.log10(value) if logarithmic else value for value in values]
@@ -47,29 +65,29 @@ def panel(x: float, y: float, width: float, height: float, title: str, x_label: 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--operator", default=""); parser.add_argument("--flops", default=""); parser.add_argument("--output-dir", default="results/e10")
+    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--operator", default=""); parser.add_argument("--flops", default=""); parser.add_argument("--output-dir", default=str(DEFAULT_RESULTS_ROOT / "e10"))
     args = parser.parse_args(); source = Path(args.input).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
-    payload = json.loads(source.read_text(encoding="utf-8")); records = payload["conditions"]
+    payload = read_versioned_payload(source); records = payload["conditions"]
     fields = sorted({key for record in records for key in record})
     temporary_csv = output / "complexity_table.csv.tmp"
     with temporary_csv.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(records)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(records)
     temporary_csv.replace(output / "complexity_table.csv")
     operator_records = []
     if args.operator:
-        operator_records = json.loads(Path(args.operator).read_text(encoding="utf-8"))["conditions"]
+        operator_records = read_versioned_payload(Path(args.operator))["conditions"]
         operator_fields = sorted({key for record in operator_records for key in record})
         temporary = output / "operator_complexity_table.csv.tmp"
         with temporary.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=operator_fields); writer.writeheader(); writer.writerows(operator_records)
+            writer = csv.DictWriter(handle, fieldnames=operator_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(operator_records)
         temporary.replace(output / "operator_complexity_table.csv")
     flops_records = []
     if args.flops:
-        flops_records = json.loads(Path(args.flops).read_text(encoding="utf-8"))["conditions"]
+        flops_records = read_versioned_payload(Path(args.flops))["conditions"]
         flops_fields = sorted({key for record in flops_records for key in record})
         temporary = output / "flops_profile_table.csv.tmp"
         with temporary.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=flops_fields); writer.writeheader(); writer.writerows(flops_records)
+            writer = csv.DictWriter(handle, fieldnames=flops_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(flops_records)
         temporary.replace(output / "flops_profile_table.csv")
     ddp_records = []
     jobs_path = Path("harness/state/jobs.json")
@@ -82,7 +100,10 @@ def main() -> int:
             result_path = Path("runs") / run_id / "artifacts" / "train_result.json"
             if not result_path.is_file():
                 continue
-            result = json.loads(result_path.read_text(encoding="utf-8")); gpus = int(match.group(1))
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+            if result.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+                continue
+            gpus = int(match.group(1))
             ddp_records.append({
                 "run_id": run_id, "name": name, "gpus": gpus,
                 "completed_optimizer_steps": result.get("completed_optimizer_steps", 100),
@@ -105,7 +126,7 @@ def main() -> int:
     ddp_fields = sorted({key for record in ddp_records for key in record}) if ddp_records else ["run_id"]
     temporary = output / "ddp_scaling_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=ddp_fields); writer.writeheader(); writer.writerows(ddp_records)
+        writer = csv.DictWriter(handle, fieldnames=ddp_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(ddp_records)
     temporary.replace(output / "ddp_scaling_table.csv")
     successful = [record for record in records if record.get("status") == "success"]
     axes = {

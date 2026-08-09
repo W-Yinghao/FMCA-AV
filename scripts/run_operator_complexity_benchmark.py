@@ -12,7 +12,11 @@ import time
 
 import torch
 
-from fmca_av.operators import estimate_moments, fit_spectral_calibration
+from fmca_av.operators import (
+    SCIENTIFIC_CORRECTNESS_VERSION,
+    estimate_moments,
+    fit_spectral_calibration,
+)
 
 
 def timed(operation, warmup: int, iterations: int) -> list[float]:
@@ -49,7 +53,12 @@ def main() -> int:
             "iterations": args.iterations, "status": "success",
         })
         del f, g; torch.cuda.empty_cache()
-    payload = {"device": torch.cuda.get_device_name(), "conditions": records, "parameters": vars(args)}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "device": torch.cuda.get_device_name(),
+        "conditions": records,
+        "parameters": vars(args),
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "operator_complexity.json"
     output.parent.mkdir(parents=True, exist_ok=True); temporary = output.with_suffix(output.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"); temporary.replace(output)
