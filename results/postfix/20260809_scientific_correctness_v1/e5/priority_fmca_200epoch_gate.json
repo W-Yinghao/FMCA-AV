@@ -1,0 +1,36 @@
+{
+  "checkpoint_epoch": 200,
+  "maximum_selected": 2,
+  "paired_seed_indices": [
+    1,
+    2,
+    3
+  ],
+  "scientific_correctness_version": "20260809_scientific_correctness_v1",
+  "selected_configurations": [
+    "fmca_av_m8"
+  ],
+  "selection_margin": 0.01,
+  "summary": [
+    {
+      "configuration": "fmca_av_m2",
+      "encoded_views_mean": 17920000,
+      "gpu_hours_mean": 1.7860638805012934,
+      "paired_seeds": 3,
+      "test_accuracy_mean": 0.8544333378473917,
+      "test_accuracy_std": 0.0026857719402623974,
+      "trainable_parameters": 11628864,
+      "views": 2
+    },
+    {
+      "configuration": "fmca_av_m8",
+      "encoded_views_mean": 71680000,
+      "gpu_hours_mean": 6.3132685575960314,
+      "paired_seeds": 3,
+      "test_accuracy_mean": 0.8946000138918558,
+      "test_accuracy_std": 0.006513852256225904,
+      "trainable_parameters": 11628864,
+      "views": 8
+    }
+  ]
+}

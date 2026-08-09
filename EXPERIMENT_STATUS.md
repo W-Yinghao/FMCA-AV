@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 12:16 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 14:39 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -130,13 +130,23 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   M=2 seeds and the first three M=8 seeds.  The paired seeds 1--3 are now the
   first E5 priority gate.
 - Priority probe jobs `931909`--`931912` were submitted for the first four
-  checkpoint/seed pairs.  Slurm CPU job `931914` ran the minimal scheduler
-  regression and passed both tests.  The priority controller submits the two
-  remaining paired probes when capacity is released, using the fixed
-  300-second polling interval.
-- Same-account external job arrays temporarily occupy the Slurm submit/QOS
-  slots, so three of the first four probes are pending.  The project neither
-  modifies those jobs nor exceeds the configured eight-GPU aggregate limit.
+  checkpoint/seed pairs, followed by `931928`--`931929` for paired seed 3.
+  All six succeeded.  Slurm renderer `932049` froze the 200-epoch gate:
+  M=2 reached mean test accuracy `0.85443` at mean `1.7861` GPU-hours, while
+  M=8 reached `0.89460` at mean `6.3133` GPU-hours.  Under the preregistered
+  one-percentage-point gate, M=8 advances and M=2 does not consume the full
+  800-epoch budget.  The raw rows and decision are in
+  `results/postfix/20260809_scientific_correctness_v1/e5/priority_fmca_200epoch_gate.*`.
+- M=8 paired seeds 1--3 are running their 200-to-400 epoch continuation as
+  Slurm `932037`, `932038`, and `932040`.  A persistent priority controller
+  will submit their 600/800-epoch chunks followed by linear probe and k-NN.
+- Strong-baseline screening started with SimCLR `932041` and VICReg `932042`;
+  the bounded controller fills the remaining SimCLR/VICReg/DINO/BYOL paired
+  seed cells as the eight-GPU budget releases slots.
+- E2 fixed-anchor/fixed-total-view job `932043` and the reduced E3 CIFAR
+  logdet/relative-ridge/AMP job `932044` use the two non-E4/E5 slots.  The
+  associated continuation, screening, and gate regressions passed as Slurm
+  `932045`, `932047`, and `932048`.
 
 After the probe gate, the queue completes the small E4 architecture set and the
 CIFAR-10 E5 finalists end-to-end before starting additional methods.  CIFAR-100
