@@ -10,11 +10,20 @@ import os
 from pathlib import Path
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 SOURCES = (
     Path("runs/20260807-062417_launch-e3-cifar-numerics-wave/artifacts/submitted.json"),
     Path("runs/20260807-073411_recover-interrupted-e3-tsd-coco-v2/artifacts/e3_submitted.json"),
 )
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
+
+
+def read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def atomic_text(path: Path, value: str) -> None:
@@ -51,7 +60,10 @@ def main() -> int:
     rows = []
     for tag, record in sorted(by_tag.items()):
         run_id = str(record["run_id"]); run_dir = Path("runs") / run_id
-        status = json.loads((run_dir / "status.json").read_text(encoding="utf-8"))
+        train_path = run_dir / "artifacts" / "train_result.json"
+        if not train_path.is_file() or read_json(train_path).get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        status = read_json(run_dir / "status.json")
         row: dict[str, object] = {"dataset": record.get("dataset", "cifar10"), "tag": tag, "seed": record["seed"], "run_id": run_id, "state": status["state"],
                                   "override_json": json.dumps(record["override"], sort_keys=True, separators=(",", ":")),
                                   "duration_seconds": "", "best_validation_score": "", "trace": "", "numerical_rank": "",
@@ -59,19 +71,21 @@ def main() -> int:
         if status.get("start_time") and status.get("end_time"):
             from datetime import datetime
             row["duration_seconds"] = (datetime.fromisoformat(status["end_time"]) - datetime.fromisoformat(status["start_time"])).total_seconds()
-        train_path = run_dir / "artifacts" / "train_result.json"; evaluation_path = run_dir / "artifacts" / "evaluation.json"
+        evaluation_path = run_dir / "artifacts" / "evaluation.json"
         if status["state"] == "SUCCEEDED" and train_path.is_file():
-            row["best_validation_score"] = json.loads(train_path.read_text(encoding="utf-8")).get("best_validation_score", "")
+            row["best_validation_score"] = read_json(train_path).get("best_validation_score", "")
         if status["state"] == "SUCCEEDED" and evaluation_path.is_file():
-            values = json.loads(evaluation_path.read_text(encoding="utf-8")).get("test_empirical_eigenvalues", [])
-            row.update(spectral_metrics(values))
+            evaluation = read_json(evaluation_path)
+            values = evaluation.get("test_empirical_eigenvalues", []) if evaluation.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION else []
+            if values:
+                row.update(spectral_metrics(values))
         rows.append(row)
-    output = Path("results/e3"); output.mkdir(parents=True, exist_ok=True)
+    output = RESULTS_ROOT / "e3"; output.mkdir(parents=True, exist_ok=True)
     fields = ["dataset", "tag", "seed", "run_id", "state", "override_json", "duration_seconds", "best_validation_score", "trace",
               "numerical_rank", "effective_rank", "condition_number", "minimum_eigenvalue", "maximum_eigenvalue"]
     temporary = output / "cifar_numerics_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(output / "cifar_numerics_table.csv")
     estimator_rows = []
     for control_path in sorted(Path("runs").glob("*/artifacts/e3_estimator_controls.json")):
@@ -79,12 +93,15 @@ def main() -> int:
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED":
             continue
         run_id = control_path.parents[1].name
-        for record in json.loads(control_path.read_text(encoding="utf-8")).get("records", []):
+        payload = read_json(control_path)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        for record in payload.get("records", []):
             estimator_rows.append({"run_id": run_id, **dict(record)})
     estimator_fields = sorted({key for row in estimator_rows for key in row}) if estimator_rows else ["run_id"]
     temporary = output / "estimator_controls.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=estimator_fields); writer.writeheader(); writer.writerows(estimator_rows)
+        writer = csv.DictWriter(handle, fieldnames=estimator_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(estimator_rows)
     temporary.replace(output / "estimator_controls.csv")
     grouped_controls: dict[tuple[object, ...], list[dict[str, object]]] = {}
     control_keys = ("dataset", "samples", "dimension", "centered", "precision", "whitening", "ridge_rule", "objective")
@@ -105,8 +122,26 @@ def main() -> int:
     control_summary_fields = sorted({key for row in control_summaries for key in row}) if control_summaries else ["dataset"]
     temporary = output / "estimator_controls_summary.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=control_summary_fields); writer.writeheader(); writer.writerows(control_summaries)
+        writer = csv.DictWriter(handle, fieldnames=control_summary_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(control_summaries)
     temporary.replace(output / "estimator_controls_summary.csv")
+    numerical_rows = []
+    constant_mode_controls = []
+    for numerical_path in sorted(Path("runs").glob("*/artifacts/e3_numerics.json")):
+        status_path = numerical_path.parents[1] / "status.json"
+        if not status_path.is_file() or read_json(status_path).get("state") != "SUCCEEDED":
+            continue
+        payload = read_json(numerical_path)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        run_id = numerical_path.parents[1].name
+        numerical_rows.extend({"run_id": run_id, **dict(record)} for record in payload.get("records", []))
+        constant_mode_controls.append({"run_id": run_id, **dict(payload.get("constant_mode_failure_control", {}))})
+    numerical_fields = sorted({key for row in numerical_rows for key in row}) if numerical_rows else ["run_id"]
+    temporary = output / "numerical_ablation.csv.tmp"
+    with temporary.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=numerical_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(numerical_rows)
+    temporary.replace(output / "numerical_ablation.csv")
+    atomic_text(output / "constant_mode_controls.json", json.dumps(constant_mode_controls, indent=2, sort_keys=True) + "\n")
     successful = [row for row in rows if row["state"] == "SUCCEEDED" and row["best_validation_score"] != ""]
     width = 1200; height = max(360, 80 + 24 * len(successful)); left = 360; chart = 760
     values = [float(row["best_validation_score"]) for row in successful]; maximum = max(values, default=1.0)
@@ -118,11 +153,11 @@ def main() -> int:
         svg.append(f'<text x="20" y="{y+12}" class="label">{row["tag"]}</text><rect x="{left}" y="{y}" width="{length:.2f}" height="15" class="bar"/><text x="{left+length+5:.2f}" y="{y+12}" class="label">{value:.3f}</text>')
     svg.append("</svg>"); atomic_text(output / "cifar_numerics.svg", "".join(svg))
     atomic_text(output / "cifar_numerics_caption.txt",
-                "E3 CIFAR-10 one-factor/fractional ablations and three-seed ImageNet-100 reference/log-det/stable/stress rechecks. Failed settings remain in the CSV; bars show the frozen best validation dependence score, while available held-out evaluations provide rank and conditioning diagnostics. The estimator-control tables add 20-seed Gaussian/finite-channel centered, whitening, adaptive-ridge, objective, precision, batch/sample and post-hoc spectral controls with failure rates and 95% confidence intervals.\n")
+                "Post-fix E3 numerical and objective ablations. Only artifacts carrying the required scientific-correctness version are included. The estimator-control tables report Gaussian/finite-channel centered, whitening, adaptive-ridge, objective, precision, batch/sample and post-hoc spectral controls with failure rates and 95% confidence intervals; numerical_ablation.csv and constant_mode_controls.json retain the exact Hermite-feature controls.\n")
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps({"stage": "render_e3_cifar_assets", "runs": len(rows), "estimator_control_rows": len(estimator_rows)}) + "\n")
-    print(json.dumps({"runs": len(rows), "successful": len(successful), "estimator_control_rows": len(estimator_rows), "output": str(output)}, indent=2)); return 0
+    print(json.dumps({"runs": len(rows), "successful": len(successful), "estimator_control_rows": len(estimator_rows), "numerical_rows": len(numerical_rows), "output": str(output)}, indent=2)); return 0
 
 
 if __name__ == "__main__": raise SystemExit(main())

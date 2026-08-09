@@ -8,10 +8,16 @@ import csv
 from html import escape
 import json
 import math
+import os
 from pathlib import Path
+
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 COLORS = {"fixed_parent": "#2855a6", "fixed_total_views": "#d14b3f"}
+RESULTS_ROOT = Path(os.environ.get(
+    "FMCA_RESULTS_ROOT", f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}",
+))
 
 
 def panel(x: float, y: float, width: float, height: float, records: list[dict], metric: str, title: str) -> str:
@@ -31,8 +37,10 @@ def panel(x: float, y: float, width: float, height: float, records: list[dict], 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--output-dir", default="results/e2")
+    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--output-dir", default=str(RESULTS_ROOT / "e2"))
     args = parser.parse_args(); source = Path(args.input).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True); payload = json.loads(source.read_text(encoding="utf-8")); records = payload["conditions"]
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing pre-fix E2 input: {source}")
     baselines = {str(record["design"]): record for record in records if int(record["views"]) == 1}
     for record in records:
         baseline = baselines[str(record["design"])]
@@ -45,12 +53,13 @@ def main() -> int:
             record[prefix + "_ci95_low"] = ratio * math.exp(-1.96 * log_se)
             record[prefix + "_ci95_high"] = ratio * math.exp(1.96 * log_se)
     fields = sorted({key for record in records for key in record}); temporary = output / "gradient_variance_table.csv.tmp"
-    with temporary.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(records)
+    with temporary.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(records)
     temporary.replace(output / "gradient_variance_table.csv")
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760"><style>.axis{stroke:#222;stroke-width:1.4}.grid{stroke:#ddd}.title{font:600 15px sans-serif}.label{font:13px sans-serif}.tick{font:11px sans-serif;fill:#333}</style>', panel(10, 10, 535, 360, records, "score_variance", "Dependence-score variance"), panel(555, 10, 535, 360, records, "gradient_variance", "Gradient variance"), panel(10, 385, 535, 360, records, "score_bias", "Absolute dependence-score bias"), panel(555, 385, 535, 360, records, "gradient_mse_to_reference", "Gradient MSE to reference"), '<g><rect x="785" y="720" width="12" height="3" fill="#2855a6"/><text x="803" y="726" class="tick">fixed parents</text><rect x="890" y="720" width="12" height="3" fill="#d14b3f"/><text x="908" y="726" class="tick">fixed total views</text></g></svg>']
     temporary = output / "gradient_variance.svg.tmp"; temporary.write_text("".join(svg), encoding="utf-8"); temporary.replace(output / "gradient_variance.svg")
     protocol = str(payload.get("parent_protocol", "unspecified parent protocol"))
-    caption = "E2 frozen-network conditional-sampling bias/variance over 500 repetitions. Parent protocol: " + protocol + ". Blue holds parent count fixed; red holds total encoded views fixed. All panels use held-out reference estimates and log-scaled magnitude. The CSV includes variance ratios relative to M=1 and log-ratio normal-approximation 95% intervals using the two variance-estimator degrees of freedom. Claim IDs: E2/C2. Source: " + str(source) + "\n"
+    caption = "Post-fix E2 frozen-network conditional-sampling bias/variance over 500 repetitions. Parent protocol: " + protocol + ". Blue holds parent count fixed; red holds total encoded views fixed. All panels use held-out reference estimates and log-scaled magnitude. The CSV includes variance ratios relative to M=1 and log-ratio normal-approximation 95% intervals using the two variance-estimator degrees of freedom. Claim IDs: E2/C2. Source: " + str(source) + "\n"
     temporary = output / "gradient_variance_caption.txt.tmp"; temporary.write_text(caption, encoding="utf-8"); temporary.replace(output / "gradient_variance_caption.txt")
     print(json.dumps({"conditions": len(records), "output_dir": str(output)}, indent=2)); return 0
 
