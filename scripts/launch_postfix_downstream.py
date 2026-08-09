@@ -136,6 +136,7 @@ def render_commands() -> dict[str, list[str]]:
         "e7_tsd": [PYTHON, "-m", "scripts.render_e7_tsd_assets"],
         "e7_factors": [PYTHON, "-m", "scripts.summarize_factor_probes"],
         "e9": [PYTHON, "-m", "scripts.render_e9_localization_assets"],
+        "completion_audit": [PYTHON, "-m", "scripts.build_experiment_completion_matrix"],
     }
 
 
