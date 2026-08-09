@@ -14,7 +14,12 @@ from typing import Any
 import torch
 
 from fmca_av.objectives import logdet_score, trace_score
-from fmca_av.operators import FMCAMoments, estimate_moments
+from fmca_av.operators import (
+    FMCAMoments,
+    SCIENTIFIC_CORRECTNESS_VERSION,
+    estimate_moments,
+    inverse_sqrt_covariance,
+)
 
 
 def hermite_features(values: torch.Tensor, dimension: int) -> torch.Tensor:
@@ -28,17 +33,10 @@ def hermite_features(values: torch.Tensor, dimension: int) -> torch.Tensor:
     return torch.cat(features, dim=1)
 
 
-def inverse_sqrt(matrix: torch.Tensor, ridge: float) -> torch.Tensor:
-    scale = matrix.diagonal().abs().mean().clamp_min(1.0)
-    regularized = matrix + ridge * scale * torch.eye(matrix.shape[0], dtype=matrix.dtype)
-    values, vectors = torch.linalg.eigh(regularized)
-    return (vectors * values.clamp_min(torch.finfo(matrix.dtype).eps).rsqrt()) @ vectors.T
-
-
 def spectrum(moments: FMCAMoments, ridge: float, whitening: str) -> torch.Tensor:
     identity = torch.eye(moments.r_f.shape[0], dtype=moments.r_f.dtype)
-    left = inverse_sqrt(moments.r_f, ridge) if whitening in {"left", "dual"} else identity
-    right = inverse_sqrt(moments.r_g, ridge) if whitening in {"right", "dual"} else identity
+    left = inverse_sqrt_covariance(moments.r_f, ridge) if whitening in {"left", "dual"} else identity
+    right = inverse_sqrt_covariance(moments.r_g, ridge) if whitening in {"right", "dual"} else identity
     return torch.linalg.svdvals(left @ moments.p_fg @ right).square()
 
 
@@ -146,7 +144,11 @@ def main() -> int:
     for index, design in enumerate(sorted(designs, key=str)):
         records.append(row(*design[:-1], args.seed + index, rg=design[-1]))
     control = constant_mode_control(4096, 8, args.seed + 10000)
-    payload = {"records": records, "constant_mode_failure_control": control}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "records": records,
+        "constant_mode_failure_control": control,
+    }
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
@@ -154,7 +156,7 @@ def main() -> int:
     temporary.replace(output)
     csv_path = output.with_suffix(".csv")
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(records[0]))
+        writer = csv.DictWriter(handle, fieldnames=list(records[0]), lineterminator="\n")
         writer.writeheader(); writer.writerows(records)
     run_dir = os.environ.get("FMCA_HARNESS_RUN_DIR")
     if run_dir:

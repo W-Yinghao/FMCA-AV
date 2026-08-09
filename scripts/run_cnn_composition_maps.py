@@ -17,6 +17,7 @@ import torch.nn.functional as F
 
 from fmca_av.baselines import BaselineSSL
 from fmca_av.config import load_config
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, inverse_sqrt_covariance
 from fmca_av.supervised_cli import SupervisedVision
 from fmca_av.vision_module import VisionFMCAAV
 from scripts.run_dependence_localization import cub_samples, image_tensor, normalize_map
@@ -82,9 +83,7 @@ def whitening(values: Tensor, ridge: float) -> tuple[Tensor, Tensor]:
     mean = values.mean(0, keepdim=True)
     centered = values.double() - mean.double()
     covariance = centered.transpose(0, 1) @ centered / max(1, len(values) - 1)
-    scale = ridge * covariance.diagonal().mean().clamp_min(1e-12)
-    eigenvalues, vectors = torch.linalg.eigh(covariance)
-    transform = vectors @ torch.diag((eigenvalues + scale).rsqrt()) @ vectors.transpose(0, 1)
+    transform = inverse_sqrt_covariance(covariance, ridge)
     return mean, transform.float()
 
 
@@ -156,6 +155,7 @@ def main() -> int:
             records.append({"id": identifier, **comparison(direct_map, recursive_map)})
     summary = {key: statistics.fmean(float(record[key]) for record in records) for key in ("rank_correlation", "normalized_l2", "top20_iou")}
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "model_type": args.model_type, "backbone": config["model"].get("backbone"), "modes": args.modes,
         "calibration_samples": args.calibration_samples, "evaluation_samples": len(records),
         "runtime_seconds": time.perf_counter() - started,

@@ -150,7 +150,10 @@ def main() -> int:
     for result_path in sorted(Path("runs").glob("*/artifacts/cnn_composition_maps.json")):
         run_dir = result_path.parents[1]; status_path = run_dir / "status.json"
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED": continue
-        payload = json.loads(result_path.read_text(encoding="utf-8")); summary = dict(payload.get("summary", {}))
+        payload = json.loads(result_path.read_text(encoding="utf-8"))
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            continue
+        summary = dict(payload.get("summary", {}))
         request = json.loads((run_dir / "request.json").read_text(encoding="utf-8"))
         composition_rows.append({
             "run_id": run_dir.name, "name": request.get("name", ""), "model_type": payload.get("model_type", ""),

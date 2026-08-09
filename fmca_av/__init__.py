@@ -8,6 +8,7 @@ from .operators import (
     estimate_moments,
     evaluate_heldout_spectrum,
     fit_spectral_calibration,
+    inverse_sqrt_covariance,
     relative_ridge_scale,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "estimate_moments",
     "evaluate_heldout_spectrum",
     "fit_spectral_calibration",
+    "inverse_sqrt_covariance",
     "relative_ridge_scale",
 ]

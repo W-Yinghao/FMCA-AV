@@ -11,20 +11,18 @@ from pathlib import Path
 
 import torch
 
-from fmca_av.operators import FMCAMoments, estimate_moments
-
-
-def inverse_sqrt(matrix: torch.Tensor, ridge: float) -> torch.Tensor:
-    scale = matrix.diagonal().abs().mean().clamp_min(1.0)
-    values, vectors = torch.linalg.eigh(matrix + ridge * scale * torch.eye(matrix.shape[0], dtype=matrix.dtype))
-    floor = torch.finfo(matrix.dtype).eps * max(1, matrix.shape[0])
-    return (vectors * values.clamp_min(floor).rsqrt()) @ vectors.T
+from fmca_av.operators import (
+    FMCAMoments,
+    SCIENTIFIC_CORRECTNESS_VERSION,
+    estimate_moments,
+    inverse_sqrt_covariance,
+)
 
 
 def spectral_values(moments: FMCAMoments, ridge: float, whitening: str) -> torch.Tensor:
     identity = torch.eye(moments.r_f.shape[0], dtype=moments.r_f.dtype)
-    left = inverse_sqrt(moments.r_f, ridge) if whitening in {"left", "dual", "dual_posthoc"} else identity
-    right = inverse_sqrt(moments.r_g, ridge) if whitening in {"right", "dual", "dual_posthoc"} else identity
+    left = inverse_sqrt_covariance(moments.r_f, ridge) if whitening in {"left", "dual", "dual_posthoc"} else identity
+    right = inverse_sqrt_covariance(moments.r_g, ridge) if whitening in {"right", "dual", "dual_posthoc"} else identity
     singular = torch.linalg.svdvals(left @ moments.p_fg @ right)
     if whitening == "dual_posthoc":
         # Make the post-hoc spectral projection explicit and discard sample-null modes.
@@ -147,7 +145,12 @@ def main() -> int:
     for design_index, design in enumerate(sorted(designs, key=str)):
         for replicate in range(args.replicates):
             records.append(evaluate(*design, args.seed + design_index * 1000 + replicate))
-    payload = {"parameters": vars(args), "design_count": len(designs), "records": records}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "parameters": vars(args),
+        "design_count": len(designs),
+        "records": records,
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "e3_estimator_controls.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")

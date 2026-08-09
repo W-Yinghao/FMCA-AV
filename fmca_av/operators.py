@@ -151,7 +151,9 @@ def regularized_covariance(matrix: Tensor, ridge: float) -> Tensor:
     )
 
 
-def _inverse_sqrt(matrix: Tensor, ridge: float) -> Tensor:
+def inverse_sqrt_covariance(matrix: Tensor, ridge: float) -> Tensor:
+    """Return the inverse square root under the shared relative-ridge rule."""
+
     regularized = regularized_covariance(matrix, ridge)
     values, vectors = torch.linalg.eigh(regularized)
     values = values.clamp_min(torch.finfo(matrix.dtype).tiny)
@@ -159,8 +161,8 @@ def _inverse_sqrt(matrix: Tensor, ridge: float) -> Tensor:
 
 
 def whitened_cross_operator(moments: FMCAMoments, ridge: float = 1e-3) -> Tensor:
-    inv_f = _inverse_sqrt(moments.r_f, ridge)
-    inv_g = _inverse_sqrt(moments.r_g, ridge)
+    inv_f = inverse_sqrt_covariance(moments.r_f, ridge)
+    inv_g = inverse_sqrt_covariance(moments.r_g, ridge)
     return inv_f @ moments.p_fg @ inv_g
 
 
@@ -185,8 +187,8 @@ def fit_spectral_calibration(
         else torch.zeros_like(g_views[0, :1])
     )
     moments = estimate_moments(f, g_views, centered=centered)
-    inv_f = _inverse_sqrt(moments.r_f, ridge)
-    inv_g = _inverse_sqrt(moments.r_g, ridge)
+    inv_f = inverse_sqrt_covariance(moments.r_f, ridge)
+    inv_g = inverse_sqrt_covariance(moments.r_g, ridge)
     cross = inv_f @ moments.p_fg @ inv_g
     u, singular_values, vh = torch.linalg.svd(cross, full_matrices=False)
     # Row features multiply these matrices on the right.
