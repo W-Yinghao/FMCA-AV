@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 10:39 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 12:16 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -19,9 +19,12 @@ The detailed formula changes, validation, and affected-result audit are in `SERV
 - FMCA-AV and the vision experiments use Lightning with the server's existing environment.
 - All experiment and test computation is submitted through the Slurm harness.
 - The aggregate harness budget is temporarily 8 GPUs, with at most 2 GPUs per task.
-- Formal SSL is capped at 4 concurrent GPUs so E7/E10 and other independent
-  non-ImageNet chains can use the remaining global capacity.
-- Non-ImageNet experiments remain ahead of ImageNet work.
+- The exhaustive 3,942-action formal queue is paused after its current four-run
+  batch.  New GPU allocation is prioritized 70% to E4/E5, 20% to E2/E3, and
+  10% to inexpensive E6 evaluation and failure recovery.
+- E7 and E9 expansion is paused; E8 and E10 receive no additional compute.
+- ImageNet-100 is conditional on stable paired CIFAR-10/100 evidence, and
+  ImageNet-1K remains paused.
 - Scheduler monitoring and orchestration use a 300-second polling interval and `squeue`; no experiment computation runs on the login node.
 - Checkpoints, raw runs, logs, datasets, and mutable scheduler state remain server-local and are not committed.
 
@@ -108,12 +111,39 @@ Both DDP points completed exactly 100 optimizer steps at global parent batch siz
 
 ## Active post-fix work
 
-- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seeds1--5 and v8 seed1 completed their first 200-epoch chunks. FMCA-AV v8 seeds2--5 are the current four-run formal wave; one recently completed child is awaiting the next 300-second state-machine handoff. The chained watcher uses the same versioned state and leaves global capacity for independent chains. No running training was cancelled.
-- Full held-out TSD: CIFAR-10 watcher `20260809-043414_postfix-cifar10-tsd-full-severity-sweep` resumed a 41-cell manifest and owns the complete 210-cell matrix; 161 cells have been submitted at this snapshot. Its batch limit remains two after the temporary aggregate increase, so it cannot monopolize the eight-GPU budget. CIFAR-100 watcher `20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry` waits for that full matrix. Both local watchers were restarted in place after the temporary 6-to-8 configuration transition caused one status refresh to reject the intermediate configuration; their manifests and completed Slurm children were preserved. The separate seven-stage image data-processing chain has completed all 35 trainings and 35 utility probes with current-version artifacts. The stopped predecessors and duplicate legacy tail retain their logs and completed versioned cells.
-- ImageNet-1K is still deferred: watcher `20260809-045027_postfix-imagenet-formal-state-machine` now gates on `formal_ssl_postfix_state.json` reaching version-matched `SUCCEEDED`, rather than on a hand-off watcher process exiting. An early post-fix CIFAR DDP1 result was migrated to E10 and the ImageNet action index reset to zero; no ImageNet training started. Per-task ImageNet training remains capped at two GPUs and uses the ImageNet A100/L40S/H100 profiles rather than V100 where possible.
-- Persistent downstream watcher `20260809-050108_postfix-complete-downstream-chain-e8` will launch versioned matched-compute, low-label, transfer, localization, and final Slurm CPU renderers only after their post-fix prerequisites, including E8 and the version-only completion audit, finish. Its predecessors were stopped before they launched any child task.
+The resource policy and the screening gate were frozen before reading the new
+probe results in `configs/experiments/tpami_priority_20260809.json`.  Screening
+uses paired seed indices 1--3 at the 200-epoch checkpoint.  Within each method
+family, the best method and methods within 1.0 percentage point of it may
+advance, with at most two methods per family; GPU-hours, encoded views, and then
+method name are preregistered tie-breakers.  Only selected methods receive seeds
+4--5 and continuation to the full budget.
 
-At the snapshot the project harness uses five of the temporary eight-GPU budget: three V100s for formal SSL and two V100s for batch-limited CIFAR-10 TSD. The fourth formal slot is between a completed child and the next 300-second state-machine handoff. Per-task capacity remains two GPUs and the independent formal cap remains four. Slurm CPU job `931175` validated the temporary aggregate setting with all four tests passing. Earlier capacity regression `930877`, TSD fairness/dependency migration `931048`/`931085`, and E10/ImageNet state migration `931127`/`931133` passed. An earlier validation attempt, `930841`, used the system Python without PyTorch and failed before tests; its logs are preserved, and no dependency was installed. Other Slurm jobs under the same Unix account are external to this repository and are neither counted nor modified by the project harness.
+- The broad formal successor, TSD expansion, downstream E9/transfer launcher,
+  and ImageNet launcher were stopped at the watcher level.  No running Slurm
+  training was cancelled and no existing result was removed.
+- Formal Slurm jobs `931270`, `931633`, `931699`, and `931835` are the final
+  in-flight batch from the broad queue.  Local watcher
+  `20260809-121400_priority-drain-formal-current` will reconcile their
+  checkpoints and mark that queue `PAUSED` without selecting a successor.
+- Eight post-fix FMCA-AV 200-epoch checkpoints were already available: all five
+  M=2 seeds and the first three M=8 seeds.  The paired seeds 1--3 are now the
+  first E5 priority gate.
+- Priority probe jobs `931909`--`931912` were submitted for the first four
+  checkpoint/seed pairs.  Slurm CPU job `931914` ran the minimal scheduler
+  regression and passed both tests.  The priority controller submits the two
+  remaining paired probes when capacity is released, using the fixed
+  300-second polling interval.
+- Same-account external job arrays temporarily occupy the Slurm submit/QOS
+  slots, so three of the first four probes are pending.  The project neither
+  modifies those jobs nor exceeds the configured eight-GPU aggregate limit.
+
+After the probe gate, the queue completes the small E4 architecture set and the
+CIFAR-10 E5 finalists end-to-end before starting additional methods.  CIFAR-100
+is a three-paired-seed confirmation stage.  E2 fixed-parent/fixed-total-view and
+the reduced CIFAR E3 numerical checks reuse selected checkpoints.  E6 is limited
+to 1%/10% low-label and CIFAR-C.  VOC, COCO, ImageNet robustness, new E7 cells,
+and new E9 cells are not scheduled by this priority wave.
 
 The following formal jobs were stopped because their scientific lineage was pre-fix or attached to the legacy state chain: Slurm jobs `929950`, `929951`, `929975`, and `930375`. Their directories remain intact for audit and are not counted as post-fix evidence.
 

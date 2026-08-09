@@ -345,7 +345,13 @@ def main() -> int:
     if not bool(state["dependencies_complete"]): wait_dependencies(list(state["dependencies"])); state["dependencies_complete"] = True; save_state(state_file, state)
     current = list(state.get("current_runs", []))
     if current:
-        observed = {str(record["run_id"]): run_state(str(record["run_id"])) for record in current}
+        if bool(state.get("pause_requested")):
+            # A priority change must not kill scientific work already inside
+            # Slurm.  Drain exactly the recorded in-flight batch, reconcile its
+            # checkpoints, and stop before selecting any successor action.
+            observed = wait_terminal([str(record["run_id"]) for record in current])
+        else:
+            observed = {str(record["run_id"]): run_state(str(record["run_id"])) for record in current}
         active_gpus_before_refresh = sum(
             action_gpus(dict(record["action"]))
             for record in current
@@ -385,6 +391,12 @@ def main() -> int:
                 retry_queue.append(retry)
         state["last_checkpoints"] = checkpoints; state["completed"] = completed
         state["retry_queue"] = retry_queue; state["current_runs"] = remaining; save_state(state_file, state)
+    if bool(state.get("pause_requested")):
+        state["state"] = "PAUSED"
+        state["pause_reason"] = str(state.get("pause_reason", "operator priority change"))
+        state["successor_run"] = ""
+        save_state(state_file, state)
+        return 0
     plan = actions()
     if int(state["action_index"]) >= len(plan) and not state.get("retry_queue"):
         state["state"] = "SUCCEEDED"; save_state(state_file, state); return 0

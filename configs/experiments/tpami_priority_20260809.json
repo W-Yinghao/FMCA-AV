@@ -1,0 +1,55 @@
+{
+  "scientific_correctness_version": "20260809_scientific_correctness_v1",
+  "resource_allocation": {
+    "e4_e5_fraction": 0.7,
+    "e2_e3_fraction": 0.2,
+    "evaluation_retry_fraction": 0.1
+  },
+  "paused_expansions": [
+    "e7",
+    "e9",
+    "e8_additional_compute",
+    "e10_additional_compute",
+    "imagenet1k"
+  ],
+  "screening": {
+    "dataset": "cifar10",
+    "checkpoint_epoch": 200,
+    "paired_seed_indices": [1, 2, 3],
+    "proposed": [
+      "fmca_av_m2",
+      "fmca_av_m8",
+      "regular_fmca_m1",
+      "hfmca_style_m2"
+    ],
+    "baselines": [
+      "simclr",
+      "vicreg",
+      "dino",
+      "byol"
+    ],
+    "selection_gate": {
+      "metric": "linear_probe_test_accuracy",
+      "maximum_per_family": 2,
+      "within_best_percentage_points": 1.0,
+      "tie_breakers": [
+        "lower_gpu_hours",
+        "lower_encoded_views",
+        "lexical_method_name"
+      ],
+      "additional_seed_indices_for_selected": [4, 5]
+    }
+  },
+  "fairness_accounting": [
+    "actual_encoded_views",
+    "forward_passes",
+    "gpu_hours",
+    "estimated_flops",
+    "trainable_parameters"
+  ],
+  "image_net_100_gate": {
+    "required_datasets": ["cifar10", "cifar100"],
+    "minimum_paired_seeds": 3,
+    "requires_stable_positive_effect": true
+  }
+}
