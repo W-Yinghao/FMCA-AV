@@ -1,0 +1,5 @@
+dataset,channel,level,dependence_score_mean,dependence_score_std,dependence_score_ci95_half_width,probe_accuracy_mean,probe_accuracy_std,probe_accuracy_ci95_half_width,absolute_calibration_test_gap_mean,heldout_clipped_mode_count_mean,runs
+cifar100,grayscale,4,583.9070923921568,26.818341672210195,26.28197483876599,,,,444.5687099735909,29.75,4
+cifar100,grayscale,5,578.3088526071472,26.68628193896425,23.39155746904159,,,,438.1481485903717,29.2,5
+cifar100,grayscale,6,592.7137829812796,22.267369388881786,19.518209840385946,,,,451.8369595006794,30.2,5
+cifar100,noise,0,,,,,,,,,1

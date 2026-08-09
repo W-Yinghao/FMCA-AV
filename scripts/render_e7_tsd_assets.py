@@ -76,7 +76,7 @@ def main() -> int:
               "heldout_clipped_mode_count", "probe_run", "probe_state", "probe_accuracy"]
     temporary = output / "tsd_utility_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(output / "tsd_utility_table.csv")
     groups: dict[tuple[str, str, int], list[dict[str, object]]] = {}
     for row in rows: groups.setdefault((str(row["dataset"]), str(row["channel"]), int(row["level"])), []).append(row)
@@ -104,7 +104,7 @@ def main() -> int:
                    "heldout_clipped_mode_count_mean", "runs"]
     temporary = output / "tsd_utility_means.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=mean_fields); writer.writeheader(); writer.writerows(means)
+        writer = csv.DictWriter(handle, fieldnames=mean_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(means)
     temporary.replace(output / "tsd_utility_means.csv")
     calibration_rows = []; chain_rows = []
     for calibration_path in sorted(Path("runs").glob("*/artifacts/e7_tsd_calibration*.json")):
@@ -123,12 +123,12 @@ def main() -> int:
     calibration_fields = sorted({key for row in calibration_rows for key in row}) if calibration_rows else ["run_id"]
     temporary = output / "tsd_calibration_summary.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=calibration_fields); writer.writeheader(); writer.writerows(calibration_rows)
+        writer = csv.DictWriter(handle, fieldnames=calibration_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(calibration_rows)
     temporary.replace(output / "tsd_calibration_summary.csv")
     chain_fields = sorted({key for row in chain_rows for key in row}) if chain_rows else ["run_id"]
     temporary = output / "tsd_data_processing_chain.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=chain_fields); writer.writeheader(); writer.writerows(chain_rows)
+        writer = csv.DictWriter(handle, fieldnames=chain_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(chain_rows)
     temporary.replace(output / "tsd_data_processing_chain.csv")
     image_chain_rows = []
     for manifest in sorted(Path("runs").glob("*/artifacts/image_chain_submitted.json")):
@@ -153,7 +153,7 @@ def main() -> int:
     image_chain_fields = ["stage", "seed_index", "seed", "source_run", "probe_run", "heldout_tsd", "heldout_clipped_mode_count", "probe_accuracy", "augmentation_json"]
     temporary = output / "image_data_processing_chain.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=image_chain_fields); writer.writeheader(); writer.writerows(image_chain_rows)
+        writer = csv.DictWriter(handle, fieldnames=image_chain_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(image_chain_rows)
     temporary.replace(output / "image_data_processing_chain.csv")
     image_chain_summary = []
     for stage in sorted({int(row["stage"]) for row in image_chain_rows}):
@@ -163,15 +163,19 @@ def main() -> int:
         image_chain_summary.append({"stage": stage, "runs": len(selected),
                                     "heldout_tsd_mean": statistics.fmean(tsd_values) if tsd_values else "",
                                     "probe_accuracy_mean": statistics.fmean(utility_values) if utility_values else ""})
-    if image_chain_summary:
+    plotted_chain = [
+        row for row in image_chain_summary
+        if row["heldout_tsd_mean"] != "" and row["probe_accuracy_mean"] != ""
+    ]
+    if plotted_chain:
         width, height, left, top, plot_w, plot_h = 900, 430, 75, 55, 750, 300
-        tsd_values = [float(row["heldout_tsd_mean"]) for row in image_chain_summary]
-        utility_values = [float(row["probe_accuracy_mean"]) for row in image_chain_summary]
+        tsd_values = [float(row["heldout_tsd_mean"]) for row in plotted_chain]
+        utility_values = [float(row["probe_accuracy_mean"]) for row in plotted_chain]
         def normalized(value: float, values: list[float]) -> float:
             span = max(values) - min(values); return 0.5 if span == 0 else (value - min(values)) / span
         points_tsd = []; points_utility = []
-        for index, row in enumerate(image_chain_summary):
-            x = left + plot_w * index / max(1, len(image_chain_summary) - 1)
+        for index, row in enumerate(plotted_chain):
+            x = left + plot_w * index / max(1, len(plotted_chain) - 1)
             points_tsd.append(f"{x:.2f},{top + plot_h * (1-normalized(float(row['heldout_tsd_mean']), tsd_values)):.2f}")
             points_utility.append(f"{x:.2f},{top + plot_h * (1-normalized(float(row['probe_accuracy_mean']), utility_values)):.2f}")
         svg_chain = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
@@ -180,8 +184,8 @@ def main() -> int:
                      f'<line x1="{left}" y1="{top+plot_h}" x2="{left+plot_w}" y2="{top+plot_h}" class="axis"/><line x1="{left}" y1="{top}" x2="{left}" y2="{top+plot_h}" class="axis"/>',
                      f'<polyline points="{" ".join(points_tsd)}" class="tsd"/><polyline points="{" ".join(points_utility)}" class="utility"/>',
                      '<text x="610" y="28" class="label" fill="#2855a6">held-out TSD (normalized)</text><text x="750" y="28" class="label" fill="#d14b3f">utility (normalized)</text>']
-        for index, row in enumerate(image_chain_summary):
-            x = left + plot_w * index / max(1, len(image_chain_summary) - 1); svg_chain.append(f'<text x="{x:.2f}" y="{top+plot_h+20}" text-anchor="middle" class="label">{row["stage"]}</text>')
+        for index, row in enumerate(plotted_chain):
+            x = left + plot_w * index / max(1, len(plotted_chain) - 1); svg_chain.append(f'<text x="{x:.2f}" y="{top+plot_h+20}" text-anchor="middle" class="label">{row["stage"]}</text>')
         svg_chain.append('</svg>'); atomic_text(output / "image_data_processing_chain.svg", "".join(svg_chain))
     plotted = [row for row in means if row["probe_accuracy_mean"] != ""]
     width = 1200; height = 720; margin = 70; plot_w = 1050; plot_h = 570

@@ -55,6 +55,19 @@ Slurm job `930423` completed successfully. It evaluated 450 conditions covering 
 
 The renderer itself ran through Slurm as job `930431` and completed with exit code 0.
 
+### E7 held-out TSD calibration snapshot
+
+The four analytic calibration configurations were recomputed with the full held-out canonical cross-matrix SVD:
+
+- full calibration: Slurm `930460`;
+- feature-dimension-4 diagnostic: Slurm `930461`;
+- 20-replicate reliability run: Slurm `930462`;
+- high-resource calibration: Slurm `930463`.
+
+The versioned E7 assets are under `results/postfix/20260809_scientific_correctness_v1/e7/`. At this snapshot the calibration table has 26 condition rows and the data-processing table has 20 rows. The severity table is intentionally partial while GPU sources and utility probes continue; it must not yet be used for a final C5 claim.
+
+Renderer job `930476` exposed a partial-data bug when utility accuracy was still missing. The code now keeps such rows in CSV but plots a joint TSD/utility stage only when both values exist. Slurm retry `930477` and newline-normalizing rerender `930480` succeeded.
+
 ## Active post-fix work
 
 - CIFAR-10/CIFAR-100 TSD severity and image data-processing controls: six one-GPU V100 jobs occupied the full GPU budget at this snapshot. Each newly completed source run records the corrected version and evaluates the held-out spectrum with full-matrix SVD.
