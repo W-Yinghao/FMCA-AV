@@ -292,8 +292,18 @@ def action_gpus(action: dict[str, object]) -> int:
     return int(DATASETS[str(action["dataset"])]["gpus"]) if str(action["kind"]) == "train" else 1
 
 
+def formal_gpu_capacity(config: dict[str, object]) -> int:
+    """Reserve part of the global budget for independent experiment chains."""
+    global_capacity = int(config["max_gpus"])
+    requested = int(config.get("formal_ssl_max_gpus", min(4, global_capacity)))
+    if requested < 1:
+        raise ValueError("formal_ssl_max_gpus must be positive")
+    return min(global_capacity, requested)
+
+
 def gpu_capacity() -> int:
-    return int(json.loads(Path("harness/config.json").read_text(encoding="utf-8"))["max_gpus"])
+    config = json.loads(Path("harness/config.json").read_text(encoding="utf-8"))
+    return formal_gpu_capacity(config)
 
 
 def take_batch(

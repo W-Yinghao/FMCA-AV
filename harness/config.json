@@ -1,6 +1,7 @@
 {
   "max_gpus": 6,
   "max_gpus_per_job": 2,
+  "formal_ssl_max_gpus": 4,
   "allowed_gpu_ids": [],
   "mode": "slurm",
   "runs_dir": "runs",

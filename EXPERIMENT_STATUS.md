@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 03:24 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 04:07 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -19,6 +19,8 @@ The detailed formula changes, validation, and affected-result audit are in `SERV
 - FMCA-AV and the vision experiments use Lightning with the server's existing environment.
 - All experiment and test computation is submitted through the Slurm harness.
 - The aggregate harness budget is 6 GPUs, with at most 2 GPUs per task.
+- Formal SSL is capped at 4 concurrent GPUs so E7/E10 and other independent
+  non-ImageNet chains can use the remaining global capacity.
 - Non-ImageNet experiments remain ahead of ImageNet work.
 - Scheduler monitoring and orchestration use a 300-second polling interval and `squeue`; no experiment computation runs on the login node.
 - Checkpoints, raw runs, logs, datasets, and mutable scheduler state remain server-local and are not committed.
@@ -89,14 +91,14 @@ The exact numerical ablation (`930509`) and 20-replicate Gaussian/finite estimat
 
 ## Active post-fix work
 
-- Formal matched-budget SSL: watcher `20260809-013422_formal-ssl-postfix-state-machine` currently has four independent CIFAR-10 FMCA-AV seed chains in their first 200-epoch chunk (Slurm `930539`, `930547`, `930559`, and `930603`). Its state is `results/orchestration/formal_ssl_postfix_state.json`; it cannot consume a legacy state or checkpoint.
-- Full held-out TSD: CIFAR-10 watcher `20260809-015613_postfix-cifar10-tsd-full-severity-sweep` is running the new complete 210-cell matrix. CIFAR-100 watcher `20260809-020626_postfix-cifar100-tsd-full-severity-after-cifar10` waits for that full matrix, while an older tail watcher continues producing versioned CIFAR-100 noise cells. At this snapshot Slurm `930727` and `930728` occupy the remaining two project GPUs.
-- E7 factors: watcher `20260809-030719_postfix-e7-factor-suite` has an independent versioned 54-cell plan covering six datasets, three default-channel seeds, and six channel interventions. It waits for capacity and never reuses an old factor checkpoint.
-- E10: watcher `20260809-025048_postfix-e10-benchmark-chain-retry` waits for capacity. The preserved first complexity child `930585` failed when the corrected nonfinite-covariance guard raised `ValueError`; commit `37bb056` records that condition as an explicit failed benchmark row and allows the frozen sweep to continue on retry.
+- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seed1/seed2 completed their first 200-epoch chunks as Slurm `930539` and `930547`. Slurm `930559`, `930603`, `930785`, and `930786` continue naturally. Watcher `20260809-040757_formal-ssl-postfix-cap4` uses the same versioned state and now maintains at most four formal GPUs, leaving two of the six global GPUs for independent chains. No running training was cancelled.
+- Full held-out TSD: CIFAR-10 watcher `20260809-015613_postfix-cifar10-tsd-full-severity-sweep` owns the new complete 210-cell matrix. CIFAR-100 watcher `20260809-020626_postfix-cifar100-tsd-full-severity-after-cifar10` waits for that full matrix. The duplicate legacy tail watcher was stopped at 03:40:19 without killing its children; completed versioned cells remain available, and the complete watcher pair guarantees coverage.
+- E7 factors: watcher `20260809-030719_postfix-e7-factor-suite` has an independent versioned 54-cell plan covering six datasets, three default-channel seeds, and six channel interventions. Its first two dSprites default training jobs, Slurm `930765` and `930766`, succeeded with current-version checkpoints. Their probes wait for capacity; no old factor checkpoint is reused.
+- E10: watcher `20260809-025048_postfix-e10-benchmark-chain-retry` submitted corrected complexity retry `20260809-040629_postfix-e10-complexity`, which succeeded. The preserved first child `930585` failed when the corrected nonfinite-covariance guard raised `ValueError`; commit `37bb056` records that condition as an explicit failed benchmark row and allows the frozen sweep to continue.
 - ImageNet-1K is still deferred: watcher `20260809-030218_postfix-imagenet-formal-state-machine` cannot proceed until the complete post-fix small/medium formal SSL watcher succeeds. Per-task ImageNet training remains capped at two GPUs and uses the ImageNet A100/L40S/H100 profiles rather than V100 where possible.
 - Persistent downstream watcher `20260809-031837_postfix-complete-downstream-chain` will launch versioned matched-compute, low-label, transfer, localization, and final Slurm CPU renderers only after their post-fix prerequisites finish.
 
-At the snapshot the project harness uses exactly six V100 GPUs: four formal SSL jobs and two TSD jobs. Other Slurm jobs under the same Unix account, including the visible `rep_train` array, are external to this repository and are neither counted nor modified by the project harness.
+At the snapshot the project harness uses four V100 GPUs in the four active formal SSL jobs listed above; two global slots are available to E7/E10. The capacity regression passed all four tests in Slurm CPU job `930877`. An earlier validation attempt, `930841`, used the system Python without PyTorch and failed before tests; its logs are preserved, and no dependency was installed. Other Slurm jobs under the same Unix account are external to this repository and are neither counted nor modified by the project harness.
 
 The following formal jobs were stopped because their scientific lineage was pre-fix or attached to the legacy state chain: Slurm jobs `929950`, `929951`, `929975`, and `930375`. Their directories remain intact for audit and are not counted as post-fix evidence.
 

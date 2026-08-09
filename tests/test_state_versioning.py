@@ -9,6 +9,7 @@ import unittest
 
 from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from scripts.formal_imagenet_state_machine import load_state as load_imagenet
+from scripts.formal_ssl_state_machine import formal_gpu_capacity
 from scripts.formal_imagenet_low_label_state_machine import load as load_imagenet_low_label
 from scripts.formal_localization_state_machine import load as load_localization
 from scripts.formal_transfer_state_machine import load as load_transfer
@@ -18,6 +19,12 @@ from scripts.launch_postfix_downstream import load as load_downstream
 
 
 class StateVersioningTests(unittest.TestCase):
+    def test_formal_ssl_capacity_reserves_global_slots(self) -> None:
+        self.assertEqual(formal_gpu_capacity({"max_gpus": 6, "formal_ssl_max_gpus": 4}), 4)
+        self.assertEqual(formal_gpu_capacity({"max_gpus": 3, "formal_ssl_max_gpus": 4}), 3)
+        with self.assertRaises(ValueError):
+            formal_gpu_capacity({"max_gpus": 6, "formal_ssl_max_gpus": 0})
+
     def test_factor_plan_has_frozen_coverage(self) -> None:
         records = factor_plan()
         self.assertEqual(len(records), 54)
