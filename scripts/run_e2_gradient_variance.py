@@ -12,7 +12,7 @@ from pathlib import Path
 import torch
 
 from fmca_av.objectives import trace_score
-from fmca_av.operators import estimate_moments
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, estimate_moments
 
 
 def hermite(values: torch.Tensor, dimension: int) -> torch.Tensor:
@@ -102,6 +102,7 @@ def main() -> int:
             record["design"] = design
             records.append(record)
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "reference": {"parents": args.reference_parents, "views": args.reference_views, "score": reference_score, "gradient_norm": float(torch.linalg.vector_norm(reference_gradient))},
         "conditions": records,
     }
