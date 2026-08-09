@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 05:37 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 10:39 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -77,6 +77,12 @@ The versioned E7 assets are under `results/postfix/20260809_scientific_correctne
 
 Renderer job `930476` exposed a partial-data bug when utility accuracy was still missing. The code now keeps such rows in CSV but plots a joint TSD/utility stage only when both values exist. Slurm retry `930477` and newline-normalizing rerender `930480` succeeded.
 
+### E7 factor semantics
+
+The versioned factor suite completed all 54 trainings and all 54 spectral probes across dSprites, Shapes3D, SmallNORB, and MPI3D toy/realistic/real. Every source training artifact carries `20260809_scientific_correctness_v1`; no legacy factor checkpoint is accepted. Slurm summary job `931568` succeeded and produced 16,416 curve rows plus 342 per-factor summary rows under `results/postfix/20260809_scientific_correctness_v1/e7/`.
+
+The complete source package contains three default-channel seeds and six single-seed channel interventions per dataset. It reports top-eigenfunction curves alongside random, bottom-eigenfunction, PCA, unranked-coordinate, and random-rotation controls. These outputs establish the completed factor-probe subtrack; the full E7 claim remains open until the held-out TSD severity matrices finish.
+
 ### E2 conditional-sampling mechanism
 
 The corrected frozen-feature Gaussian variance experiment completed as Slurm `930508`, and renderer `930524` produced 10 post-fix condition rows under `results/postfix/20260809_scientific_correctness_v1/e2/`.
@@ -102,13 +108,12 @@ Both DDP points completed exactly 100 optimizer steps at global parent batch siz
 
 ## Active post-fix work
 
-- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seeds1--5 completed their first 200-epoch chunks. FMCA-AV v8 seeds1--4 now fill the four-GPU formal cap. The chained watcher uses the same versioned state and leaves global capacity for independent chains. No running training was cancelled.
-- Full held-out TSD: CIFAR-10 watcher `20260809-043414_postfix-cifar10-tsd-full-severity-sweep` resumed a 41-cell manifest and owns the complete 210-cell matrix; 55 cells have been submitted at this snapshot. Its batch limit remains two after the temporary aggregate increase, so it cannot monopolize the eight-GPU budget. CIFAR-100 watcher `20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry` waits for that full matrix. Both local watchers were restarted in place after the temporary 6-to-8 configuration transition caused one status refresh to reject the intermediate configuration; their manifests and completed Slurm children were preserved. The stopped predecessors and duplicate legacy tail retain their logs and completed versioned cells.
-- E7 factors: watcher `20260809-030719_postfix-e7-factor-suite` has an independent versioned 54-cell plan covering six datasets, three default-channel seeds, and six channel interventions. Its first 26 trainings have current-version checkpoints or active current-version runs. Probes follow after training; no old factor checkpoint is reused.
+- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seeds1--5 and v8 seed1 completed their first 200-epoch chunks. FMCA-AV v8 seeds2--5 are the current four-run formal wave; one recently completed child is awaiting the next 300-second state-machine handoff. The chained watcher uses the same versioned state and leaves global capacity for independent chains. No running training was cancelled.
+- Full held-out TSD: CIFAR-10 watcher `20260809-043414_postfix-cifar10-tsd-full-severity-sweep` resumed a 41-cell manifest and owns the complete 210-cell matrix; 161 cells have been submitted at this snapshot. Its batch limit remains two after the temporary aggregate increase, so it cannot monopolize the eight-GPU budget. CIFAR-100 watcher `20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry` waits for that full matrix. Both local watchers were restarted in place after the temporary 6-to-8 configuration transition caused one status refresh to reject the intermediate configuration; their manifests and completed Slurm children were preserved. The separate seven-stage image data-processing chain has completed all 35 trainings and 35 utility probes with current-version artifacts. The stopped predecessors and duplicate legacy tail retain their logs and completed versioned cells.
 - ImageNet-1K is still deferred: watcher `20260809-045027_postfix-imagenet-formal-state-machine` now gates on `formal_ssl_postfix_state.json` reaching version-matched `SUCCEEDED`, rather than on a hand-off watcher process exiting. An early post-fix CIFAR DDP1 result was migrated to E10 and the ImageNet action index reset to zero; no ImageNet training started. Per-task ImageNet training remains capped at two GPUs and uses the ImageNet A100/L40S/H100 profiles rather than V100 where possible.
 - Persistent downstream watcher `20260809-050108_postfix-complete-downstream-chain-e8` will launch versioned matched-compute, low-label, transfer, localization, and final Slurm CPU renderers only after their post-fix prerequisites, including E8 and the version-only completion audit, finish. Its predecessors were stopped before they launched any child task.
 
-At the snapshot the project harness uses six of the temporary eight-GPU budget: four V100s for formal SSL and two V100s for batch-limited CIFAR-10 TSD. Per-task capacity remains two GPUs and the independent formal cap remains four. Slurm CPU job `931175` validated the temporary aggregate setting with all four tests passing. Earlier capacity regression `930877`, TSD fairness/dependency migration `931048`/`931085`, and E10/ImageNet state migration `931127`/`931133` passed. An earlier validation attempt, `930841`, used the system Python without PyTorch and failed before tests; its logs are preserved, and no dependency was installed. Other Slurm jobs under the same Unix account are external to this repository and are neither counted nor modified by the project harness.
+At the snapshot the project harness uses five of the temporary eight-GPU budget: three V100s for formal SSL and two V100s for batch-limited CIFAR-10 TSD. The fourth formal slot is between a completed child and the next 300-second state-machine handoff. Per-task capacity remains two GPUs and the independent formal cap remains four. Slurm CPU job `931175` validated the temporary aggregate setting with all four tests passing. Earlier capacity regression `930877`, TSD fairness/dependency migration `931048`/`931085`, and E10/ImageNet state migration `931127`/`931133` passed. An earlier validation attempt, `930841`, used the system Python without PyTorch and failed before tests; its logs are preserved, and no dependency was installed. Other Slurm jobs under the same Unix account are external to this repository and are neither counted nor modified by the project harness.
 
 The following formal jobs were stopped because their scientific lineage was pre-fix or attached to the legacy state chain: Slurm jobs `929950`, `929951`, `929975`, and `930375`. Their directories remain intact for audit and are not counted as post-fix evidence.
 
