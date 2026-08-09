@@ -14,7 +14,7 @@ import torch
 
 from fmca_av.config import load_config
 from fmca_av.objectives import fmca_score
-from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION, estimate_moments
+from fmca_av.operators import E10_COMPLEXITY_NUMERICS_POLICY, MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION, estimate_moments
 from fmca_av.vision_module import VisionFMCAAV
 
 
@@ -30,13 +30,14 @@ def measure(base: dict[str, object], condition: dict[str, object], warmup: int, 
         model = VisionFMCAAV(config).cuda().train(); optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
         images = torch.randn(batch, views, 3, size, size, device="cuda")
         mixed = str(condition["precision"]) != "32-true"
+        scaler = torch.amp.GradScaler("cuda", enabled=mixed)
         torch.cuda.reset_peak_memory_stats(); durations = []
         for iteration in range(warmup + iterations):
             optimizer.zero_grad(set_to_none=True); torch.cuda.synchronize(); start = time.perf_counter()
             with torch.autocast("cuda", dtype=torch.float16, enabled=mixed):
                 f, g, _ = model.feature_maps(images); moments = estimate_moments(f, g, centered=True)
                 loss = -fmca_score(moments, "trace", ridge=1e-3)
-            loss.backward(); optimizer.step(); torch.cuda.synchronize()
+            scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update(); torch.cuda.synchronize()
             if iteration >= warmup: durations.append(time.perf_counter() - start)
         mean = sum(durations) / len(durations)
         return {**condition, "status": "success", "seconds_per_step": mean, "encoded_images_per_second": batch * views / mean, "peak_memory_mb": torch.cuda.max_memory_allocated() / (1024 ** 2), "parameters": sum(parameter.numel() for parameter in model.parameters())}
@@ -63,12 +64,13 @@ def main() -> int:
     payload = {
         "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY,
+        "numerics_policy": E10_COMPLEXITY_NUMERICS_POLICY,
         "device": torch.cuda.get_device_name(),
         "conditions": records,
     }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "complexity.json"
     output.parent.mkdir(parents=True, exist_ok=True); temporary = output.with_suffix(output.suffix + ".tmp"); temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"); temporary.replace(output)
-    with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle: handle.write(json.dumps({"stage": "complexity", "conditions": len(records), "device": payload["device"], "moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY}) + "\n")
+    with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle: handle.write(json.dumps({"stage": "complexity", "conditions": len(records), "device": payload["device"], "moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY, "numerics_policy": E10_COMPLEXITY_NUMERICS_POLICY}) + "\n")
     print(json.dumps(payload, indent=2)); return 0
 
 

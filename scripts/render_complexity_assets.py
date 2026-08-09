@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 import re
 
-from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
+from fmca_av.operators import E10_COMPLEXITY_NUMERICS_POLICY, MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
 
 
 DEFAULT_RESULTS_ROOT = Path(
@@ -36,6 +36,12 @@ def require_current_moment_policy(payload: dict) -> None:
         raise ValueError(
             f"refusing E10 complexity input with moment policy {recorded!r}; "
             f"expected {MOMENT_ACCUMULATION_POLICY!r}"
+        )
+    recorded_numerics = payload.get("numerics_policy")
+    if recorded_numerics != E10_COMPLEXITY_NUMERICS_POLICY:
+        raise ValueError(
+            f"refusing E10 complexity input with numerics policy {recorded_numerics!r}; "
+            f"expected {E10_COMPLEXITY_NUMERICS_POLICY!r}"
         )
 
 
@@ -171,7 +177,7 @@ def main() -> int:
         temporary = output / "ddp_scaling.svg.tmp"; temporary.write_text("".join(ddp_svg), encoding="utf-8"); temporary.replace(output / "ddp_scaling.svg")
     caption = (
         "E10 complexity scaling on " + str(payload.get("device", "unknown GPU")) + ". "
-        "Low-precision network features use FP32 moment accumulation before whitening/SVD. "
+        "Low-precision network features use FP32 moment accumulation before whitening/SVD, and FP16 optimization uses GradScaler. "
         "Each point reports the mean of the timed iterations after warm-up; throughput counts all encoded views, "
         "and memory is peak allocated CUDA memory. Axes M, K, and B denote views per parent, feature dimension, and parent batch size. "
         "The isolated operator table/figure separately time moment construction and complete whitening/SVD for K=32--512. "

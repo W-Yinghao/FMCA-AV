@@ -9,7 +9,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
+from fmca_av.operators import E10_COMPLEXITY_NUMERICS_POLICY, MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -216,7 +216,10 @@ def main() -> int:
     complexity = ensure_gpu_stage(
         state, state_path, "complexity", "postfix-e10-complexity",
         "scripts.run_complexity_benchmark", "complexity.json",
-        {"moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY},
+        {
+            "moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY,
+            "numerics_policy": E10_COMPLEXITY_NUMERICS_POLICY,
+        },
     )
     operator = ensure_gpu_stage(
         state, state_path, "operator", "postfix-e10-operator-complexity",

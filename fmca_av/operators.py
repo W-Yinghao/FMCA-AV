@@ -16,6 +16,7 @@ from torch import Tensor
 
 SCIENTIFIC_CORRECTNESS_VERSION = "20260809_scientific_correctness_v1"
 MOMENT_ACCUMULATION_POLICY = "float32_for_float16_and_bfloat16"
+E10_COMPLEXITY_NUMERICS_POLICY = "autocast_with_grad_scaler_and_float32_moments"
 
 
 @dataclass
