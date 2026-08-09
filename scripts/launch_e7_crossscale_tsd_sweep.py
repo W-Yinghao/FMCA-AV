@@ -67,6 +67,7 @@ def retry_with_capacity(run_id: str) -> str:
 
 
 def main(phase: str | None = None) -> int:
+    prerequisite = PREREQUISITE
     if phase is None:
         parser = argparse.ArgumentParser()
         parser.add_argument(
@@ -75,9 +76,12 @@ def main(phase: str | None = None) -> int:
             default="all",
             help="Select a scheduling phase so ImageNet work can be deferred.",
         )
-        phase = parser.parse_args().phase
+        parser.add_argument("--prerequisite", default=PREREQUISITE)
+        arguments = parser.parse_args()
+        phase = arguments.phase
+        prerequisite = arguments.prerequisite
     artifacts = Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts"; artifacts.mkdir(parents=True, exist_ok=True); output = artifacts / "submitted.json"
-    time.sleep(POLL_SECONDS); wait_success(PREREQUISITE)
+    time.sleep(POLL_SECONDS); wait_success(prerequisite)
     records = json.loads(output.read_text(encoding="utf-8")) if output.is_file() else []
     refresh()
     for record in records:
