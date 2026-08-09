@@ -32,8 +32,8 @@ EXTERNAL_WATCHERS = {
     "tsd_cifar10": "20260809-043414_postfix-cifar10-tsd-full-severity-sweep",
     "tsd_cifar100": "20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry",
     "factor": "20260809-030719_postfix-e7-factor-suite",
-    "e10": "20260809-041821_postfix-e10-benchmark-chain-fp32moments",
-    "imagenet": "20260809-030218_postfix-imagenet-formal-state-machine",
+    "e10": "20260809-045026_postfix-e10-benchmark-chain-fp32moments",
+    "imagenet": "20260809-045027_postfix-imagenet-formal-state-machine",
 }
 
 

@@ -14,6 +14,8 @@ from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS
 
 POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
+TORCHRUN = "/home/infres/yinwang/FMCA-AV/scripts/torchrun"
+REQUIRED_DDP_GPUS = (1, 2)
 TERMINAL = {"SUCCEEDED", "FAILED", "STOPPED", "BLOCKED"}
 
 
@@ -127,6 +129,80 @@ def ensure_gpu_stage(
     return run_id
 
 
+def ddp_command(gpus: int) -> list[str]:
+    if gpus not in REQUIRED_DDP_GPUS:
+        raise ValueError(f"unsupported E10 DDP GPU count: {gpus}")
+    config = f"configs/ssl/cifar10_ddp{gpus}_smoke.json"
+    if gpus == 1:
+        return [PYTHON, "-m", "scripts.run_fmca_pipeline", "--config", config]
+    return [
+        TORCHRUN, "--standalone", "--nnodes=1", f"--nproc_per_node={gpus}",
+        "-m", "scripts.run_fmca_pipeline", "--config", config,
+    ]
+
+
+def valid_ddp_result(run_id: str, gpus: int) -> bool:
+    if not valid_artifact(run_id, "train_result.json"):
+        return False
+    payload = json.loads(artifact(run_id, "train_result.json").read_text(encoding="utf-8"))
+    return (
+        int(payload.get("completed_optimizer_steps", -1)) == 100
+        and int(payload.get("global_parent_batch_size", -1)) == 128
+        and int(run_status(run_id).get("requested_gpus", -1)) == gpus
+    )
+
+
+def find_existing_ddp_result(gpus: int) -> str:
+    jobs_path = Path("harness/state/jobs.json")
+    if not jobs_path.is_file():
+        return ""
+    jobs = dict(json.loads(jobs_path.read_text(encoding="utf-8")).get("jobs", {}))
+    marker = f"e10-cifar10-ddp{gpus}-100step"
+    candidates = sorted(
+        (
+            str(record.get("run_id", run_id))
+            for run_id, record in jobs.items()
+            if marker in str(record.get("name", ""))
+        ),
+        reverse=True,
+    )
+    return next((run_id for run_id in candidates if valid_ddp_result(run_id, gpus)), "")
+
+
+def ensure_ddp_stage(state: dict, state_path: Path, gpus: int) -> str:
+    key = f"ddp{gpus}"
+    runs = state.setdefault("runs", {})
+    run_id = str(runs.get(key, ""))
+    if run_id and valid_ddp_result(run_id, gpus):
+        return run_id
+    if not run_id:
+        run_id = find_existing_ddp_result(gpus)
+        if run_id:
+            runs[key] = run_id
+            atomic_json(state_path, state)
+            return run_id
+    if run_id:
+        child_state = str(run_status(run_id).get("state"))
+        if child_state not in TERMINAL:
+            wait_success(run_id)
+            if valid_ddp_result(run_id, gpus):
+                return run_id
+        superseded = state.setdefault("superseded_runs", {}).setdefault(key, [])
+        if run_id not in superseded:
+            superseded.append(run_id)
+    run_id = submit_with_capacity([
+        "python3", "-m", "harness.cli", "submit",
+        "--name", f"e10-cifar10-ddp{gpus}-100step-postfix",
+        "--gpus", str(gpus), "--profile", "v100", "--", *ddp_command(gpus),
+    ])
+    runs[key] = run_id
+    atomic_json(state_path, state)
+    wait_success(run_id)
+    if not valid_ddp_result(run_id, gpus):
+        raise RuntimeError(f"E10 DDP child {run_id} produced an invalid train_result.json")
+    return run_id
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -150,6 +226,8 @@ def main() -> int:
         state, state_path, "flops", "postfix-e10-flops-profile",
         "scripts.run_flops_profile", "flops_profile.json",
     )
+    for gpus in REQUIRED_DDP_GPUS:
+        ensure_ddp_stage(state, state_path, gpus)
 
     render_id = str(state["runs"].get("render", ""))
     if render_id and run_status(render_id).get("state") not in TERMINAL:

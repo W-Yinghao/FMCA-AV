@@ -22,7 +22,7 @@ POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
 TORCHRUN = "/home/infres/yinwang/FMCA-AV/scripts/torchrun"
 REFERENCE = "configs/ssl/imagenet1k_reference.json"
-DEFAULT_DEPENDENCY = "20260809-013422_formal-ssl-postfix-state-machine"
+DEFAULT_DEPENDENCY_STATE = "results/orchestration/formal_ssl_postfix_state.json"
 FMCA_SEEDS = (20267001, 20267002, 20267003)
 FMCA_VARIANTS = ("fmca_av", "fmca_av_matched_head", "hfmca_style", "regular_fmca")
 BASELINES = ("simclr", "vicreg", "moco_v2", "dino", "dcca", "vamp2")
@@ -31,10 +31,8 @@ BASELINE_SEEDS = FMCA_SEEDS
 
 def actions() -> list[dict[str, object]]:
     values: list[dict[str, object]] = []
-    # Each task may use at most two GPUs.  Keep the one- and two-rank scaling
-    # points and omit the superseded four-rank point.
-    for gpus in (1, 2):
-        values.append({"kind": "ddp", "gpus": gpus})
+    # E10 owns the post-fix one-/two-rank CIFAR scaling points.  This ImageNet
+    # chain starts directly with ImageNet work and does not duplicate them.
     for variant in FMCA_VARIANTS:
         views = 1 if variant == "regular_fmca" else 8
         for base_seed in FMCA_SEEDS:
@@ -63,15 +61,44 @@ def actions() -> list[dict[str, object]]:
     return values
 
 
-def load_state(path: Path, dependency: str) -> dict[str, object]:
+def dependency_state_value(path: Path) -> str:
+    if not path.is_file():
+        return "MISSING"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy formal SSL dependency state: {path}")
+    return str(payload.get("state", "MISSING"))
+
+
+def load_state(path: Path, dependency_state: str) -> dict[str, object]:
+    dependency_path = Path(dependency_state).resolve()
     if path.is_file():
         state = json.loads(path.read_text(encoding="utf-8"))
         if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
             raise RuntimeError(f"refusing legacy ImageNet state: {path}")
+        completed = list(state.get("completed", []))
+        migrated = [
+            record for record in completed
+            if str(dict(record.get("action", {})).get("kind", "")) == "ddp"
+        ]
+        if migrated:
+            if state.get("current_run") or str(dict(state.get("current_action") or {}).get("kind", "")) == "ddp":
+                raise RuntimeError("cannot migrate ImageNet DDP prefix while a child is active")
+            state["action_index"] = max(0, int(state.get("action_index", 0)) - len(migrated))
+            state["completed"] = [record for record in completed if record not in migrated]
+            moved = list(state.get("migrated_e10_ddp_runs", []))
+            for record in migrated:
+                run_id = str(record.get("run_id", ""))
+                if run_id and run_id not in moved:
+                    moved.append(run_id)
+            state["migrated_e10_ddp_runs"] = moved
+        state["dependency_state"] = str(dependency_path)
+        state["dependency_complete"] = dependency_state_value(dependency_path) == "SUCCEEDED"
         return state
     return {
         "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
-        "dependency": dependency, "action_index": 0, "current_run": "", "current_action": None,
+        "dependency_state": str(dependency_path), "dependency_complete": False,
+        "action_index": 0, "current_run": "", "current_action": None,
         "current_attempt": 0, "current_infrastructure_attempt": 0, "current_retry_from": "",
         "last_checkpoints": {}, "probe_checkpoints": {}, "final_train_runs": {},
         "completed": [], "chain_runs": [], "state": "RUNNING",
@@ -108,6 +135,17 @@ def wait_success(run_id: str) -> None:
         raise RuntimeError(f"prerequisite {run_id} ended in {value}")
 
 
+def wait_dependency_state(path: Path) -> None:
+    while True:
+        value = dependency_state_value(path)
+        if value == "SUCCEEDED":
+            return
+        if value in {"FAILED", "STOPPED", "BLOCKED"}:
+            raise RuntimeError(f"formal SSL dependency state ended in {value}: {path}")
+        time.sleep(POLL_SECONDS)
+        refresh()
+
+
 def submit(argv: list[str]) -> str:
     while True:
         result = subprocess.run(argv, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -136,16 +174,6 @@ def last_checkpoint(run_id: str) -> str:
 def command_for(action: dict[str, object], state: dict[str, object]) -> tuple[str, int, list[str]]:
     kind = str(action["kind"])
     checkpoints = dict(state["last_checkpoints"])
-    if kind == "ddp":
-        gpus = int(action["gpus"])
-        config = f"configs/ssl/cifar10_ddp{gpus}_smoke.json"
-        name = f"e10-cifar10-ddp{gpus}-100step-scaling-recovered"
-        if gpus == 1:
-            command = [PYTHON, "-m", "scripts.run_fmca_pipeline", "--config", config]
-        else:
-            command = [TORCHRUN, "--standalone", "--nnodes=1", f"--nproc_per_node={gpus}",
-                       "-m", "scripts.run_fmca_pipeline", "--config", config]
-        return name, gpus, command
     key = str(action["key"]); seed = int(action["seed"])
     checkpoint = str(checkpoints.get(key, ""))
     if kind == "fmca_train":
@@ -265,26 +293,29 @@ def submit_action(action: dict[str, object], state: dict[str, object], retry_fro
                    "--gpus", str(gpus), *profile, *retry_args, "--", *command])
 
 
-def submit_successor(state_file: Path, dependency: str, index: int) -> str:
+def submit_successor(state_file: Path, dependency_state: str, index: int) -> str:
     return submit([
         "python3", "-m", "harness.cli", "watch", "--name", f"imagenet-formal-chain-step-{index:03d}", "--",
-        PYTHON, "-m", "scripts.formal_imagenet_state_machine", "--state-file", str(state_file), "--dependency", dependency,
+        PYTHON, "-m", "scripts.formal_imagenet_state_machine", "--state-file", str(state_file), "--dependency-state", dependency_state,
     ])
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-file", default=f"results/orchestration/imagenet_formal_{SCIENTIFIC_CORRECTNESS_VERSION}.json")
-    parser.add_argument("--dependency", default=DEFAULT_DEPENDENCY)
+    parser.add_argument("--dependency", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--dependency-state", default=DEFAULT_DEPENDENCY_STATE)
     args = parser.parse_args()
     state_file = Path(args.state_file).resolve()
-    state = load_state(state_file, args.dependency)
+    state = load_state(state_file, args.dependency_state)
     chain_runs = list(state["chain_runs"]); current_chain_run = os.environ["FMCA_HARNESS_RUN_ID"]
     if current_chain_run not in chain_runs: chain_runs.append(current_chain_run)
     state["chain_runs"] = chain_runs
     save_state(state_file, state)
     if not bool(state.get("dependency_complete", False)):
-        wait_success(str(state["dependency"])); state["dependency_complete"] = True; save_state(state_file, state)
+        wait_dependency_state(Path(str(state["dependency_state"])))
+        state["dependency_complete"] = True
+        save_state(state_file, state)
     current_run = str(state.get("current_run", ""))
     if current_run:
         terminal = wait_terminal(current_run)
@@ -364,7 +395,7 @@ def main() -> int:
     state["current_run"] = run_id; state["current_action"] = action
     state["current_attempt"] = int(state.get("current_attempt", 0)) + 1
     save_state(state_file, state)
-    successor = submit_successor(state_file, args.dependency, index)
+    successor = submit_successor(state_file, args.dependency_state, index)
     state["successor_run"] = successor; save_state(state_file, state)
     return 0
 

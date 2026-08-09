@@ -126,6 +126,11 @@ def main() -> int:
                 "gpu_hours": result.get("gpu_hours", ""),
             })
     ddp_records.sort(key=lambda record: (int(record["gpus"]), str(record["run_id"])))
+    observed_ddp_gpus = {int(record["gpus"]) for record in ddp_records}
+    if observed_ddp_gpus != {1, 2}:
+        raise RuntimeError(
+            f"post-fix E10 requires exactly 1/2-GPU DDP points, observed {sorted(observed_ddp_gpus)}"
+        )
     reference_throughput = next((float(record["encoded_views_per_second"]) for record in reversed(ddp_records)
                                  if record["gpus"] == 1 and record["encoded_views_per_second"] != ""), None)
     for record in ddp_records:
