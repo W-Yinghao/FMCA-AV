@@ -67,15 +67,15 @@ def locked() -> Iterator[None]:
 
 def load_config() -> Dict[str, Any]:
     config = read_json(CONFIG_PATH)
-    if config.get("max_gpus") != 6:
-        raise ValueError("config max_gpus must be exactly 6")
+    if config.get("max_gpus") not in {6, 8}:
+        raise ValueError("config max_gpus must be either 6 or 8")
     if config.get("max_gpus_per_job") != 2:
         raise ValueError("config max_gpus_per_job must be exactly 2")
     if config.get("mode") not in ("auto", "direct", "slurm"):
         raise ValueError("config mode must be auto, direct, or slurm")
     allowed = config.get("allowed_gpu_ids")
-    if not isinstance(allowed, list) or len(allowed) > 6:
-        raise ValueError("allowed_gpu_ids must be a list of at most six IDs")
+    if not isinstance(allowed, list) or len(allowed) > int(config["max_gpus"]):
+        raise ValueError("allowed_gpu_ids must not exceed the configured GPU budget")
     if len({str(item) for item in allowed}) != len(allowed):
         raise ValueError("allowed_gpu_ids contains duplicates")
     if int(config.get("stop_grace_seconds", 30)) < 0:
