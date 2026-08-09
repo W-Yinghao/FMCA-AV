@@ -147,6 +147,16 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   logdet/relative-ridge/AMP job `932044` use the two non-E4/E5 slots.  The
   associated continuation, screening, and gate regressions passed as Slurm
   `932045`, `932047`, and `932048`.
+- The bounded E4 wave is staged behind the active eight-GPU batch.  CPU Slurm
+  `932052` validated its design rules and `932053` instantiated all four models:
+  raw-parent and mean differ from the 11,628,864-parameter final model by 179
+  parameters, DeepSets by 1, and concat by 609 (maximum relative difference
+  `5.24e-5`).  Every condition executes exactly eight backbone forwards per
+  parent; raw-parent uses seven conditional views plus one explicit parent.
+  Controller compile job `932055` passed.  Watcher
+  `20260809-144329_priority-e4-architecture-permutation-wave` will run three
+  paired seeds at the matched 200/800 scheduler point, then linear probes and a
+  deterministic reverse-view permutation diagnostic for every checkpoint.
 
 After the probe gate, the queue completes the small E4 architecture set and the
 CIFAR-10 E5 finalists end-to-end before starting additional methods.  CIFAR-100
