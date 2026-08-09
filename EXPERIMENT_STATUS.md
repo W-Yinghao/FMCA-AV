@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 14:39 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 15:41 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -18,7 +18,10 @@ The detailed formula changes, validation, and affected-result audit are in `SERV
 
 - FMCA-AV and the vision experiments use Lightning with the server's existing environment.
 - All experiment and test computation is submitted through the Slurm harness.
-- The aggregate harness budget is temporarily 8 GPUs, with at most 2 GPUs per task.
+- The aggregate harness budget is restored to 6 GPUs, with at most 2 GPUs per
+  task. Jobs already submitted under the temporary 8-GPU budget are left
+  untouched to finish naturally; no successor is admitted until the active
+  harness allocation is back within the 6-GPU limit.
 - The exhaustive 3,942-action formal queue is paused after its current four-run
   batch.  New GPU allocation is prioritized 70% to E4/E5, 20% to E2/E3, and
   10% to inexpensive E6 evaluation and failure recovery.
@@ -41,6 +44,8 @@ Published correction commits:
 - `22e2ff7`: restartable post-fix E7 factor suite.
 - `55c831d`: persistent post-fix downstream chain.
 - `d588e6c`: temporary eight-GPU aggregate budget with a strict two-GPU per-task limit.
+- The current configuration restores the six-GPU aggregate limit without
+  cancelling jobs submitted under `d588e6c`.
 
 ## Completed post-fix results
 
