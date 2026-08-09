@@ -1,0 +1,3 @@
+completed_optimizer_steps,encoded_views,encoded_views_per_second,global_parent_batch_size,gpu_hours,gpus,name,peak_memory_mb_per_rank,run_id,scaling_efficiency_vs_1gpu,training_duration_seconds
+100,25600,4325.435810821108,128,0.001644021879441829,1,e10-cifar10-ddp1-100step-scaling-recovered,1360.43798828125,20260809-043330_e10-cifar10-ddp1-100step-scaling-recovered,1.0,5.918478765990585
+100,25600,2751.8776763078513,128,0.005168188377218838,2,e10-cifar10-ddp2-100step-postfix,1162.8330078125,20260809-051133_e10-cifar10-ddp2-100step-postfix,0.3181040936295221,9.302739078993909

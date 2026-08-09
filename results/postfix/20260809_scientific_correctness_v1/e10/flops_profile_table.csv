@@ -1,0 +1,15 @@
+axis,backbone,batch,features,flops_per_encoded_view,parameters,peak_memory_mb,scope,size,status,supported_operator_training_step_flops,views
+views,resnet18_cifar,2,128,1125900546.0,11825472,118.111328125,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,2251801092,1
+views,resnet18_cifar,2,128,1119523009.0,11825472,129.0771484375,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,4478092036,2
+views,resnet18_cifar,2,128,1116334240.5,11825472,146.8837890625,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,8930673924,4
+views,resnet18_cifar,2,128,1114739856.25,11825472,200.2470703125,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,17835837700,8
+views,resnet18_cifar,2,128,1113942664.125,11825472,272.7236328125,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,35646165252,16
+features,resnet18_cifar,2,32,1113685297.0,11726976,128.1494140625,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,4454741188,2
+features,resnet18_cifar,2,64,1114453089.0,11759808,128.43505859375,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,4457812356,2
+features,resnet18_cifar,2,128,1119523009.0,11825472,129.0771484375,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,4478092036,2
+features,resnet18_cifar,2,256,1157562753.0,11956800,130.64453125,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,4630251012,2
+features,resnet18_cifar,2,512,1455342337.0,12219456,134.904296875,one forward+objective+backward step; PyTorch profiler supported operators only,32,success,5821369348,2
+backbone,resnet18_imagenet,2,128,3635564737.0,11833152,198.4970703125,one forward+objective+backward step; PyTorch profiler supported operators only,224,success,14542258948,2
+backbone,resnet50_imagenet,2,128,8189792449.0,25737536,510.06884765625,one forward+objective+backward step; PyTorch profiler supported operators only,224,success,32759169796,2
+backbone,convnext_tiny,2,128,25574847289.0,28738912,606.041015625,one forward+objective+backward step; PyTorch profiler supported operators only,224,success,102299389156,2
+backbone,vit_s_16,2,128,25224447553.0,22191232,357.2109375,one forward+objective+backward step; PyTorch profiler supported operators only,224,success,100897790212,2
