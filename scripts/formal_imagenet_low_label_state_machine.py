@@ -15,11 +15,13 @@ try:
 except ModuleNotFoundError:
     from orchestration_retries import is_infrastructure_failure, retry_record
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
 REFERENCE = "configs/ssl/imagenet1k_reference.json"
-DEFAULT_PRETRAIN_STATE = "results/orchestration/imagenet_formal_state.json"
+DEFAULT_PRETRAIN_STATE = f"results/orchestration/imagenet_formal_{SCIENTIFIC_CORRECTNESS_VERSION}.json"
 FMCA_METHODS = ("fmca_av", "fmca_av_matched_head", "hfmca_style", "regular_fmca")
 BASELINES = ("simclr", "vicreg", "moco_v2", "dino")
 SEEDS = (20267001, 20267002, 20267003)
@@ -42,8 +44,12 @@ def save(path: Path, state: dict[str, object]) -> None:
 
 def load(path: Path, pretrain_state: str) -> dict[str, object]:
     if path.is_file():
-        return read(path)
+        state = read(path)
+        if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy ImageNet low-label state: {path}")
+        return state
     return {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "pretrain_state": str(Path(pretrain_state).resolve()), "pretrain_complete": False,
         "source_checkpoints": {}, "action_index": 0, "current_runs": [],
         "retry_queue": [], "completed": [], "chain_runs": [], "state": "RUNNING",
@@ -71,6 +77,8 @@ def wait_pretraining(state: dict[str, object]) -> None:
         if not path.is_file():
             continue
         payload = read(path)
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy ImageNet pretraining state: {path}")
         value = str(payload.get("state", "RUNNING"))
         if value in {"FAILED", "STOPPED", "BLOCKED"}:
             raise RuntimeError(f"formal ImageNet pretraining ended in {value}")
@@ -176,7 +184,7 @@ def submit_successor(state_file: Path, pretrain_state: str, index: int) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--state-file", default="results/orchestration/formal_imagenet_low_label_state.json")
+    parser.add_argument("--state-file", default=f"results/orchestration/formal_imagenet_low_label_{SCIENTIFIC_CORRECTNESS_VERSION}.json")
     parser.add_argument("--pretrain-state", default=DEFAULT_PRETRAIN_STATE)
     args = parser.parse_args(); state_file = Path(args.state_file).resolve()
     state = load(state_file, args.pretrain_state)

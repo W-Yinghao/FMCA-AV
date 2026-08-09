@@ -15,12 +15,14 @@ try:
 except ModuleNotFoundError:
     from orchestration_retries import MAX_INFRASTRUCTURE_ATTEMPTS, is_infrastructure_failure
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
 TORCHRUN = "/home/infres/yinwang/FMCA-AV/scripts/torchrun"
 REFERENCE = "configs/ssl/imagenet1k_reference.json"
-DEFAULT_DEPENDENCY = "20260807-073411_recover-interrupted-e3-tsd-coco-v2"
+DEFAULT_DEPENDENCY = "20260809-013422_formal-ssl-postfix-state-machine"
 FMCA_SEEDS = (20267001, 20267002, 20267003)
 FMCA_VARIANTS = ("fmca_av", "fmca_av_matched_head", "hfmca_style", "regular_fmca")
 BASELINES = ("simclr", "vicreg", "moco_v2", "dino", "dcca", "vamp2")
@@ -63,8 +65,12 @@ def actions() -> list[dict[str, object]]:
 
 def load_state(path: Path, dependency: str) -> dict[str, object]:
     if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
+        state = json.loads(path.read_text(encoding="utf-8"))
+        if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy ImageNet state: {path}")
+        return state
     return {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "dependency": dependency, "action_index": 0, "current_run": "", "current_action": None,
         "current_attempt": 0, "current_infrastructure_attempt": 0, "current_retry_from": "",
         "last_checkpoints": {}, "probe_checkpoints": {}, "final_train_runs": {},
@@ -117,6 +123,8 @@ def last_checkpoint(run_id: str) -> str:
     result_path = Path("runs") / run_id / "artifacts" / "train_result.json"
     if result_path.is_file():
         payload = json.loads(result_path.read_text(encoding="utf-8"))
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy ImageNet checkpoint from {run_id}")
         for field in ("last_checkpoint", "best_checkpoint"):
             value = payload.get(field)
             if value and Path(str(value)).is_file():
@@ -266,7 +274,7 @@ def submit_successor(state_file: Path, dependency: str, index: int) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--state-file", default="results/orchestration/imagenet_formal_state.json")
+    parser.add_argument("--state-file", default=f"results/orchestration/imagenet_formal_{SCIENTIFIC_CORRECTNESS_VERSION}.json")
     parser.add_argument("--dependency", default=DEFAULT_DEPENDENCY)
     args = parser.parse_args()
     state_file = Path(args.state_file).resolve()

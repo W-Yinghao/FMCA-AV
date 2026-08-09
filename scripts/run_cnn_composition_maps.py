@@ -156,6 +156,7 @@ def main() -> int:
     summary = {key: statistics.fmean(float(record[key]) for record in records) for key in ("rank_correlation", "normalized_l2", "top20_iou")}
     payload = {
         "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "checkpoint": str(Path(args.checkpoint).resolve()),
         "model_type": args.model_type, "backbone": config["model"].get("backbone"), "modes": args.modes,
         "calibration_samples": args.calibration_samples, "evaluation_samples": len(records),
         "runtime_seconds": time.perf_counter() - started,

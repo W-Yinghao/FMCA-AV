@@ -20,6 +20,7 @@ from torch.utils.data import Dataset
 from .backbones import build_backbone
 from .baseline_cli import _classes, _data_module
 from .config import load_config
+from .operators import SCIENTIFIC_CORRECTNESS_VERSION
 from .profiling import BatchTimingRecorder, ExecutedStepRecorder
 
 
@@ -122,6 +123,7 @@ def train(args: argparse.Namespace) -> int:
     if not trainer.is_global_zero:
         return 0
     result = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "method": "supervised_random_labels" if random_labels else "supervised",
         "random_labels": random_labels, "dataset": str(config["data"]["dataset"]),
         "config_path": str(Path(args.config).resolve()),

@@ -19,6 +19,25 @@ RESULTS_ROOT = Path(os.environ.get(
 ))
 
 
+def has_current_source(payload: dict) -> bool:
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        return False
+    checkpoint = str(payload.get("checkpoint", payload.get("source_checkpoint", "")))
+    if not checkpoint:
+        return False
+    for parent in Path(checkpoint).parents:
+        for filename in ("train_result.json", "supervised_result.json"):
+            metadata = parent / filename
+            if not metadata.is_file():
+                continue
+            try:
+                source = json.loads(metadata.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return False
+            return source.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+    return False
+
+
 def atomic_text(path: Path, value: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True); temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(value, encoding="utf-8"); temporary.replace(path)
@@ -55,7 +74,7 @@ def main() -> int:
         payload = json.loads(result_path.read_text(encoding="utf-8"))
         # A post-fix paper table must never silently combine legacy g-only maps
         # with the paired f/g dependence definition.
-        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        if not has_current_source(payload):
             continue
         summary = payload.get("summary", {})
         preferred = "absolute_dependence" if "absolute_dependence" in summary else ("spectral" if "spectral" in summary else ("projector_energy" if "projector_energy" in summary else ("eigen_cam" if "eigen_cam" in summary else "")))
@@ -99,7 +118,7 @@ def main() -> int:
               "random_deletion_cosine_auc", "random_insertion_cosine_auc", "random_faithfulness_auc_gap"]
     output.mkdir(parents=True, exist_ok=True); temporary = output / "localization_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(output / "localization_table.csv")
     metric_names = ("top20_mask_iou", "pixel_auprc", "pointing_game", "foreground_energy_ratio", "top_faithfulness_auc_gap")
     grouped: dict[tuple[str, str, str, str], list[dict[str, object]]] = {}
@@ -131,7 +150,7 @@ def main() -> int:
     ]
     temporary = output / "localization_summary.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=summary_fields); writer.writeheader(); writer.writerows(summary_rows)
+        writer = csv.DictWriter(handle, fieldnames=summary_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(summary_rows)
     temporary.replace(output / "localization_summary.csv")
     plot_rows = [row for row in summary_rows if row["top20_mask_iou_mean"] != ""]
     width = 1200; height = max(360, 80 + 28 * len(plot_rows)); left = 390; chart = 740
@@ -151,7 +170,7 @@ def main() -> int:
         run_dir = result_path.parents[1]; status_path = run_dir / "status.json"
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED": continue
         payload = json.loads(result_path.read_text(encoding="utf-8"))
-        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        if not has_current_source(payload):
             continue
         summary = dict(payload.get("summary", {}))
         request = json.loads((run_dir / "request.json").read_text(encoding="utf-8"))
@@ -167,7 +186,7 @@ def main() -> int:
                           "rank_correlation", "normalized_l2", "top20_iou", "composition_assumption"]
     temporary = output / "cnn_composition_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=composition_fields); writer.writeheader(); writer.writerows(composition_rows)
+        writer = csv.DictWriter(handle, fieldnames=composition_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(composition_rows)
     temporary.replace(output / "cnn_composition_table.csv")
     caption = ("Quantitative E9 localization and faithfulness results. Post-fix FMCA-AV rows use the nonnegative absolute paired-canonical dependence contribution as the primary map. "
                "The raw table retains negative and randomized-backbone controls and reports top/random deletion-insertion cosine AUC; "

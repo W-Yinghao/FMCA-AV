@@ -16,6 +16,7 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from fmca_av.config import load_config
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from fmca_av.supervised_cli import SupervisedVision
 from scripts.run_dependence_localization import (
     MEAN, STD, cub_samples, feature_map, image_tensor, imagenet_samples,
@@ -106,7 +107,9 @@ def main() -> int:
     for map_name in sorted({name for record in records for name in record["maps"]}):
         keys = sorted({key for record in records for key in record["maps"][map_name]})
         summary[map_name] = {key: statistics.fmean(record["maps"][map_name][key] for record in records if key in record["maps"][map_name]) for key in keys}
-    payload = {"method": "supervised_random_labels" if config["experiment"].get("random_labels", False) else "supervised",
+    payload = {"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+               "checkpoint": str(Path(args.checkpoint).resolve()),
+               "method": "supervised_random_labels" if config["experiment"].get("random_labels", False) else "supervised",
                "dataset": args.dataset, "samples": len(records), "randomize_backbone": args.randomize_backbone,
                "runtime_seconds": time.perf_counter() - started,
                "peak_memory_mb": torch.cuda.max_memory_allocated() / (1024 ** 2),

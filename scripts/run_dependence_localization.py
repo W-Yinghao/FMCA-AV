@@ -390,6 +390,8 @@ def main() -> int:
             summary[map_name]["max_box_acc_iou50"], summary[map_name]["max_box_acc_quantile"] = max(accuracies)
     payload = {"dataset": args.dataset, "method": config["experiment"].get("method", "fmca_av"),
                "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+               "checkpoint": str(Path(args.checkpoint).resolve()),
+               "calibration": str(Path(args.calibration).resolve()),
                "dependence_map_version": "paired_f_g_s_v1",
                "primary_localization_map": PRIMARY_DEPENDENCE_MAP,
                "dependence_map_definition": DEPENDENCE_MAP_DEFINITION,

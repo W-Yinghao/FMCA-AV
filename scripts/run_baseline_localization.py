@@ -18,6 +18,7 @@ import torch.nn.functional as F
 from fmca_av.baseline_cli import _data_module
 from fmca_av.baselines import BaselineSSL
 from fmca_av.config import load_config
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from scripts.run_dependence_localization import (
     MEAN, STD, cub_samples, faithfulness, feature_map, image_tensor,
     imagenet_samples, localization_metrics, normalize_map, upsample, voc_samples,
@@ -100,7 +101,9 @@ def main() -> int:
             key = f"box_iou_q{quantile:02d}"; values = [float(record["maps"][map_name][key] >= 0.5) for record in records if key in record["maps"][map_name]]
             if values: accuracies.append((statistics.fmean(values), quantile / 100.0))
         if accuracies: summary[map_name]["max_box_acc_iou50"], summary[map_name]["max_box_acc_quantile"] = max(accuracies)
-    payload = {"method": config["experiment"]["method"], "dataset": args.dataset, "samples": len(records),
+    payload = {"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+               "checkpoint": str(Path(args.checkpoint).resolve()),
+               "method": config["experiment"]["method"], "dataset": args.dataset, "samples": len(records),
                "randomize_backbone": args.randomize_backbone, "runtime_seconds": time.perf_counter() - started,
                "peak_memory_mb": torch.cuda.max_memory_allocated() / (1024 ** 2), "summary": summary, "records": records}
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "localization.json"

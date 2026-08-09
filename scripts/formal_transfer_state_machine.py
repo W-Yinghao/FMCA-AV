@@ -15,11 +15,13 @@ try:
 except ModuleNotFoundError:
     from orchestration_retries import is_infrastructure_failure, retry_record
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 POLL_SECONDS = 300
 PYTHON = "/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python"
 REFERENCE = "configs/ssl/imagenet1k_reference.json"
-DEFAULT_PRETRAIN_STATE = "results/orchestration/imagenet_formal_state.json"
+DEFAULT_PRETRAIN_STATE = f"results/orchestration/imagenet_formal_{SCIENTIFIC_CORRECTNESS_VERSION}.json"
 TARGET_STEPS = 90000
 CHUNK_STEPS = 30000
 FMCA_METHODS = ("fmca_av", "fmca_av_matched_head", "hfmca_style", "regular_fmca")
@@ -41,8 +43,13 @@ def save(path: Path, state: dict[str, object]) -> None:
 
 
 def load(path: Path, pretrain_state: str) -> dict[str, object]:
-    if path.is_file(): return json.loads(path.read_text(encoding="utf-8"))
-    return {"pretrain_state": str(Path(pretrain_state).resolve()), "pretrain_complete": False, "source_checkpoints": {},
+    if path.is_file():
+        state = json.loads(path.read_text(encoding="utf-8"))
+        if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy formal transfer state: {path}")
+        return state
+    return {"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+            "pretrain_state": str(Path(pretrain_state).resolve()), "pretrain_complete": False, "source_checkpoints": {},
             "action_index": 0, "current_runs": [], "retry_queue": [], "detector_checkpoints": {},
             "completed": [], "chain_runs": [], "state": "RUNNING"}
 
@@ -61,6 +68,8 @@ def wait_pretraining(state: dict[str, object]) -> None:
         time.sleep(POLL_SECONDS); refresh()
         if not path.is_file(): continue
         payload = json.loads(path.read_text(encoding="utf-8")); value = str(payload.get("state", "RUNNING"))
+        if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+            raise RuntimeError(f"refusing legacy ImageNet pretraining state: {path}")
         if value == "SUCCEEDED":
             checkpoints = dict(payload.get("last_checkpoints", {}))
             expected = [checkpoint_key(method, seed) for method in METHODS for seed in SEEDS]
@@ -155,7 +164,10 @@ def wait_terminal(run_ids: list[str]) -> dict[str, str]:
 def detector_checkpoint(run_id: str) -> str:
     path = Path("runs") / run_id / "artifacts" / "detection_train_result.json"
     if not path.is_file(): return ""
-    value = json.loads(path.read_text(encoding="utf-8")).get("last_checkpoint")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(f"refusing legacy detector checkpoint from {run_id}")
+    value = payload.get("last_checkpoint")
     return str(value) if value and Path(str(value)).is_file() else ""
 
 
@@ -174,7 +186,7 @@ def take_batch(state: dict[str, object], plan: list[dict[str, object]]) -> list[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--state-file", default="results/orchestration/formal_transfer_state.json")
+    parser = argparse.ArgumentParser(); parser.add_argument("--state-file", default=f"results/orchestration/formal_transfer_{SCIENTIFIC_CORRECTNESS_VERSION}.json")
     parser.add_argument("--pretrain-state", default=DEFAULT_PRETRAIN_STATE); args = parser.parse_args()
     state_file = Path(args.state_file).resolve(); state = load(state_file, args.pretrain_state)
     chain = list(state["chain_runs"]); current_chain_run = os.environ["FMCA_HARNESS_RUN_ID"]
