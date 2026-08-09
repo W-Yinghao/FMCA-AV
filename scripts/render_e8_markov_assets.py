@@ -12,8 +12,20 @@ import math
 from pathlib import Path
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
 
 PALETTE = ("#2855a6", "#d14b3f", "#20854e", "#7a4aa8", "#d18b16")
+DEFAULT_OUTPUT = Path("results/postfix") / SCIENTIFIC_CORRECTNESS_VERSION / "e8"
+
+
+def require_current_payload(payload: dict, source: Path) -> None:
+    recorded = payload.get("scientific_correctness_version")
+    if recorded != SCIENTIFIC_CORRECTNESS_VERSION:
+        raise RuntimeError(
+            f"refusing pre-fix E8 source {source}: correctness version "
+            f"{recorded!r} != {SCIENTIFIC_CORRECTNESS_VERSION!r}"
+        )
 
 
 def panel(x: float, y: float, width: float, height: float, title: str, label: str, series: dict[str, list[tuple[int, float]]]) -> str:
@@ -33,13 +45,13 @@ def panel(x: float, y: float, width: float, height: float, title: str, label: st
 
 def write_csv(path: Path, rows: list[dict]) -> None:
     fields = list(rows[0]) if rows else ["empty"]; temporary = path.with_suffix(path.suffix + ".tmp")
-    with temporary.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+    with temporary.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(path)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--output-dir", default="results/e8")
-    args = parser.parse_args(); source = Path(args.input).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True); payload = json.loads(source.read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
+    args = parser.parse_args(); source = Path(args.input).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True); payload = json.loads(source.read_text(encoding="utf-8")); require_current_payload(payload, source)
     exact_values = defaultdict(list)
     exact_condition_rows = []
     for record in payload["exact_records"]:
@@ -97,7 +109,7 @@ def main() -> int:
         spectrum[row["dynamics"]].append((int(row["lag"]), float(row["spectrum_mae_median"]))); ck[row["dynamics"]].append((int(row["lag"]), float(row["chapman_kolmogorov_max_abs_median"]))); transition[row["dynamics"]].append((int(row["lag"]), float(row["transition_weighted_l2_median"])))
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760"><style>.axis{stroke:#222;stroke-width:1.4}.grid{stroke:#ddd}.title{font:600 15px sans-serif}.label{font:13px sans-serif}.tick{font:10px sans-serif;fill:#333}</style>', panel(10, 10, 535, 360, "Exact one-step power law", "spectrum MAE", exact_series), panel(555, 10, 535, 360, "Continuous direct vs composed", "spectrum MAE", spectrum), panel(10, 385, 535, 360, "Chapman-Kolmogorov residual", "max absolute residual", ck), panel(555, 385, 535, 360, "Transition reconstruction", "weighted L2", transition), '</svg>']
     temporary = output / "markov_direct_composed.svg.tmp"; temporary.write_text("".join(svg), encoding="utf-8"); temporary.replace(output / "markov_direct_composed.svg")
-    caption = "E8 direct-versus-composed Markov validation across reversible/non-reversible exact chains and OU/double-/multi-well continuous dynamics. Curves report medians across preregistered replicates and boundary conditions; aggregate CSVs also report means, standard deviations and 95% CI half-widths. The condition tables preserve every trajectory-length, sampling-step, diffusion, observation-interval, discretization and non-equilibrium cell, including negative composition results. Claim IDs: E8/C6/Case3. Source: " + str(source) + "\n"
+    caption = "E8 direct-versus-composed Markov validation across reversible/non-reversible exact chains and OU/double-/multi-well continuous dynamics. Curves report medians across preregistered replicates and boundary conditions; aggregate CSVs also report means, standard deviations and 95% CI half-widths. The condition tables preserve every trajectory-length, sampling-step, diffusion, observation-interval, discretization and non-equilibrium cell, including negative composition results. Scientific correctness version: " + SCIENTIFIC_CORRECTNESS_VERSION + ". Claim IDs: E8/C6/Case3. Source: " + str(source) + "\n"
     temporary = output / "markov_caption.txt.tmp"; temporary.write_text(caption, encoding="utf-8"); temporary.replace(output / "markov_caption.txt")
     print(json.dumps({"exact_rows": len(exact_rows), "continuous_rows": len(continuous_rows), "output_dir": str(output)}, indent=2)); return 0
 

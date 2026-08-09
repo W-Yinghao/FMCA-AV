@@ -21,6 +21,7 @@ SSL_STATE = Path("results/orchestration/formal_ssl_postfix_state.json")
 IMAGE_STATE = Path(f"results/orchestration/imagenet_formal_{VERSION}.json")
 FACTOR_STATE = Path(f"results/orchestration/factor_suite_{VERSION}.json")
 E10_STATE = Path(f"results/orchestration/e10_{VERSION}.json")
+E8_STATE = Path(f"results/orchestration/e8_{VERSION}.json")
 MATCHED_STATE = Path(f"results/orchestration/matched_compute_{VERSION}.json")
 LOW_LABEL_STATE = Path(f"results/orchestration/formal_low_label_{VERSION}.json")
 E3_IMAGENET100_STATE = Path(f"results/orchestration/e3_imagenet100_recheck_{VERSION}.json")
@@ -201,6 +202,7 @@ def main() -> int:
     wait_state(IMAGENET_LOW_LABEL_STATE, "formal ImageNet low-label")
     wait_state(FACTOR_STATE, "factor suite")
     wait_state(E10_STATE, "E10 suite")
+    wait_state(E8_STATE, "E8 Markov suite")
     for key in ("tsd_cifar10", "tsd_cifar100", "factor", "e10", "imagenet"):
         wait_run(str(dict(state["external_watchers"])[key]), key)
 

@@ -12,6 +12,7 @@ from pathlib import Path
 import torch
 
 from fmca_av.markov import directed_cycle, lag_composition_diagnostic, metastable_chain, nonnormal_chain, reversible_chain
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from scripts.run_markov_continuous import diagnostic
 
 
@@ -83,7 +84,12 @@ def main() -> int:
                     "dynamics": dynamics,
                     **diagnostic(trajectory, condition["bins"], [2, 4, 8, 16], 8, 0.25),
                 })
-    payload = {"exact_records": exact_records, "continuous_records": continuous_records, "parameters": vars(args)}
+    payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+        "exact_records": exact_records,
+        "continuous_records": continuous_records,
+        "parameters": vars(args),
+    }
     output = Path(args.output) if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "e8_markov_full.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
@@ -91,7 +97,12 @@ def main() -> int:
     temporary.replace(output)
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps({"stage": "e8_markov_full_sweep", "exact_conditions": len(exact_records), "continuous_conditions": len(continuous_records)}) + "\n")
+            handle.write(json.dumps({
+                "stage": "e8_markov_full_sweep",
+                "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+                "exact_conditions": len(exact_records),
+                "continuous_conditions": len(continuous_records),
+            }) + "\n")
     print(json.dumps({"exact_conditions": len(exact_records), "continuous_conditions": len(continuous_records)}, indent=2))
     return 0
 
