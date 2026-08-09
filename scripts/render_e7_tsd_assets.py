@@ -37,7 +37,8 @@ def atomic_text(path: Path, value: str) -> None:
 def main() -> int:
     jobs = json.loads(Path("harness/state/jobs.json").read_text(encoding="utf-8"))["jobs"]
     source_rows: dict[str, dict[str, object]] = {}
-    probe_by_source: dict[str, tuple[str, object]] = {}
+    source_by_name: dict[str, str] = {}
+    probe_by_source_name: dict[str, tuple[str, object]] = {}
     for run_id, job in jobs.items():
         name = str(job.get("name", "")); match = PATTERN.search(name)
         if match and "utility-linear-probe" not in name:
@@ -60,11 +61,21 @@ def main() -> int:
                                    "calibration_tsd": calibration_score, "heldout_tsd": heldout_tsd,
                                    "calibration_test_gap": gap, "heldout_clipped_mode_count": clipped_modes,
                                    "probe_run": "", "probe_state": "", "probe_accuracy": ""}
+            source_by_name[name] = run_id
         if name.endswith("-utility-linear-probe"):
-            source_run = name[:-len("-utility-linear-probe")]; probe_path = Path("runs") / run_id / "artifacts" / "probe_result.json"
+            source_name = name[:-len("-utility-linear-probe")]
+            probe_path = Path("runs") / run_id / "artifacts" / "probe_result.json"
             accuracy: object = ""
-            if probe_path.is_file(): accuracy = json.loads(probe_path.read_text(encoding="utf-8")).get("test_accuracy", "")
-            probe_by_source[source_run] = (run_id, accuracy)
+            if probe_path.is_file():
+                probe = json.loads(probe_path.read_text(encoding="utf-8"))
+                if probe.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION:
+                    accuracy = probe.get("test_accuracy", "")
+            probe_by_source_name[source_name] = (run_id, accuracy)
+    probe_by_source = {
+        source_by_name[name]: value
+        for name, value in probe_by_source_name.items()
+        if name in source_by_name
+    }
     for source_run, row in source_rows.items():
         if source_run in probe_by_source:
             probe_run, accuracy = probe_by_source[source_run]; row["probe_run"] = probe_run
