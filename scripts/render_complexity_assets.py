@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 import re
 
-from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
 
 
 DEFAULT_RESULTS_ROOT = Path(
@@ -28,6 +28,15 @@ def read_versioned_payload(path: Path) -> dict:
             f"{recorded!r} != {SCIENTIFIC_CORRECTNESS_VERSION!r}"
         )
     return payload
+
+
+def require_current_moment_policy(payload: dict) -> None:
+    recorded = payload.get("moment_accumulation_policy")
+    if recorded != MOMENT_ACCUMULATION_POLICY:
+        raise ValueError(
+            f"refusing E10 complexity input with moment policy {recorded!r}; "
+            f"expected {MOMENT_ACCUMULATION_POLICY!r}"
+        )
 
 
 def coordinates(values: list[float], start: float, extent: float, logarithmic: bool = True) -> list[float]:
@@ -67,7 +76,9 @@ def panel(x: float, y: float, width: float, height: float, title: str, x_label: 
 def main() -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--input", required=True); parser.add_argument("--operator", default=""); parser.add_argument("--flops", default=""); parser.add_argument("--output-dir", default=str(DEFAULT_RESULTS_ROOT / "e10"))
     args = parser.parse_args(); source = Path(args.input).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
-    payload = read_versioned_payload(source); records = payload["conditions"]
+    payload = read_versioned_payload(source)
+    require_current_moment_policy(payload)
+    records = payload["conditions"]
     fields = sorted({key for record in records for key in record})
     temporary_csv = output / "complexity_table.csv.tmp"
     with temporary_csv.open("w", newline="", encoding="utf-8") as handle:
@@ -155,6 +166,7 @@ def main() -> int:
         temporary = output / "ddp_scaling.svg.tmp"; temporary.write_text("".join(ddp_svg), encoding="utf-8"); temporary.replace(output / "ddp_scaling.svg")
     caption = (
         "E10 complexity scaling on " + str(payload.get("device", "unknown GPU")) + ". "
+        "Low-precision network features use FP32 moment accumulation before whitening/SVD. "
         "Each point reports the mean of the timed iterations after warm-up; throughput counts all encoded views, "
         "and memory is peak allocated CUDA memory. Axes M, K, and B denote views per parent, feature dimension, and parent batch size. "
         "The isolated operator table/figure separately time moment construction and complete whitening/SVD for K=32--512. "

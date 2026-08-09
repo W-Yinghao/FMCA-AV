@@ -15,6 +15,7 @@ from torch import Tensor
 
 
 SCIENTIFIC_CORRECTNESS_VERSION = "20260809_scientific_correctness_v1"
+MOMENT_ACCUMULATION_POLICY = "float32_for_float16_and_bfloat16"
 
 
 @dataclass
@@ -86,6 +87,19 @@ def _check_features(f: Tensor, g_views: Tensor) -> None:
         raise ValueError("at least two parents and one conditional view are required")
 
 
+def _promote_operator_features(f: Tensor, g_views: Tensor) -> Tuple[Tensor, Tensor]:
+    """Choose a stable accumulation dtype without detaching network gradients."""
+
+    if not f.is_floating_point() or not g_views.is_floating_point():
+        raise TypeError("f and g_views must have floating-point dtypes")
+    if f.device != g_views.device:
+        raise ValueError("f and g_views must be on the same device")
+    dtype = torch.promote_types(f.dtype, g_views.dtype)
+    if dtype in {torch.float16, torch.bfloat16}:
+        dtype = torch.float32
+    return f.to(dtype=dtype), g_views.to(dtype=dtype)
+
+
 def estimate_moments(f: Tensor, g_views: Tensor, centered: bool = True) -> FMCAMoments:
     """Estimate the three matrices in the FMCA-AV block operator.
 
@@ -95,6 +109,7 @@ def estimate_moments(f: Tensor, g_views: Tensor, centered: bool = True) -> FMCAM
     """
 
     _check_features(f, g_views)
+    f, g_views = _promote_operator_features(f, g_views)
     batch, views, _ = g_views.shape
     if centered:
         f_work = f - f.mean(dim=0, keepdim=True)
@@ -180,6 +195,7 @@ def fit_spectral_calibration(
     """
 
     _check_features(f, g_views)
+    f, g_views = _promote_operator_features(f, g_views)
     mean_f = f.mean(dim=0, keepdim=True) if centered else torch.zeros_like(f[:1])
     mean_g = (
         g_views.mean(dim=(0, 1), keepdim=False).unsqueeze(0)
@@ -251,6 +267,7 @@ def evaluate_heldout_spectrum(
     _check_features(f, g_views)
     _require_finite("held-out f", f)
     _require_finite("held-out g_views", g_views)
+    f, g_views = _promote_operator_features(f, g_views)
     mean_f = _calibration_tensor(calibration, "mean_f", f)
     mean_g = _calibration_tensor(calibration, "mean_g", g_views)
     transform_f = _calibration_tensor(calibration, "transform_f", f)

@@ -9,7 +9,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+from fmca_av.operators import MOMENT_ACCUMULATION_POLICY, SCIENTIFIC_CORRECTNESS_VERSION
 
 
 POLL_SECONDS = 300
@@ -40,7 +40,7 @@ def artifact(run_id: str, name: str) -> Path:
     return Path("runs") / run_id / "artifacts" / name
 
 
-def valid_artifact(run_id: str, name: str) -> bool:
+def valid_artifact(run_id: str, name: str, required: dict[str, object] | None = None) -> bool:
     path = artifact(run_id, name)
     if run_status(run_id).get("state") != "SUCCEEDED" or not path.is_file():
         return False
@@ -48,7 +48,10 @@ def valid_artifact(run_id: str, name: str) -> bool:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    return payload.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+    return (
+        payload.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+        and all(payload.get(key) == value for key, value in (required or {}).items())
+    )
 
 
 def submit_with_capacity(argv: list[str]) -> str:
@@ -90,19 +93,28 @@ def load_state(path: Path) -> dict:
     }
 
 
-def ensure_gpu_stage(state: dict, state_path: Path, key: str, name: str, module: str, artifact_name: str) -> str:
+def ensure_gpu_stage(
+    state: dict,
+    state_path: Path,
+    key: str,
+    name: str,
+    module: str,
+    artifact_name: str,
+    required: dict[str, object] | None = None,
+) -> str:
     runs = state.setdefault("runs", {})
     run_id = str(runs.get(key, ""))
-    if run_id and valid_artifact(run_id, artifact_name):
+    if run_id and valid_artifact(run_id, artifact_name, required):
         return run_id
     if run_id:
         child_state = str(run_status(run_id).get("state"))
         if child_state not in TERMINAL:
             wait_success(run_id)
-            if valid_artifact(run_id, artifact_name):
+            if valid_artifact(run_id, artifact_name, required):
                 return run_id
-        elif child_state == "SUCCEEDED":
-            raise RuntimeError(f"E10 child {run_id} has invalid or unversioned {artifact_name}")
+        superseded = state.setdefault("superseded_runs", {}).setdefault(key, [])
+        if run_id not in superseded:
+            superseded.append(run_id)
     run_id = submit_with_capacity([
         "python3", "-m", "harness.cli", "submit", "--name", name,
         "--gpus", "1", "--", PYTHON, "-m", module,
@@ -110,7 +122,7 @@ def ensure_gpu_stage(state: dict, state_path: Path, key: str, name: str, module:
     runs[key] = run_id
     atomic_json(state_path, state)
     wait_success(run_id)
-    if not valid_artifact(run_id, artifact_name):
+    if not valid_artifact(run_id, artifact_name, required):
         raise RuntimeError(f"E10 child {run_id} did not produce valid {artifact_name}")
     return run_id
 
@@ -128,6 +140,7 @@ def main() -> int:
     complexity = ensure_gpu_stage(
         state, state_path, "complexity", "postfix-e10-complexity",
         "scripts.run_complexity_benchmark", "complexity.json",
+        {"moment_accumulation_policy": MOMENT_ACCUMULATION_POLICY},
     )
     operator = ensure_gpu_stage(
         state, state_path, "operator", "postfix-e10-operator-complexity",

@@ -14,6 +14,20 @@ from fmca_av.operators import (
 
 
 class OperatorEstimatorTests(unittest.TestCase):
+    def test_low_precision_moments_accumulate_in_float32_with_gradients(self) -> None:
+        f = torch.tensor([[1000.0, -1000.0], [-1000.0, 1000.0]], dtype=torch.float16, requires_grad=True)
+        g = f.detach().reshape(2, 1, 2).repeat(1, 2, 1).requires_grad_()
+        moments = estimate_moments(f, g, centered=True)
+        self.assertEqual(moments.r_f.dtype, torch.float32)
+        self.assertEqual(moments.r_g.dtype, torch.float32)
+        self.assertEqual(moments.p_fg.dtype, torch.float32)
+        self.assertTrue(torch.isfinite(moments.r_f).all())
+        self.assertTrue(torch.isfinite(moments.r_g).all())
+        score = trace_score(moments)
+        score.backward()
+        self.assertTrue(torch.isfinite(f.grad).all())
+        self.assertTrue(torch.isfinite(g.grad).all())
+
     def test_rg_is_mean_of_outer_products_not_outer_product_of_mean(self) -> None:
         f = torch.tensor([[1.0], [-1.0]])
         g_views = torch.tensor([[[1.0], [-1.0]], [[2.0], [-2.0]]])
