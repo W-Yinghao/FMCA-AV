@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader, Dataset, Subset
 
 from fmca_av.config import load_config
 from fmca_av.data.factors import FACTOR_CARDINALITIES, FACTOR_NAMES, factor_dataset
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from fmca_av.data.imagenet import ImageNetProbeTransform
 from fmca_av.vision_module import VisionFMCAAV
 
@@ -169,6 +170,7 @@ def main() -> int:
             rotation = torch.linalg.qr(matrix).Q[:, :k]
             records.extend(evaluate_selection("random_rotation_first", train_canonical.double() @ rotation, test_canonical.double() @ rotation, train_labels, test_labels, cardinalities, k, args.ridge, repeat))
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "dataset": dataset_name,
         "factor_names": FACTOR_NAMES[dataset_name],
         "factor_cardinalities": cardinalities,

@@ -10,6 +10,26 @@ import json
 from pathlib import Path
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
+
+DEFAULT_OUTPUT = Path(f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}/e7")
+
+
+def current_source(payload: dict) -> bool:
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        return False
+    checkpoint = str(payload.get("checkpoint", ""))
+    for parent in Path(checkpoint).parents:
+        metadata = parent / "train_result.json"
+        if metadata.is_file():
+            try:
+                source = json.loads(metadata.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return False
+            return source.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+    return False
+
 
 def channel_from_name(name: str, dataset: str) -> str:
     prefix = f"e7-{dataset}-"
@@ -23,11 +43,14 @@ def channel_from_name(name: str, dataset: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--runs", default="runs"); parser.add_argument("--output-dir", default="results/e7")
+    parser = argparse.ArgumentParser(); parser.add_argument("--runs", default="runs"); parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args(); runs = Path(args.runs).resolve(); output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
     curves = []
     for path in sorted(runs.glob("*/artifacts/factor_probe.json")):
-        payload = json.loads(path.read_text(encoding="utf-8")); run_dir = path.parents[1]; status = json.loads((run_dir / "status.json").read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not current_source(payload):
+            continue
+        run_dir = path.parents[1]; status = json.loads((run_dir / "status.json").read_text(encoding="utf-8"))
         dataset = str(payload["dataset"]); channel = channel_from_name(str(status["name"]), dataset); names = payload["factor_names"]
         grouped = defaultdict(list)
         for record in payload["records"]: grouped[(record["selection"], int(record["k"]), int(record["factor_index"]))].append(float(record["accuracy"]))
@@ -35,7 +58,7 @@ def main() -> int:
             curves.append({"run_id": status["run_id"], "dataset": dataset, "channel": channel, "selection": selection, "k": k, "factor_index": factor, "factor_name": names[factor], "accuracy_mean": statistics.fmean(values), "accuracy_std": statistics.stdev(values) if len(values) > 1 else 0.0, "repeats": len(values)})
     curve_fields = ["run_id", "dataset", "channel", "selection", "k", "factor_index", "factor_name", "accuracy_mean", "accuracy_std", "repeats"]
     temp = output / "factor_probe_curves.csv.tmp"
-    with temp.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=curve_fields); writer.writeheader(); writer.writerows(curves)
+    with temp.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=curve_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(curves)
     temp.replace(output / "factor_probe_curves.csv")
     indexed = {(row["run_id"], row["selection"], row["k"], row["factor_index"]): row for row in curves}; summaries = []
     identities = sorted({(row["run_id"], row["dataset"], row["channel"], row["factor_index"], row["factor_name"]) for row in curves})
@@ -55,9 +78,10 @@ def main() -> int:
         summaries.append({"run_id": run_id, "dataset": dataset, "channel": channel, "factor_index": factor, "factor_name": factor_name, "top_auc": auc, "full_top_accuracy": maximum, "min_k_95pct_top": min_k, **differences})
     summary_fields = list(summaries[0]) if summaries else ["run_id"]
     temp = output / "factor_probe_summary.csv.tmp"
-    with temp.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=summary_fields); writer.writeheader(); writer.writerows(summaries)
+    with temp.open("w", newline="", encoding="utf-8") as handle: writer = csv.DictWriter(handle, fieldnames=summary_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(summaries)
     temp.replace(output / "factor_probe_summary.csv")
-    snapshot = {"curve_rows": len(curves), "summary_rows": len(summaries), "runs": sorted({row["run_id"] for row in curves})}
+    snapshot = {"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+                "curve_rows": len(curves), "summary_rows": len(summaries), "runs": sorted({row["run_id"] for row in curves})}
     temp = output / "factor_probe_snapshot.json.tmp"; temp.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8"); temp.replace(output / "factor_probe_snapshot.json")
     print(json.dumps(snapshot, indent=2)); return 0
 

@@ -12,9 +12,16 @@ from scripts.formal_imagenet_state_machine import load_state as load_imagenet
 from scripts.formal_imagenet_low_label_state_machine import load as load_imagenet_low_label
 from scripts.formal_localization_state_machine import load as load_localization
 from scripts.formal_transfer_state_machine import load as load_transfer
+from scripts.launch_postfix_factor_suite import load_state as load_factor, plan as factor_plan
 
 
 class StateVersioningTests(unittest.TestCase):
+    def test_factor_plan_has_frozen_coverage(self) -> None:
+        records = factor_plan()
+        self.assertEqual(len(records), 54)
+        self.assertEqual(sum(record["channel"] == "default" for record in records), 18)
+        self.assertEqual(len({record["key"] for record in records}), 54)
+
     def test_new_states_carry_current_version(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -23,6 +30,7 @@ class StateVersioningTests(unittest.TestCase):
                 load_transfer(root / "transfer.json", "pretrain.json"),
                 load_localization(root / "localization.json", "pretrain.json"),
                 load_imagenet_low_label(root / "lowlabel.json", "pretrain.json"),
+                load_factor(root / "factor.json"),
             )
             for state in states:
                 self.assertEqual(
@@ -39,6 +47,11 @@ class StateVersioningTests(unittest.TestCase):
                 path.write_text(json.dumps({"state": "RUNNING"}), encoding="utf-8")
                 with self.assertRaises(RuntimeError):
                     loader(path, "dependency.json")
+
+            factor_path = root / "legacy-factor.json"
+            factor_path.write_text(json.dumps({"state": "RUNNING"}), encoding="utf-8")
+            with self.assertRaises(RuntimeError):
+                load_factor(factor_path)
 
 
 if __name__ == "__main__":
