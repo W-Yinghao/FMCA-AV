@@ -9,6 +9,11 @@ import os
 from pathlib import Path
 import re
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
+
+DEFAULT_OUTPUT = Path(f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}/e6")
+
 
 METHODS = (
     "fmca_av_matched_head", "hfmca_style", "regular_fmca", "spectral_contrastive",
@@ -19,6 +24,19 @@ DATASETS = ("imagenet100", "imagenet1k", "cifar100", "cifar10", "stl10", "tinyim
 
 
 def read(path: Path) -> dict[str, object]: return json.loads(path.read_text(encoding="utf-8"))
+
+
+def has_current_source(payload: dict[str, object]) -> bool:
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        return False
+    source = str(payload.get("source_checkpoint", payload.get("checkpoint", "")))
+    if not source:
+        return False
+    for parent in Path(source).parents:
+        metadata = parent / "train_result.json"
+        if metadata.is_file():
+            return read(metadata).get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+    return False
 
 
 def labels(name: str) -> tuple[str, str, str]:
@@ -32,7 +50,7 @@ def labels(name: str) -> tuple[str, str, str]:
 def write_csv(path: Path, rows: list[dict[str, object]], fields: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True); temporary = path.with_suffix(path.suffix + ".tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(path)
 
 
@@ -51,34 +69,42 @@ def main() -> int:
             path = run_dir / "artifacts" / filename
             if not path.is_file(): continue
             value = read(path)
+            if not has_current_source(value): continue
             rows.append({"run_id": run_id, "name": name, "dataset": dataset, "method": method, "seed": seed, "protocol": protocol,
                          "label_fraction": value.get("label_fraction", ""), "primary_metric": "accuracy",
                          "primary_value": value.get("test_accuracy", ""), "secondary_metric": "top5_accuracy",
                          "secondary_value": value.get("test_top5_accuracy", ""), "samples": "", "task": "", "evaluation_protocol": ""})
         path = run_dir / "artifacts" / "voc2007_multilabel.json"
         if path.is_file():
-            value = read(path); rows.append({"run_id": run_id, "name": name, "dataset": "voc2007", "method": method, "seed": seed,
-                "protocol": "frozen_multilabel_probe", "label_fraction": 1.0, "primary_metric": "mAP",
-                "primary_value": value.get("test_map", ""), "secondary_metric": "validation_mAP",
-                "secondary_value": value.get("best_validation_map", ""), "samples": "", "task": "classification", "evaluation_protocol": "multilabel_average_precision"})
+            value = read(path)
+            if has_current_source(value):
+                rows.append({"run_id": run_id, "name": name, "dataset": "voc2007", "method": method, "seed": seed,
+                    "protocol": "frozen_multilabel_probe", "label_fraction": 1.0, "primary_metric": "mAP",
+                    "primary_value": value.get("test_map", ""), "secondary_metric": "validation_mAP",
+                    "secondary_value": value.get("best_validation_map", ""), "samples": "", "task": "classification", "evaluation_protocol": "multilabel_average_precision"})
         path = run_dir / "artifacts" / "coco_transfer.json"
         if path.is_file():
-            value = read(path); task = str(value.get("task", "")); key = "segm_AP" if task == "instance_segmentation" else "bbox_AP"
-            secondary = "segm_AP50" if task == "instance_segmentation" else "bbox_AP50"
-            rows.append({"run_id": run_id, "name": name, "dataset": "coco2017", "method": method, "seed": seed, "protocol": "transfer",
-                "label_fraction": "", "primary_metric": key, "primary_value": value.get(key, ""),
-                "secondary_metric": secondary, "secondary_value": value.get(secondary, ""),
-                "samples": value.get("evaluated_images", ""), "task": task,
-                "evaluation_protocol": value.get("evaluation_protocol", "legacy_custom_coco_style_101_point")})
+            value = read(path)
+            if has_current_source(value):
+                task = str(value.get("task", "")); key = "segm_AP" if task == "instance_segmentation" else "bbox_AP"
+                secondary = "segm_AP50" if task == "instance_segmentation" else "bbox_AP50"
+                rows.append({"run_id": run_id, "name": name, "dataset": "coco2017", "method": method, "seed": seed, "protocol": "transfer",
+                    "label_fraction": "", "primary_metric": key, "primary_value": value.get(key, ""),
+                    "secondary_metric": secondary, "secondary_value": value.get(secondary, ""),
+                    "samples": value.get("evaluated_images", ""), "task": task,
+                    "evaluation_protocol": value.get("evaluation_protocol", "legacy_custom_coco_style_101_point")})
         path = run_dir / "artifacts" / "voc_detection.json"
         if path.is_file():
-            value = read(path); rows.append({"run_id": run_id, "name": name, "dataset": "voc2007+2012", "method": method, "seed": seed,
-                "protocol": "transfer", "label_fraction": "", "primary_metric": "bbox_AP", "primary_value": value.get("bbox_AP", ""),
-                "secondary_metric": "bbox_AP50", "secondary_value": value.get("bbox_AP50", ""),
-                "samples": value.get("evaluated_images", ""), "task": "detection",
-                "evaluation_protocol": value.get("evaluation_protocol", "custom_coco_style_101_point_voc_macro")})
+            value = read(path)
+            if has_current_source(value):
+                rows.append({"run_id": run_id, "name": name, "dataset": "voc2007+2012", "method": method, "seed": seed,
+                    "protocol": "transfer", "label_fraction": "", "primary_metric": "bbox_AP", "primary_value": value.get("bbox_AP", ""),
+                    "secondary_metric": "bbox_AP50", "secondary_value": value.get("bbox_AP50", ""),
+                    "samples": value.get("evaluated_images", ""), "task": "detection",
+                    "evaluation_protocol": value.get("evaluation_protocol", "custom_coco_style_101_point_voc_macro")})
     fields = ["run_id", "name", "dataset", "method", "seed", "protocol", "label_fraction", "primary_metric", "primary_value", "secondary_metric", "secondary_value", "samples", "task", "evaluation_protocol"]
-    output = Path("results/e6"); write_csv(output / "generalization_transfer_table.csv", rows, fields)
+    output = Path(os.environ.get("FMCA_RESULTS_ROOT", str(DEFAULT_OUTPUT.parent))) / "e6"
+    write_csv(output / "generalization_transfer_table.csv", rows, fields)
     plotted = [row for row in rows if row["primary_value"] != ""]
     width = 1250; height = max(340, 80 + 26 * len(plotted)); left = 480; chart = 690
     maximum = max((float(row["primary_value"]) for row in plotted), default=1.0)
@@ -90,7 +116,7 @@ def main() -> int:
         label = f'{row["dataset"]} | {row["method"]} | {row["protocol"]} | labels={row["label_fraction"] or "all"} | {row["primary_metric"]}'
         svg.append(f'<text x="20" y="{y+12}" class="label">{label}</text><rect x="{left}" y="{y}" width="{length:.2f}" height="16" class="bar"/><text x="{left+length+5:.2f}" y="{y+12}" class="label">{value:.4f}</text>')
     svg.append("</svg>"); atomic_text(output / "generalization_transfer.svg", "".join(svg))
-    atomic_text(output / "generalization_transfer_caption.txt", "E6 low-label frozen-probe/fine-tuning and VOC/COCO transfer results. Each row names its evaluation protocol: future formal COCO bbox/segmentation AP uses official pycocotools COCOeval, while retained legacy smoke rows and VOC detection are explicitly labeled as 101-point custom protocols. Short-smoke zero or negative results are retained rather than promoted as successful transfer. Claim IDs: E6/C3.\n")
+    atomic_text(output / "generalization_transfer_caption.txt", "Post-fix E6 low-label frozen-probe/fine-tuning and VOC/COCO transfer results. Only artifacts carrying the current scientific-correctness version are included. Each row names its evaluation protocol: formal COCO bbox/segmentation AP uses official pycocotools COCOeval, while VOC detection is explicitly labeled as a 101-point custom protocol. Claim IDs: E6/C3.\n")
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps({"stage": "render_e6_generalization_assets", "rows": len(rows)}) + "\n")

@@ -25,6 +25,7 @@ from torchvision.transforms.functional import pil_to_tensor
 from fmca_av.config import load_config
 from fmca_av.vision_module import VisionFMCAAV
 from fmca_av.baselines import BaselineSSL
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 import xml.etree.ElementTree as ET
 
 
@@ -324,7 +325,8 @@ def main() -> int:
     trainer = L.Trainer(accelerator="gpu", devices=1, max_steps=args.max_steps, max_epochs=-1, precision="32-true", enable_progress_bar=False, log_every_n_steps=5, default_root_dir=str(run_dir))
     trainer.fit(module, train_dataloaders=train_loader, ckpt_path=args.resume or None)
     last_checkpoint = checkpoint_dir / "last.ckpt"; trainer.save_checkpoint(str(last_checkpoint))
-    training_result = {"dataset": args.dataset, "task": args.task, "source_checkpoint": str(Path(args.checkpoint).resolve()),
+    training_result = {"scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+                       "dataset": args.dataset, "task": args.task, "source_checkpoint": str(Path(args.checkpoint).resolve()),
                        "target_steps": args.max_steps, "last_checkpoint": str(last_checkpoint.resolve())}
     temporary = (run_dir / "artifacts" / "detection_train_result.json.tmp")
     temporary.write_text(json.dumps(training_result, indent=2, sort_keys=True) + "\n", encoding="utf-8")

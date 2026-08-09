@@ -22,6 +22,7 @@ from fmca_av.config import load_config
 from fmca_av.baselines import BaselineSSL
 from fmca_av.data.imagenet import ImageNetProbeTransform
 from fmca_av.vision_module import VisionFMCAAV
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 
 
 VOC_CLASSES = (
@@ -169,6 +170,7 @@ def main() -> int:
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=validation_loader)
     metrics = trainer.test(model, dataloaders=test_loader, ckpt_path="best")[0]
     result = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "source_checkpoint": str(Path(args.checkpoint).resolve()),
         "model_type": args.model_type,
         "protocol": "VOC2007 train frozen-backbone linear multi-label probe; val model selection; test evaluation",

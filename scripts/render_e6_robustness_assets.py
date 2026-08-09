@@ -11,6 +11,28 @@ from pathlib import Path
 import re
 import statistics
 
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
+
+
+DEFAULT_OUTPUT = Path(f"results/postfix/{SCIENTIFIC_CORRECTNESS_VERSION}/e6")
+
+
+def has_current_source(payload: dict[str, object]) -> bool:
+    if payload.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
+        return False
+    source = str(payload.get("source_checkpoint", payload.get("checkpoint", "")))
+    if not source:
+        return False
+    for parent in Path(source).parents:
+        metadata = parent / "train_result.json"
+        if metadata.is_file():
+            try:
+                value = json.loads(metadata.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return False
+            return value.get("scientific_correctness_version") == SCIENTIFIC_CORRECTNESS_VERSION
+    return False
+
 
 METHODS = (
     "fmca_av_matched_head", "hfmca_style", "regular_fmca", "spectral_contrastive",
@@ -37,6 +59,7 @@ def main() -> int:
     for path in sorted(Path("runs").glob("*/artifacts/*.json")):
         try: payload = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError): continue
+        if not has_current_source(payload): continue
         run_dir = path.parents[1]; status_path = run_dir / "status.json"
         if not status_path.is_file() or json.loads(status_path.read_text(encoding="utf-8")).get("state") != "SUCCEEDED": continue
         request = json.loads((run_dir / "request.json").read_text(encoding="utf-8")); name = str(request.get("name", ""))
@@ -82,11 +105,12 @@ def main() -> int:
                 rows.append({**common, "dataset": payload.get("dataset", "imagenet1k"), "suite": suite,
                              "mean_accuracy": value.get("top1_accuracy", ""), "ece": value.get("ece_15_bin", ""),
                              "samples": value.get("samples", "")})
-    output = Path("results/e6"); output.mkdir(parents=True, exist_ok=True)
+    output = Path(os.environ.get("FMCA_RESULTS_ROOT", str(DEFAULT_OUTPUT.parent))) / "e6"
+    output.mkdir(parents=True, exist_ok=True)
     fields = ["run_id", "name", "file", "dataset", "method", "seed", "suite", "mean_accuracy", "mce", "relative_mce", "clean_accuracy", "ece", "samples"]
     temporary = output / "robustness_table.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(output / "robustness_table.csv")
     grouped: dict[tuple[str, str, str], list[dict[str, object]]] = {}
     for row in rows:
@@ -106,12 +130,12 @@ def main() -> int:
     summary_fields = ["dataset", "method", "suite", "runs", "mean_accuracy", "std_accuracy", "ci95_half_width"]
     temporary = output / "robustness_summary.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=summary_fields); writer.writeheader(); writer.writerows(summary_rows)
+        writer = csv.DictWriter(handle, fieldnames=summary_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(summary_rows)
     temporary.replace(output / "robustness_summary.csv")
     detail_fields = ["run_id", "name", "dataset", "suite", "corruption", "family", "severity", "accuracy"]
     temporary = output / "robustness_per_corruption.csv.tmp"
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=detail_fields); writer.writeheader(); writer.writerows(detail_rows)
+        writer = csv.DictWriter(handle, fieldnames=detail_fields, lineterminator="\n"); writer.writeheader(); writer.writerows(detail_rows)
     temporary.replace(output / "robustness_per_corruption.csv")
     plotted = summary_rows
     width = 1200; height = max(320, 75 + 28 * len(plotted)); left = 440; chart = 680
@@ -126,7 +150,7 @@ def main() -> int:
         svg.append(f'<text x="20" y="{y+13}" class="label">{label[:65]}</text><rect x="{left}" y="{y}" width="{chart*value:.2f}" height="18" class="bar"/><line x1="{max(left, center-ci):.2f}" y1="{y+9}" x2="{center+ci:.2f}" y2="{y+9}" stroke="#111"/><text x="{center+5:.2f}" y="{y+13}" class="label">{value:.3f}</text>')
     svg.append("</svg>"); atomic_text(output / "robustness_accuracy.svg", "".join(svg))
     atomic_text(output / "robustness_caption.txt",
-                "E6 clean/corruption/OOD results. The summary and figure report mean and normal-approximation 95% CI over independent seeds. ImageNet-C mCE uses the canonical 15-corruption AlexNet normalization; four extra corruptions are retained separately. Legacy CIFAR-C runs without a stored clean score report unnormalized mean corruption error only.\n")
+                "Post-fix E6 clean/corruption/OOD results. Only artifacts carrying the current scientific-correctness version are included. The summary and figure report mean and normal-approximation 95% CI over independent seeds. ImageNet-C mCE uses the canonical 15-corruption AlexNet normalization; four extra corruptions are retained separately.\n")
     if os.environ.get("FMCA_HARNESS_RUN_DIR"):
         with (Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "metrics.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps({"stage": "render_e6_robustness_assets", "rows": len(rows), "detail_rows": len(detail_rows)}) + "\n")

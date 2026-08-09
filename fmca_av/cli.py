@@ -401,6 +401,7 @@ def linear_probe(args: argparse.Namespace) -> int:
     if trainer.is_global_zero:
         test_metrics = test_results[0]
         result = {
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
             "source_checkpoint": str(Path(args.checkpoint).resolve()),
             "probe_checkpoint": checkpoint.best_model_path,
             "best_validation_accuracy": float(checkpoint.best_model_score),
@@ -463,6 +464,7 @@ def fine_tune(args: argparse.Namespace) -> int:
     if trainer.is_global_zero:
         test_metrics = test_results[0]
         result = {
+            "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
             "source_checkpoint": str(Path(args.checkpoint).resolve()),
             "finetune_checkpoint": checkpoint.best_model_path,
             "best_validation_accuracy": float(checkpoint.best_model_score),
@@ -564,6 +566,7 @@ def knn_evaluate(args: argparse.Namespace) -> int:
             bank_limit=args.bank_limit,
         )
     result = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "checkpoint": str(Path(args.checkpoint).resolve()),
         "method": config["experiment"].get("method", "fmca_av"),
         "knn_accuracy": accuracy,
@@ -641,6 +644,7 @@ def corruption_evaluate(args: argparse.Namespace) -> int:
             del loader, dataset
         details[corruption_file.stem] = severity_results
     result = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "checkpoint": str(Path(args.checkpoint).resolve()),
         "probe_checkpoint": str(Path(args.probe_checkpoint).resolve()),
         "mean_corruption_accuracy": sum(all_accuracies) / len(all_accuracies),
@@ -720,6 +724,7 @@ def imagenet_robustness_evaluate(args: argparse.Namespace) -> int:
         return evaluate_dataset(WNIDFolderDataset(str(path), wnids, transform))
 
     result: Dict[str, Any] = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "checkpoint": str(Path(args.checkpoint).resolve()),
         "probe_checkpoint": str(Path(args.probe_checkpoint).resolve()),
         "dataset": dataset_name,
