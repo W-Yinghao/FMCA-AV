@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 05:21 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 05:37 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -102,9 +102,9 @@ Both DDP points completed exactly 100 optimizer steps at global parent batch siz
 
 ## Active post-fix work
 
-- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seeds1--4 completed their first 200-epoch chunks. Seed5 and FMCA-AV v8 seeds1--3 currently fill the four-GPU formal cap. The chained watcher uses the same versioned state and leaves global capacity for independent chains. No running training was cancelled.
-- Full held-out TSD: CIFAR-10 watcher `20260809-043414_postfix-cifar10-tsd-full-severity-sweep` resumed a 41-cell manifest and owns the complete 210-cell matrix. Its batch limit remains two after the temporary aggregate increase, so it cannot monopolize the eight-GPU budget. CIFAR-100 watcher `20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry` waits for that full matrix. Both local watchers were restarted in place after the temporary 6-to-8 configuration transition caused one status refresh to reject the intermediate configuration; their manifests and completed Slurm children were preserved. The stopped predecessors and duplicate legacy tail retain their logs and completed versioned cells.
-- E7 factors: watcher `20260809-030719_postfix-e7-factor-suite` has an independent versioned 54-cell plan covering six datasets, three default-channel seeds, and six channel interventions. Its first fourteen trainings have current-version checkpoints. Probes follow after training; no old factor checkpoint is reused.
+- Formal matched-budget SSL: CIFAR-10 FMCA-AV v2 seeds1--5 completed their first 200-epoch chunks. FMCA-AV v8 seeds1--4 now fill the four-GPU formal cap. The chained watcher uses the same versioned state and leaves global capacity for independent chains. No running training was cancelled.
+- Full held-out TSD: CIFAR-10 watcher `20260809-043414_postfix-cifar10-tsd-full-severity-sweep` resumed a 41-cell manifest and owns the complete 210-cell matrix; 55 cells have been submitted at this snapshot. Its batch limit remains two after the temporary aggregate increase, so it cannot monopolize the eight-GPU budget. CIFAR-100 watcher `20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry` waits for that full matrix. Both local watchers were restarted in place after the temporary 6-to-8 configuration transition caused one status refresh to reject the intermediate configuration; their manifests and completed Slurm children were preserved. The stopped predecessors and duplicate legacy tail retain their logs and completed versioned cells.
+- E7 factors: watcher `20260809-030719_postfix-e7-factor-suite` has an independent versioned 54-cell plan covering six datasets, three default-channel seeds, and six channel interventions. Its first 26 trainings have current-version checkpoints or active current-version runs. Probes follow after training; no old factor checkpoint is reused.
 - ImageNet-1K is still deferred: watcher `20260809-045027_postfix-imagenet-formal-state-machine` now gates on `formal_ssl_postfix_state.json` reaching version-matched `SUCCEEDED`, rather than on a hand-off watcher process exiting. An early post-fix CIFAR DDP1 result was migrated to E10 and the ImageNet action index reset to zero; no ImageNet training started. Per-task ImageNet training remains capped at two GPUs and uses the ImageNet A100/L40S/H100 profiles rather than V100 where possible.
 - Persistent downstream watcher `20260809-050108_postfix-complete-downstream-chain-e8` will launch versioned matched-compute, low-label, transfer, localization, and final Slurm CPU renderers only after their post-fix prerequisites, including E8 and the version-only completion audit, finish. Its predecessors were stopped before they launched any child task.
 
