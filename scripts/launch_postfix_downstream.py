@@ -29,10 +29,10 @@ TRANSFER_STATE = Path(f"results/orchestration/formal_transfer_{VERSION}.json")
 LOCALIZATION_STATE = Path(f"results/orchestration/formal_localization_{VERSION}.json")
 IMAGENET_LOW_LABEL_STATE = Path(f"results/orchestration/formal_imagenet_low_label_{VERSION}.json")
 EXTERNAL_WATCHERS = {
-    "tsd_cifar10": "20260809-015613_postfix-cifar10-tsd-full-severity-sweep",
-    "tsd_cifar100": "20260809-020626_postfix-cifar100-tsd-full-severity-after-cifar10",
+    "tsd_cifar10": "20260809-043414_postfix-cifar10-tsd-full-severity-sweep",
+    "tsd_cifar100": "20260809-043436_postfix-cifar100-tsd-full-severity-after-cifar10-retry",
     "factor": "20260809-030719_postfix-e7-factor-suite",
-    "e10": "20260809-025048_postfix-e10-benchmark-chain-retry",
+    "e10": "20260809-041821_postfix-e10-benchmark-chain-fp32moments",
     "imagenet": "20260809-030218_postfix-imagenet-formal-state-machine",
 }
 
@@ -53,6 +53,9 @@ def load(path: Path = STATE_PATH) -> dict:
         state = read(path)
         if state.get("scientific_correctness_version") != VERSION:
             raise RuntimeError(f"refusing legacy downstream state: {path}")
+        # Operational watcher retries preserve scientific artifacts but receive
+        # new human-readable run IDs.  Keep persisted dependencies current.
+        state["external_watchers"] = dict(EXTERNAL_WATCHERS)
         return state
     return {
         "scientific_correctness_version": VERSION,

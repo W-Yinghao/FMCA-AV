@@ -10,6 +10,7 @@ import time
 
 
 POLL_SECONDS = 300
+BATCH_LIMIT = 2
 BASELINE_WATCHER = "20260807-060401_continue-cifar10-baseline-screening-fixed"
 VALIDATION_RUN = "20260807-055116_validate-cifar-augmentation-severity"
 CONFIG = "configs/ssl/cifar10_smoke.json"
@@ -83,6 +84,28 @@ def submit(name: str, overrides: dict[str, object], seed: int) -> str:
         refresh()
 
 
+def save(records: list[dict[str, object]], output: Path) -> None:
+    temporary = output.with_suffix(".tmp")
+    temporary.write_text(json.dumps(records, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(output)
+
+
+def retry_with_capacity(run_id: str) -> str:
+    while True:
+        completed = subprocess.run(
+            ["python3", "-m", "harness.cli", "retry", "--run", run_id],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if completed.returncode == 0:
+            return completed.stdout.strip()
+        if "GPU limit exceeded" not in completed.stderr:
+            raise RuntimeError(completed.stderr.strip())
+        time.sleep(POLL_SECONDS)
+        refresh()
+
+
 def main() -> int:
     run_dir = Path(__import__("os").environ["FMCA_HARNESS_RUN_DIR"])
     artifacts = run_dir / "artifacts"
@@ -91,7 +114,15 @@ def main() -> int:
     wait_success([BASELINE_WATCHER, VALIDATION_RUN])
     output = artifacts / "submitted.json"
     records = json.loads(output.read_text(encoding="utf-8")) if output.is_file() else []
+    for record in records:
+        run_id = str(record["run_id"])
+        if state(run_id) in {"FAILED", "STOPPED", "BLOCKED"}:
+            record["run_id"] = retry_with_capacity(run_id)
+            save(records, output)
+    if records:
+        wait_success([str(record["run_id"]) for record in records])
     existing = {(str(record["channel"]), int(record["level"]), int(record["seed"])) for record in records}
+    inflight: list[str] = []
     for channel, configurations in LEVELS.items():
         for level, overrides in enumerate(configurations):
             for seed_index, seed in enumerate(SEEDS, start=1):
@@ -101,9 +132,13 @@ def main() -> int:
                 run_id = submit(name, overrides, seed)
                 records.append({"channel": channel, "level": level, "seed": seed, "run_id": run_id, "overrides": overrides})
                 existing.add((channel, level, seed))
-                temporary = artifacts / "submitted.json.tmp"
-                temporary.write_text(json.dumps(records, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-                temporary.replace(artifacts / "submitted.json")
+                save(records, output)
+                inflight.append(run_id)
+                if len(inflight) >= BATCH_LIMIT:
+                    wait_success(inflight)
+                    inflight.clear()
+    if inflight:
+        wait_success(inflight)
     time.sleep(POLL_SECONDS)
     wait_success([record["run_id"] for record in records])
     return 0

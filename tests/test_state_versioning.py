@@ -10,15 +10,20 @@ import unittest
 from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION
 from scripts.formal_imagenet_state_machine import load_state as load_imagenet
 from scripts.formal_ssl_state_machine import formal_gpu_capacity
+from scripts.launch_cifar10_tsd_sweep import BATCH_LIMIT as TSD_BATCH_LIMIT, LEVELS as TSD_LEVELS, SEEDS as TSD_SEEDS
 from scripts.formal_imagenet_low_label_state_machine import load as load_imagenet_low_label
 from scripts.formal_localization_state_machine import load as load_localization
 from scripts.formal_transfer_state_machine import load as load_transfer
 from scripts.launch_postfix_factor_suite import load_state as load_factor, plan as factor_plan
 from scripts.launch_e3_imagenet100_recheck import load_state as load_imagenet100_e3
-from scripts.launch_postfix_downstream import load as load_downstream
+from scripts.launch_postfix_downstream import EXTERNAL_WATCHERS, load as load_downstream
 
 
 class StateVersioningTests(unittest.TestCase):
+    def test_cifar10_tsd_plan_is_complete_but_fairly_batched(self) -> None:
+        self.assertEqual(TSD_BATCH_LIMIT, 2)
+        self.assertEqual(sum(len(levels) for levels in TSD_LEVELS.values()) * len(TSD_SEEDS), 210)
+
     def test_formal_ssl_capacity_reserves_global_slots(self) -> None:
         self.assertEqual(formal_gpu_capacity({"max_gpus": 6, "formal_ssl_max_gpus": 4}), 4)
         self.assertEqual(formal_gpu_capacity({"max_gpus": 3, "formal_ssl_max_gpus": 4}), 3)
@@ -73,6 +78,16 @@ class StateVersioningTests(unittest.TestCase):
             downstream_path.write_text(json.dumps({"state": "RUNNING"}), encoding="utf-8")
             with self.assertRaises(RuntimeError):
                 load_downstream(downstream_path)
+
+    def test_downstream_refreshes_operational_watcher_retries(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "downstream.json"
+            path.write_text(json.dumps({
+                "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
+                "state": "RUNNING",
+                "external_watchers": {"tsd_cifar10": "stopped-run"},
+            }), encoding="utf-8")
+            self.assertEqual(load_downstream(path)["external_watchers"], EXTERNAL_WATCHERS)
 
 
 if __name__ == "__main__":
