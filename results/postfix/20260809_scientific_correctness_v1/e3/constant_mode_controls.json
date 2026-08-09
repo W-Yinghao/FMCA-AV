@@ -1,0 +1,10 @@
+[
+  {
+    "centered_effective_rank": 8,
+    "centered_largest_eigenvalue": 0.49475341131502987,
+    "reference_uncentered_trace": 0.954478826578722,
+    "run_id": "20260809-020528_postfix-e3-full-exact-numerical-ablation",
+    "uncentered_largest_eigenvalue": 0.9999999836583507,
+    "uncentered_logdet": 19.10596280296577
+  }
+]

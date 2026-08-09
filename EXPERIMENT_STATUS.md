@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 01:54 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-09 02:11 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -67,6 +67,19 @@ The four analytic calibration configurations were recomputed with the full held-
 The versioned E7 assets are under `results/postfix/20260809_scientific_correctness_v1/e7/`. At this snapshot the calibration table has 26 condition rows and the data-processing table has 20 rows. The severity table is intentionally partial while GPU sources and utility probes continue; it must not yet be used for a final C5 claim.
 
 Renderer job `930476` exposed a partial-data bug when utility accuracy was still missing. The code now keeps such rows in CSV but plots a joint TSD/utility stage only when both values exist. Slurm retry `930477` and newline-normalizing rerender `930480` succeeded.
+
+### E2 conditional-sampling mechanism
+
+The corrected frozen-feature Gaussian variance experiment completed as Slurm `930508`, and renderer `930524` produced 10 post-fix condition rows under `results/postfix/20260809_scientific_correctness_v1/e2/`.
+
+- With parent count fixed, score variance fell from `0.1885` at one view to `0.01667` at 16 views; gradient variance fell from `0.003675` to `1.782e-5`.
+- With total views fixed, score variance fell from `0.09852` to `0.02606`; gradient variance fell from `3.548e-4` to `3.711e-5`.
+
+These are mechanism results on frozen Gaussian features, not yet a final C2 representation-learning conclusion; the CIFAR fixed-anchor experiment must use a newly trained post-fix checkpoint.
+
+### E3 objective and numerical controls
+
+The exact numerical ablation (`930509`) and 20-replicate Gaussian/finite estimator controls (`930510`) completed. Renderer `930525` produced 23 exact numerical rows and 900 estimator-control rows across 45 designs; all 900 estimator records succeeded and none reported nonfinite output. Post-fix assets are under `results/postfix/20260809_scientific_correctness_v1/e3/`. CIFAR/ImageNet training rows remain empty until their post-fix source models exist.
 
 ## Active post-fix work
 
