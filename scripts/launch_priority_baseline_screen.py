@@ -125,7 +125,7 @@ def render(rows: list[dict[str, object]], selected: list[str]) -> None:
               "trainable_parameters", "selected"]
     path = output / "priority_baseline_200epoch_gate.csv"; temporary = path.with_suffix(".csv.tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader()
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader()
         for row in rows:
             writer.writerow({**row, "selected": str(row["method"] in selected).lower()})
     temporary.replace(path)

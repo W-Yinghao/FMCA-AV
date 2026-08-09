@@ -78,7 +78,8 @@ def main() -> int:
     fields = ["configuration", "views", "seed_index", "seed", "train_run", "probe_run",
               "test_accuracy", "validation_accuracy", "gpu_hours", "encoded_views", "trainable_parameters"]
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(rows)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader(); writer.writerows(rows)
     temporary.replace(csv_path)
     write(output / "priority_fmca_200epoch_gate.json", {
         "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
