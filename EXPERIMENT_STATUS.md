@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-10 15:13 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-10 22:51 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -74,6 +74,22 @@ Slurm job `930423` completed successfully. It evaluated 450 conditions covering 
 - `results/postfix/20260809_scientific_correctness_v1/e1/estimator_baselines_caption.txt`
 
 The renderer itself ran through Slurm as job `930431` and completed with exit code 0.
+
+### E1 neural nonlinear pilot
+
+The Lightning FMCA-AV MLP pilot completed all nine planned conditions on two
+moons, GMM, and spiral: three seeds per family, M=8 independent noisy subviews,
+100 epochs and 2,000 optimizer steps per run.  The two isolated H100 shards
+`933151` and `933152` succeeded, followed by CPU aggregation `934100`.
+
+The result is reproducible but unfavorable relative to the fixed-bin 100k-parent
+numerical oracle.  Mean top-k spectrum MAE is `0.21261` for two moons, `0.19852`
+for GMM, and `0.21707` for spiral; corresponding relative L1 errors are
+`0.40703`, `0.53046`, and `0.35790`.  These substantially exceed the proposed
+5% high-resource recovery gate.  The pilot therefore establishes a neural
+approximation boundary, not a successful exact-recovery claim.  Raw per-seed
+rows, three-seed summaries, versioned JSON, SVG, and caption are under
+`results/postfix/20260809_scientific_correctness_v1/e1/neural_nonlinear/`.
 
 ### E7 held-out TSD calibration snapshot
 
@@ -182,13 +198,9 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   `20260809-144329_priority-e4-architecture-permutation-wave` will run three
   paired seeds at the matched 200/800 scheduler point, then linear probes and a
   deterministic reverse-view permutation diagnostic for every checkpoint.
-- The existing E1 nonlinear results are finite-channel empirical SVD results,
-  not neural-network evidence.  A new Lightning FMCA-AV MLP pilot covers two
-  moons, GMM, and spiral with three seeds, continuous clean parent coordinates,
-  M=8 independent noisy subviews, held-out full-matrix SVD, and a fixed-bin
-  high-sample numerical oracle.  Eight CPU regressions passed as Slurm `933142`.
-  Two single-H100 shards `933151` and `933152` are queued in the isolated
-  two-GPU pool; no result is claimed until all nine conditions finish.
+- Eight regressions for the E1 neural nonlinear implementation passed as CPU
+  Slurm `933142`; the completed training and aggregate results are reported in
+  the E1 section above.
 
 After the probe gate, the queue completes the small E4 architecture set and the
 CIFAR-10 E5 finalists end-to-end before starting additional methods.  CIFAR-100
