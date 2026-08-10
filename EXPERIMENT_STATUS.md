@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-09 15:41 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-10 05:17 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -98,7 +98,20 @@ The corrected frozen-feature Gaussian variance experiment completed as Slurm `93
 - With parent count fixed, score variance fell from `0.1885` at one view to `0.01667` at 16 views; gradient variance fell from `0.003675` to `1.782e-5`.
 - With total views fixed, score variance fell from `0.09852` to `0.02606`; gradient variance fell from `3.548e-4` to `3.711e-5`.
 
-These are mechanism results on frozen Gaussian features, not yet a final C2 representation-learning conclusion; the CIFAR fixed-anchor experiment must use a newly trained post-fix checkpoint.
+The CIFAR-10 fixed-anchor experiment then completed as Slurm `932043` from the
+post-fix M=8, seed-1, 200-epoch checkpoint.  It contains 500 repetitions for
+each of M=1/2/4/8/16 under both fixed-parent and fixed-total-view designs.  The
+original artifact omitted its top-level version field, so it remains untouched;
+CPU Slurm `932672` validated the source checkpoint and produced an auditable
+post-fix copy, and CPU renderer `932676` wrote a separate result set under
+`results/postfix/20260809_scientific_correctness_v1/e2/cifar10_fixed_anchor_m8_seed1_epoch200/`.
+
+This CIFAR snapshot does not reproduce a universal variance-reduction claim.
+Relative to M=1, fixed-parent score and gradient variance are higher for every
+M>1.  Under fixed total views, score variance falls to `0.02293` of M=1 at
+M=16; gradient variance is non-monotone at M=2/4, then falls to `0.06332` of
+M=1 at M=16.  These results are retained as a boundary result rather than
+mixed with the favorable frozen-Gaussian table.
 
 ### E3 objective and numerical controls
 
@@ -142,23 +155,24 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   one-percentage-point gate, M=8 advances and M=2 does not consume the full
   800-epoch budget.  The raw rows and decision are in
   `results/postfix/20260809_scientific_correctness_v1/e5/priority_fmca_200epoch_gate.*`.
-- M=8 paired seeds 1--3 are running their 200-to-400 epoch continuation as
-  Slurm `932037`, `932038`, and `932040`.  A persistent priority controller
-  will submit their 600/800-epoch chunks followed by linear probe and k-NN.
-- Strong-baseline screening started with SimCLR `932041` and VICReg `932042`;
-  the bounded controller fills the remaining SimCLR/VICReg/DINO/BYOL paired
-  seed cells as the eight-GPU budget releases slots.
+- M=8 paired seeds 1--3 completed their 400-epoch continuation as Slurm
+  `932037`, `932038`, and `932040`; their 600-epoch chunks are Slurm `932350`,
+  `932570`, and `932664`.  The persistent priority controller will continue
+  selected seeds to 800 epochs followed by linear probe and k-NN.
+- All three SimCLR 200-epoch screening runs succeeded.  VICReg seeds 1--2
+  succeeded and seed 3 is Slurm `932663`; DINO and BYOL remain behind them in
+  the bounded controller.
 - E2 fixed-anchor/fixed-total-view job `932043` and the reduced E3 CIFAR
-  logdet/relative-ridge/AMP job `932044` use the two non-E4/E5 slots.  The
-  associated continuation, screening, and gate regressions passed as Slurm
-  `932045`, `932047`, and `932048`.
-- The bounded E4 wave is staged behind the active eight-GPU batch.  CPU Slurm
+  logdet/relative-ridge/AMP job `932044` succeeded.  The E2 provenance and
+  isolated CPU rendering jobs `932672` and `932676` also succeeded.
+- The bounded E4 wave is active under the six-GPU aggregate budget.  CPU Slurm
   `932052` validated its design rules and `932053` instantiated all four models:
   raw-parent and mean differ from the 11,628,864-parameter final model by 179
   parameters, DeepSets by 1, and concat by 609 (maximum relative difference
   `5.24e-5`).  Every condition executes exactly eight backbone forwards per
   parent; raw-parent uses seven conditional views plus one explicit parent.
-  Controller compile job `932055` passed.  Watcher
+  Controller compile job `932055` passed.  All three raw-parent training runs
+  succeeded; mean seeds 1--2 are Slurm `932428` and `932655`.  Watcher
   `20260809-144329_priority-e4-architecture-permutation-wave` will run three
   paired seeds at the matched 200/800 scheduler point, then linear probes and a
   deterministic reverse-view permutation diagnostic for every checkpoint.

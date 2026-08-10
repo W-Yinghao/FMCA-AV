@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from fmca_av.config import load_config
 from fmca_av.data.cifar import CIFARFiles, CIFARViewTransform
 from fmca_av.objectives import fmca_score
-from fmca_av.operators import estimate_moments
+from fmca_av.operators import SCIENTIFIC_CORRECTNESS_VERSION, estimate_moments
 from fmca_av.vision_module import VisionFMCAAV
 
 
@@ -152,6 +152,7 @@ def main() -> int:
             record["design"] = design
             records.append(record)
     payload = {
+        "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
         "dataset": str(config["data"]["dataset"]), "checkpoint": str(Path(args.checkpoint).resolve()),
         "gradient_parameters": sum(parameter.numel() for parameter in parameters),
         "reference": {"parents": args.reference_parents, "views": args.reference_views,
