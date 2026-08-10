@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-10 05:17 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-10 12:35 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -155,13 +155,15 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   one-percentage-point gate, M=8 advances and M=2 does not consume the full
   800-epoch budget.  The raw rows and decision are in
   `results/postfix/20260809_scientific_correctness_v1/e5/priority_fmca_200epoch_gate.*`.
-- M=8 paired seeds 1--3 completed their 400-epoch continuation as Slurm
-  `932037`, `932038`, and `932040`; their 600-epoch chunks are Slurm `932350`,
-  `932570`, and `932664`.  The persistent priority controller will continue
-  selected seeds to 800 epochs followed by linear probe and k-NN.
-- All three SimCLR 200-epoch screening runs succeeded.  VICReg seeds 1--2
-  succeeded and seed 3 is Slurm `932663`; DINO and BYOL remain behind them in
-  the bounded controller.
+- M=8 paired seeds 1--3 completed both their 400-epoch continuation (`932037`,
+  `932038`, `932040`) and their 600-epoch continuation (`932350`, `932570`,
+  `932664`).  Each 600-epoch checkpoint carries the current scientific version
+  and global optimizer step `105000`.  Their 800-epoch submissions wait for a
+  slot under the six-GPU aggregate limit, then linear probe and k-NN follow.
+- All three SimCLR and all three VICReg 200-epoch screening trainings
+  succeeded.  DINO seed 1 (`932669`) succeeded, while seeds 2--3 are `932848`
+  and `932948`; BYOL remains behind them in the bounded controller.  No
+  baseline result is selected until all paired probes complete.
 - E2 fixed-anchor/fixed-total-view job `932043` and the reduced E3 CIFAR
   logdet/relative-ridge/AMP job `932044` succeeded.  The E2 provenance and
   isolated CPU rendering jobs `932672` and `932676` also succeeded.
@@ -171,8 +173,9 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   parameters, DeepSets by 1, and concat by 609 (maximum relative difference
   `5.24e-5`).  Every condition executes exactly eight backbone forwards per
   parent; raw-parent uses seven conditional views plus one explicit parent.
-  Controller compile job `932055` passed.  All three raw-parent training runs
-  succeeded; mean seeds 1--2 are Slurm `932428` and `932655`.  Watcher
+  Controller compile job `932055` passed.  All three raw-parent and all three
+  mean training runs succeeded.  DeepSets seeds 1--3 are Slurm `932756`,
+  `932828`, and `932842`; concat seed 1 is `932845`.  Watcher
   `20260809-144329_priority-e4-architecture-permutation-wave` will run three
   paired seeds at the matched 200/800 scheduler point, then linear probes and a
   deterministic reverse-view permutation diagnostic for every checkpoint.
