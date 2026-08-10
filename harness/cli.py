@@ -181,14 +181,30 @@ def doctor(_args: argparse.Namespace) -> int:
     return 0
 
 
+def gpu_budget_pool(config: Dict[str, Any], name: str) -> Optional[str]:
+    for pool_name, pool in config.get("extra_gpu_pools", {}).items():
+        if name.startswith(str(pool["name_prefix"])):
+            return str(pool_name)
+    return None
+
+
 def allocation_for(config: Dict[str, Any], mode: str, gpus: int,
-                   jobs: Dict[str, Any]) -> Tuple[List[str], int]:
-    used = sum(int(record.get("requested_gpus", 0)) for record in jobs["jobs"].values()
-               if record.get("state") in ACTIVE_STATES)
-    if used + gpus > int(config["max_gpus"]):
+                   jobs: Dict[str, Any], name: str = "") -> Tuple[List[str], int]:
+    pool_name = gpu_budget_pool(config, name)
+    if pool_name is None:
+        used = sum(int(record.get("requested_gpus", 0)) for record in jobs["jobs"].values()
+                   if (record.get("state") in ACTIVE_STATES and
+                       not record.get("gpu_budget_pool")))
+        limit = int(config["max_gpus"])
+    else:
+        used = sum(int(record.get("requested_gpus", 0)) for record in jobs["jobs"].values()
+                   if (record.get("state") in ACTIVE_STATES and
+                       record.get("gpu_budget_pool") == pool_name))
+        limit = int(config["extra_gpu_pools"][pool_name]["max_gpus"])
+    if used + gpus > limit:
         raise RuntimeError(
-            "GPU limit exceeded: %d active/queued + %d requested > %d"
-            % (used, gpus, int(config["max_gpus"]))
+            "GPU limit exceeded: %d active/queued + %d requested > %d in budget pool %s"
+            % (used, gpus, limit, pool_name or "default")
         )
     if gpus == 0 or mode == "slurm":
         return [], used
@@ -268,12 +284,17 @@ def dry_run(args: argparse.Namespace) -> int:
         with locked():
             jobs = refresh_all_locked(config)
             try:
-                allocated, used = allocation_for(config, mode, args.gpus, jobs)
+                allocated, used = allocation_for(config, mode, args.gpus, jobs, args.name)
             except RuntimeError as exc:
                 allocated = []
-                used = sum(int(record.get("requested_gpus", 0))
-                           for record in jobs["jobs"].values()
-                           if record.get("state") in ACTIVE_STATES)
+                pool_name = gpu_budget_pool(config, args.name)
+                used = sum(
+                    int(record.get("requested_gpus", 0))
+                    for record in jobs["jobs"].values()
+                    if (record.get("state") in ACTIVE_STATES and
+                        ((record.get("gpu_budget_pool") == pool_name) if pool_name else
+                         not record.get("gpu_budget_pool")))
+                )
                 allocation_error = str(exc)
     except Exception as exc:
         return fail(str(exc))
@@ -285,6 +306,7 @@ def dry_run(args: argparse.Namespace) -> int:
         "dry_run": True,
         "name": args.name,
         "requested_gpus": args.gpus,
+        "gpu_budget_pool": gpu_budget_pool(config, args.name),
         "requested_cpus": requested_cpu_count(config, args.gpus, args.profile),
         "active_or_queued_gpus": used,
         "resolved_mode": mode,
@@ -325,6 +347,7 @@ def _create_run_locked(name: str, gpus: int, raw: List[str], final: List[str], m
         "run_id": run_id,
         "name": name,
         "requested_gpus": gpus,
+        "gpu_budget_pool": gpu_budget_pool(config, name),
         "requested_cpus": requested_cpu_count(config, gpus, profile),
         "original_command": raw,
         "final_command": final,
@@ -346,6 +369,7 @@ def _create_run_locked(name: str, gpus: int, raw: List[str], final: List[str], m
         "name": name,
         "state": "QUEUED",
         "requested_gpus": gpus,
+        "gpu_budget_pool": request["gpu_budget_pool"],
         "requested_cpus": request["requested_cpus"],
         "actual_gpu_ids": allocated,
         "pid": None,
@@ -470,7 +494,7 @@ def submit_new(name: str, gpus: int, command: Sequence[str], retry_from: Optiona
                         "GPU limit exceeded: Slurm user submit slots %d/%d occupied "
                         "(%d harness jobs); retry after polling" %
                         (active_slurm_jobs, max_slurm_jobs, active_harness_jobs))
-            allocated, _used = allocation_for(config, mode, gpus, jobs)
+            allocated, _used = allocation_for(config, mode, gpus, jobs, name)
             resume_artifacts_from = None
             if local_watcher and retry_from:
                 candidate = runs_dir(config) / retry_from / "artifacts"

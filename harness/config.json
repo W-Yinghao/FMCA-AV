@@ -1,6 +1,12 @@
 {
   "max_gpus": 6,
   "max_gpus_per_job": 2,
+  "extra_gpu_pools": {
+    "nonlinear_neural": {
+      "max_gpus": 2,
+      "name_prefix": "e1-neural-nonlinear-"
+    }
+  },
   "formal_ssl_max_gpus": 4,
   "allowed_gpu_ids": [],
   "mode": "slurm",

@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from harness import state
+from harness import cli, state
 
 
 class HarnessBudgetConfigTest(unittest.TestCase):
@@ -40,6 +40,22 @@ class HarnessBudgetConfigTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "configured GPU budget"):
             self.load(max_gpus=6, allowed_gpu_ids=list(range(7)))
+
+    def test_named_extra_pool_is_isolated_from_default_budget(self):
+        config = self.load()
+        jobs = {"jobs": {
+            "regular": {"state": "RUNNING", "requested_gpus": 6},
+            "toy": {"state": "RUNNING", "requested_gpus": 1,
+                    "gpu_budget_pool": "nonlinear_neural"},
+        }}
+        _, regular_used = cli.allocation_for(config, "slurm", 0, jobs, "regular-job")
+        _, toy_used = cli.allocation_for(
+            config, "slurm", 1, jobs, "e1-neural-nonlinear-two-moons",
+        )
+        self.assertEqual(regular_used, 6)
+        self.assertEqual(toy_used, 1)
+        with self.assertRaisesRegex(RuntimeError, "nonlinear_neural"):
+            cli.allocation_for(config, "slurm", 2, jobs, "e1-neural-nonlinear-gmm")
 
 
 if __name__ == "__main__":

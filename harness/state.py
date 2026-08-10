@@ -71,6 +71,24 @@ def load_config() -> Dict[str, Any]:
         raise ValueError("config max_gpus must be either 6 or 8")
     if config.get("max_gpus_per_job") != 2:
         raise ValueError("config max_gpus_per_job must be exactly 2")
+    extra_pools = config.get("extra_gpu_pools", {})
+    if not isinstance(extra_pools, dict):
+        raise ValueError("extra_gpu_pools must be an object")
+    prefixes = []
+    for pool_name, pool in extra_pools.items():
+        if not isinstance(pool_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", pool_name):
+            raise ValueError("extra GPU pool names must be filesystem-safe")
+        if not isinstance(pool, dict):
+            raise ValueError("extra GPU pool definitions must be objects")
+        maximum = int(pool.get("max_gpus", 0))
+        prefix = pool.get("name_prefix")
+        if maximum < 1 or maximum > int(config["max_gpus_per_job"]):
+            raise ValueError("extra GPU pool max_gpus must be in 1..max_gpus_per_job")
+        if not isinstance(prefix, str) or not prefix or not re.fullmatch(r"[A-Za-z0-9_.-]+", prefix):
+            raise ValueError("extra GPU pool name_prefix must be non-empty and filesystem-safe")
+        if any(prefix.startswith(value) or value.startswith(prefix) for value in prefixes):
+            raise ValueError("extra GPU pool name_prefix values must not overlap")
+        prefixes.append(prefix)
     if config.get("mode") not in ("auto", "direct", "slurm"):
         raise ValueError("config mode must be auto, direct, or slurm")
     allowed = config.get("allowed_gpu_ids")

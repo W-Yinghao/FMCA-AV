@@ -1,6 +1,6 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-10 12:35 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-10 15:13 CEST. The experiment program is running and is not yet complete.
 
 ## Scientific version boundary
 
@@ -22,6 +22,9 @@ The detailed formula changes, validation, and affected-result audit are in `SERV
   task. Jobs already submitted under the temporary 8-GPU budget are left
   untouched to finish naturally; no successor is admitted until the active
   harness allocation is back within the 6-GPU limit.
+- A separately authorized `nonlinear_neural` pool admits only run names with
+  prefix `e1-neural-nonlinear-` and is hard-limited to 2 additional GPUs.  It
+  is excluded from, and cannot be borrowed by, the regular six-GPU pool.
 - The exhaustive 3,942-action formal queue is paused after its current four-run
   batch.  New GPU allocation is prioritized 70% to E4/E5, 20% to E2/E3, and
   10% to inexpensive E6 evaluation and failure recovery.
@@ -179,6 +182,13 @@ method name are preregistered tie-breakers.  Only selected methods receive seeds
   `20260809-144329_priority-e4-architecture-permutation-wave` will run three
   paired seeds at the matched 200/800 scheduler point, then linear probes and a
   deterministic reverse-view permutation diagnostic for every checkpoint.
+- The existing E1 nonlinear results are finite-channel empirical SVD results,
+  not neural-network evidence.  A new Lightning FMCA-AV MLP pilot covers two
+  moons, GMM, and spiral with three seeds, continuous clean parent coordinates,
+  M=8 independent noisy subviews, held-out full-matrix SVD, and a fixed-bin
+  high-sample numerical oracle.  Eight CPU regressions passed as Slurm `933142`.
+  Two single-H100 shards `933151` and `933152` are queued in the isolated
+  two-GPU pool; no result is claimed until all nine conditions finish.
 
 After the probe gate, the queue completes the small E4 architecture set and the
 CIFAR-10 E5 finalists end-to-end before starting additional methods.  CIFAR-100
