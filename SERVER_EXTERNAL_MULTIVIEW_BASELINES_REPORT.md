@@ -41,6 +41,8 @@ Each successful checkpoint receives the existing frozen linear probe and weighte
 
 The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599 GFLOPs per encoded view for both controls. At two views this is 5.199 GFLOPs per parent and 10.398 GFLOPs for the profiled two-parent forward/objective/backward step; at eight views this is 20.794 GFLOPs per parent and 41.587 GFLOPs per profiled step. These are PyTorch-profiler supported-operator counts, not hardware-peak FLOPs.
 
+The completed HAI profile measures 13.457 supported-operator GFLOPs for a two-parent forward/objective/backward step, 6.728 GFLOPs per parent, and 0.841 GFLOPs per encoded view. Its early exits at the four stage boundaries explain why eight HAI views cost less than eight full-backbone views; the figure still excludes operators unsupported by the PyTorch profiler.
+
 ## Deliberate harness adaptations and source discrepancies
 
 - The existing CIFAR harness reserves 2,500 calibration and 2,500 validation examples, so SSL pretraining uses 45,000 of the 50,000 training images. Official FastSSL and FroSSL results use the full training set.
@@ -104,7 +106,9 @@ All three M=2 raw chains are complete, but their aggregate and reproduction devi
 - `20260811-211041_hai-cpu-regression` / Slurm `936655`: PASS, 6/6 scoped external-baseline tests, including HAI hierarchy, actual augmentation-parameter output, four-stage gradient participation, and stage-loss summation.
 - `20260811-211145_hai-c10-smoke` / Slurm `936666`: FAILED before model execution because the shared config validator accepts only its historical `trace`/`logdet` objective-name vocabulary. The configuration was corrected to retain validator-compatible `name=trace` while recording the actual `base_objective=simsiam_symmetric_negative_cosine`; no scientific code or result was produced by this failed launch.
 - `20260811-211352_hai-c10-smoke-retry`: PASS on A100 in 14 seconds. Two optimizer steps and one validation batch completed with finite losses; peak allocated memory was 1,089 MB.
-- `20260811-211553_hai-baseline-controller-v3`: active local watcher with a fixed 300-second poll. Its first refresh submitted FLOPs run `20260811-212127_hai-c10-flops` / Slurm `936682`, seed-1 pretraining `20260811-212127_hai-c10-seed1-pretrain` / Slurm `936683`, and seed-2 pretraining `20260811-212128_hai-c10-seed2-pretrain` / Slurm `936684`. All three landed on A100; seed 3 remains waiting for one of these slots to release under the six-GPU total limit.
+- `20260811-211553_hai-baseline-controller-v3`: active local watcher with a fixed 300-second poll. Its first refresh submitted FLOPs run `20260811-212127_hai-c10-flops` / Slurm `936682`, seed-1 pretraining `20260811-212127_hai-c10-seed1-pretrain` / Slurm `936683`, and seed-2 pretraining `20260811-212128_hai-c10-seed2-pretrain` / Slurm `936684`. All three landed on A100; seed 3 waited for that short FLOPs slot to release under the six-GPU total limit.
+- `20260811-212127_hai-c10-flops` / Slurm `936682`: PASS on A100, 13.457 supported-operator GFLOPs per two-parent training step.
+- `20260811-212127_hai-c10-seed1-pretrain` / Slurm `936683`, `20260811-212128_hai-c10-seed2-pretrain` / Slurm `936684`, and `20260811-212629_hai-c10-seed3-pretrain` / Slurm `936689`: RUNNING on three A100s. At the 21:26 refresh, seeds 1/2 had finite per-stage and total losses through approximately epochs 5/6; seed 3 had just started after the FLOPs slot was released.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
