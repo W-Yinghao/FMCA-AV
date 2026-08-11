@@ -56,6 +56,16 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - FroSSL: 92.8% for two views (paper Table 5). The paper does not report CIFAR-10 four/eight-view values and states that gains from more CIFAR views were negligible.
 - HAI does not report a CIFAR-10 experiment, so there is no official CIFAR-10 scalar reproduction target.
 
+## Partial completed downstream results
+
+These rows are emitted only after the full per-seed pretrain/probe/kNN/diagnostics chain succeeds. They remain partial until all three paired seeds are complete.
+
+| Method | Views | Seed | Linear probe test | kNN test | Backbone effective rank | Backbone numerical rank | Projector effective rank | Mean absolute projector off-diagonal correlation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| FastSSL-Barlow-Twins | 2 | 20260821 | 84.63% | 78.98% | 1.269 / 2048 | 575 / 2048 | 1.005 / 256 | 0.9746 |
+
+The first seed's linear probe is 1.80 percentage points below the paper's 86.43% two-view mean. This is not yet a three-seed reproduction deviation. The result also uses the declared harness adaptations (45,000-image SSL split and the harness probe rather than the official 200-epoch Adam probe), so the gap cannot be attributed to one cause. Although the covariance entropy effective ranks are very low, the backbone retains 575 modes under the reported relative numerical-rank threshold and reaches 84.63% linear-probe accuracy; the diagnostics are reported as anisotropy/collapse evidence rather than converted into a binary post-hoc label.
+
 ## Validation and results
 
 - `20260811-034147_external-baselines-cpu-tests`: PASS, 4/4 formula/config tests.
@@ -72,6 +82,9 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - `20260811-040549_external-c10-fastssl_barlow_twins-v2-seed1-pretrain` / Slurm `934549`: PASS, 100/100 epochs on A100-SXM4-40GB. The run encoded 8,960,000 views in 2,200.53 seconds (0.6113 GPU-hours, 4,071.7 views/s), peaked at 6,730 MB, and finished with finite train loss 13.2991 and validation loss 13.8442. Its downstream evaluations remain active/pending and no accuracy is inferred from the pretraining loss.
 - `20260811-041050_external-c10-fastssl_barlow_twins-v2-seed2-pretrain` / Slurm `934561`: PASS, 100/100 epochs on A100-PCIE-40GB in 2,444.62 seconds (0.6791 GPU-hours, 3,665.2 views/s), with 6,730 MB peak memory, final train loss 13.1176, and validation loss 13.9410.
 - `20260811-041051_external-c10-fastssl_barlow_twins-v2-seed3-pretrain` / Slurm `934562`: PASS, 100/100 epochs on A100-PCIE-40GB in 2,416.30 seconds (0.6712 GPU-hours, 3,708.1 views/s), with 6,730 MB peak memory, final train loss 12.8863, and validation loss 13.9751.
+- `20260811-044555_external-c10-fastssl_barlow_twins-v2-seed1-linear-probe` / Slurm `934595`: PASS, 84.63% top-1 and 99.35% top-5 test accuracy; best validation accuracy 84.52%.
+- `20260811-045556_external-c10-fastssl_barlow_twins-v2-seed1-knn` / Slurm `934616`: PASS, 78.98% weighted 20-NN test accuracy with a 50,000-sample bank.
+- `20260811-045557_external-c10-fastssl_barlow_twins-v2-seed1-diagnostics` / Slurm `934617`: PASS. The clean-test backbone covariance has effective rank 1.269, relative numerical rank 575/2048, and 0.88% dimensions below standard deviation 0.01; the projector has effective rank 1.005, numerical rank 39/256, and mean absolute off-diagonal correlation 0.9746.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
