@@ -12,6 +12,8 @@ Status: implementation validation in progress. This report is restricted to CIFA
 
 The machine-readable source lock is `configs/external_baseline_sources.json`. Audit checkouts are detached at the commits above under `/projects/EEG-foundation-model/yinghao/FMCA-AV/external_sources/` and are not vendored into this repository.
 
+The official CVF page exposes only the ten-page paper and an arXiv link; it has no supplementary-material link. The arXiv source archive also contains only that manuscript. Consequently, details referenced by the paper as being in an appendix—but absent from the released manuscript—cannot be treated as known settings. In particular, exact shallow-head kernel/stride/channel choices, projection dimensions, and a CIFAR-specific protocol will be recorded as reimplementation assumptions rather than attributed to the authors.
+
 ## Implemented objectives
 
 FastSSL-Barlow-Twins retains the official small two-layer projector and, for more than two views, computes the invariance diagonal estimator against the mean projected view while applying the stronger redundancy penalty to the autocorrelation of that mean. Its redundancy coefficient is (1/d) with (d=256). It does not use the ordinary paired Barlow Twins branch under a new name.
@@ -28,12 +30,14 @@ The first formal matrix is three paired seeds for each of:
 
 | Method | Views | Backbone | Projector | Pretraining epochs | State |
 |---|---:|---|---|---:|---|
-| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | pending validation |
-| FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | pending validation |
-| FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | pending validation |
+| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs active |
+| FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs pending capacity |
+| FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | objective and official-batch scheduler smokes passed; formal runs pending capacity |
 | HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | to be recorded | four stage heads | to be recorded | not started until the first three methods pass |
 
 Each successful checkpoint receives the existing frozen linear probe and weighted kNN evaluation, clean-test backbone/projector covariance spectra, effective rank and collapse diagnostics. Run-level wall time, GPU model, peak memory, encoded views, throughput, parameters, GPU-hours, and supported-operator FLOPs are retained.
+
+The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599 GFLOPs per encoded view for both controls. At two views this is 5.199 GFLOPs per parent and 10.398 GFLOPs for the profiled two-parent forward/objective/backward step; at eight views this is 20.794 GFLOPs per parent and 41.587 GFLOPs per profiled step. These are PyTorch-profiler supported-operator counts, not hardware-peak FLOPs.
 
 ## Deliberate harness adaptations and source discrepancies
 
@@ -57,6 +61,13 @@ Each successful checkpoint receives the existing frozen linear probe and weighte
 - `20260811-034147_external-baselines-cpu-tests`: PASS, 4/4 formula/config tests.
 - `20260811-034825_external-baselines-regression`: PASS, 52/52 existing and new discovered tests.
 - `20260811-035348_external-controller-regression`: PASS, 6/6 scoped formula/config/controller tests.
-- GPU smokes, formal runs, linear probes, kNN, collapse diagnostics, FLOPs, failures, and final numerical summaries: pending.
+- `20260811-040046_external-c10-fastssl_barlow_twins-v8-smoke` / Slurm `934540`: PASS on A100, finite train/validation losses.
+- `20260811-040047_external-c10-fastssl_vicreg-v8-smoke` / Slurm `934541`: PASS on A100, finite train/validation losses.
+- `20260811-040047_external-c10-frossl-v8-smoke` / Slurm `934542`: PASS on A100, finite train/validation losses.
+- `20260811-040145_external-c10-frossl-scheduler-smoke` / Slurm `934544`: NUMERICAL WARNING. The deliberately tiny batch-8 LARS/scheduler check exited successfully but produced a NaN at its second validation point. Because the official FroSSL recipe uses batch 256, this is recorded as a failed small-batch stress condition rather than evidence about the formal configuration.
+- `20260811-040707_external-c10-frossl-scheduler-b256-smoke` / Slurm `934550`: PASS on A100. With the official batch size 256 and real LARS/warmup-cosine schedule, two optimizer steps produced finite train losses 336.98 and 330.43 and finite validation losses 169.76 and 105.05. Peak memory was 9,620 MB.
+- `20260811-040548_external-c10-fastssl_barlow_twins-v2-flops` / Slurm `934547`: PASS, 10.398 supported-operator GFLOPs per two-parent training step.
+- `20260811-040549_external-c10-fastssl_barlow_twins-v8-flops` / Slurm `934548`: PASS, 41.587 supported-operator GFLOPs per two-parent training step.
+- Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
