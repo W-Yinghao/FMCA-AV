@@ -35,6 +35,23 @@
   "hai": {
     "paper_url": "https://openaccess.thecvf.com/content/CVPR2022/html/Zhang_Rethinking_the_Augmentation_Module_in_Contrastive_Learning_Learning_Hierarchical_Augmentation_CVPR_2022_paper.html",
     "official_repository": null,
-    "implementation": "faithful reimplementation after FastSSL and FroSSL validation"
+    "implementation": "in-repository faithful SimSiam + HAI reimplementation",
+    "paper_source_archive": "/projects/EEG-foundation-model/yinghao/FMCA-AV/external_sources/papers/hai_arxiv2206.00227_source.tar",
+    "paper_defined": [
+      "four add-one augmentation pairs ordered crop, color jitter, grayscale, blur, horizontal flip",
+      "four losses at ResNet stage boundaries",
+      "3/2/1/0 extra convolutional layers",
+      "independent three-layer projection heads",
+      "actual color-jitter parameter embedding before each projector",
+      "sum of four stage losses",
+      "SimSiam optimizer schedule"
+    ],
+    "cifar10_adaptation_assumptions": [
+      "ResNet-18 CIFAR backbone matches the existing fair harness rather than the paper's ImageNet ResNet-34/50",
+      "shallow adapters use 3x3 stride-2 Conv-BN-ReLU with channel doubling because kernels, channels, and strides were not published",
+      "augmentation embedding is 512-dimensional as published for ImageNet",
+      "projectors use the standard SimSiam 2048-dimensional output and each stage has its own predictor because HAI does not publish these dimensions or predictor-sharing details",
+      "CIFAR-10 data split and downstream evaluation follow the existing harness because no CIFAR protocol was published"
+    ]
   }
 }

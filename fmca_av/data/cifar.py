@@ -90,19 +90,29 @@ class CIFARViewTransform:
                 )
         return image.resize((self.size, self.size), Image.Resampling.BICUBIC)
 
-    def _color(self, image: Image.Image, generator: Optional[torch.Generator]) -> Image.Image:
+    def _color_with_parameters(
+        self, image: Image.Image, generator: Optional[torch.Generator]
+    ) -> Tuple[Image.Image, Tensor]:
         strength = self.color_jitter_strength
+        brightness = _random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+        contrast = _random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+        saturation = _random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+        hue = _random_uniform(generator, -0.2 * strength, 0.2 * strength)
         operations = [
-            lambda value: ImageEnhance.Brightness(value).enhance(_random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)),
-            lambda value: ImageEnhance.Contrast(value).enhance(_random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)),
-            lambda value: ImageEnhance.Color(value).enhance(_random_uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)),
+            lambda value: ImageEnhance.Brightness(value).enhance(brightness),
+            lambda value: ImageEnhance.Contrast(value).enhance(contrast),
+            lambda value: ImageEnhance.Color(value).enhance(saturation),
         ]
         for index in torch.randperm(len(operations), generator=generator).tolist():
             image = operations[index](image)
-        hue_shift = int(round(_random_uniform(generator, -0.2 * strength, 0.2 * strength) * 255))
+        hue_shift = int(round(hue * 255))
         hsv = np.asarray(image.convert("HSV")).copy()
         hsv[:, :, 0] = (hsv[:, :, 0].astype(np.int16) + hue_shift) % 256
-        return Image.fromarray(hsv.astype(np.uint8), mode="HSV").convert("RGB")
+        image = Image.fromarray(hsv.astype(np.uint8), mode="HSV").convert("RGB")
+        return image, torch.tensor([brightness, contrast, saturation, hue], dtype=torch.float32)
+
+    def _color(self, image: Image.Image, generator: Optional[torch.Generator]) -> Image.Image:
+        return self._color_with_parameters(image, generator)[0]
 
     def __call__(self, channels_first: np.ndarray, generator: Optional[torch.Generator] = None) -> Tensor:
         image = Image.fromarray(np.transpose(channels_first, (1, 2, 0)), mode="RGB")
@@ -126,6 +136,41 @@ class CIFARViewTransform:
             noise = torch.randn(tensor.shape, generator=generator, dtype=tensor.dtype)
             tensor = (tensor + self.additive_noise_std * noise).clamp(0.0, 1.0)
         return (tensor - self.mean) / self.std
+
+
+class HAIViewTransform(CIFARViewTransform):
+    """CVPR 2022 HAI add-one augmentation modules for CIFAR images.
+
+    The paper fixes the hierarchy as crop, then color jitter, grayscale, blur,
+    and horizontal flip.  A call at level ``i`` samples an independent random
+    instance of ``T_i`` and returns the actual color-jitter parameters used by
+    HAI's augmentation embedding.  Neutral parameters denote a skipped jitter.
+    """
+
+    def __call__(
+        self,
+        channels_first: np.ndarray,
+        level: int,
+        generator: Optional[torch.Generator] = None,
+    ) -> Tuple[Tensor, Tensor]:
+        if level not in {1, 2, 3, 4}:
+            raise ValueError("HAI augmentation level must be in 1..4")
+        image = Image.fromarray(np.transpose(channels_first, (1, 2, 0)), mode="RGB")
+        image = self._crop(image, generator) if self.random_resized_crop else image.resize(
+            (self.size, self.size), Image.Resampling.BICUBIC
+        )
+        color_parameters = torch.tensor([1.0, 1.0, 1.0, 0.0], dtype=torch.float32)
+        if float(torch.rand((), generator=generator)) < self.color_jitter_probability:
+            image, color_parameters = self._color_with_parameters(image, generator)
+        if level >= 2 and float(torch.rand((), generator=generator)) < self.grayscale_probability:
+            image = ImageOps.grayscale(image).convert("RGB")
+        if level >= 3 and float(torch.rand((), generator=generator)) < self.gaussian_blur_probability:
+            image = image.filter(ImageFilter.GaussianBlur(radius=self.gaussian_blur_sigma))
+        if level >= 4 and float(torch.rand((), generator=generator)) < self.horizontal_flip_probability:
+            image = ImageOps.mirror(image)
+        array = np.asarray(image, dtype=np.float32).copy()
+        tensor = torch.from_numpy(array).permute(2, 0, 1) / 255.0
+        return (tensor - self.mean) / self.std, color_parameters
 
 
 class MultiViewDataset(Dataset):
@@ -155,6 +200,33 @@ class MultiViewDataset(Dataset):
         if self.parent_transform is not None:
             return views, label, index, self.parent_transform(image)
         return views, label, index
+
+
+class HAIHierarchicalDataset(Dataset):
+    """Eight HAI views ordered as adjacent pairs for stages one through four."""
+
+    def __init__(
+        self,
+        base: Dataset,
+        transform: HAIViewTransform,
+        deterministic_seed: Optional[int] = None,
+    ) -> None:
+        self.base = base
+        self.transform = transform
+        self.deterministic_seed = deterministic_seed
+
+    def __len__(self) -> int:
+        return len(self.base)
+
+    def __getitem__(self, index: int):
+        image, label = self.base[index]
+        generator = None
+        if self.deterministic_seed is not None:
+            generator = torch.Generator().manual_seed(self.deterministic_seed + index)
+        transformed = [self.transform(image, level, generator) for level in range(1, 5) for _ in range(2)]
+        views = torch.stack([value[0] for value in transformed])
+        augmentation_parameters = torch.stack([value[1] for value in transformed])
+        return views, label, index, augmentation_parameters
 
 
 class CIFARProbeTransform:
@@ -240,6 +312,9 @@ class CIFARDataModule:
         validation_indices = permutation[calibration_size:calibration_size + validation_size]
         training_indices = permutation[calibration_size + validation_size:]
         augmentation = self.config.get("augmentation", {})
+        view_construction = str(self.config.get("view_construction", "independent"))
+        if view_construction not in {"independent", "hai_hierarchical"}:
+            raise ValueError("data.view_construction must be independent or hai_hierarchical")
         transform = CIFARViewTransform(augmentation)
         parent_transform = (
             CIFARProbeTransform(
@@ -251,23 +326,40 @@ class CIFARDataModule:
             if bool(self.config.get("include_raw_parent", False)) else None
         )
         views = int(self.config["num_views"])
-        self.datasets = {
-            "train": MultiViewDataset(
-                Subset(base_train, training_indices), transform, views,
-                parent_transform=parent_transform,
-            ),
-            "calibration": MultiViewDataset(
-                Subset(base_train, calibration_indices), transform, views,
-                self.seed + 100000, parent_transform,
-            ),
-            "val": MultiViewDataset(
-                Subset(base_train, validation_indices), transform, views,
-                self.seed + 200000, parent_transform,
-            ),
-            "test": MultiViewDataset(
-                base_test, transform, views, self.seed + 300000, parent_transform,
-            ),
-        }
+        if view_construction == "hai_hierarchical":
+            if views != 8:
+                raise ValueError("HAI hierarchical construction requires exactly eight views")
+            if parent_transform is not None:
+                raise ValueError("HAI hierarchical construction does not support include_raw_parent")
+            hierarchical_transform = HAIViewTransform(augmentation)
+            self.datasets = {
+                "train": HAIHierarchicalDataset(Subset(base_train, training_indices), hierarchical_transform),
+                "calibration": HAIHierarchicalDataset(
+                    Subset(base_train, calibration_indices), hierarchical_transform, self.seed + 100000
+                ),
+                "val": HAIHierarchicalDataset(
+                    Subset(base_train, validation_indices), hierarchical_transform, self.seed + 200000
+                ),
+                "test": HAIHierarchicalDataset(base_test, hierarchical_transform, self.seed + 300000),
+            }
+        else:
+            self.datasets = {
+                "train": MultiViewDataset(
+                    Subset(base_train, training_indices), transform, views,
+                    parent_transform=parent_transform,
+                ),
+                "calibration": MultiViewDataset(
+                    Subset(base_train, calibration_indices), transform, views,
+                    self.seed + 100000, parent_transform,
+                ),
+                "val": MultiViewDataset(
+                    Subset(base_train, validation_indices), transform, views,
+                    self.seed + 200000, parent_transform,
+                ),
+                "test": MultiViewDataset(
+                    base_test, transform, views, self.seed + 300000, parent_transform,
+                ),
+            }
 
     def _loader(self, split: str, shuffle: bool) -> DataLoader:
         workers = int(self.config.get("num_workers", 4))

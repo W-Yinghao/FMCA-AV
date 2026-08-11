@@ -16,6 +16,7 @@ from torch import Tensor, nn
 import torch.nn.functional as functional
 
 from .backbones import build_backbone
+from .hai import HAIBackbone, HAISimSiamHeads
 from .lars import LARS
 from .models import MLP
 from .objectives import trace_score
@@ -177,16 +178,30 @@ class BaselineSSL(L.LightningModule):
         supported = {
             "simclr", "barlow_twins", "vicreg", "spectral_contrastive",
             "fastsiam", "byol", "moco_v2", "dino", "dcca", "vamp2",
-            "fastssl_barlow_twins", "fastssl_vicreg", "frossl",
+            "fastssl_barlow_twins", "fastssl_vicreg", "frossl", "hai_simsiam",
         }
         if self.method not in supported:
             raise ValueError("unsupported baseline method: " + self.method)
-        self.backbone = build_backbone(
-            str(model.get("backbone", "resnet18_cifar")),
-            width=int(model.get("backbone_width", 64)),
-        )
+        backbone_name = str(model.get("backbone", "resnet18_cifar"))
+        backbone_width = int(model.get("backbone_width", 64))
+        if self.method == "hai_simsiam":
+            if backbone_name != "resnet18_cifar":
+                raise ValueError("the scoped CIFAR HAI reimplementation requires resnet18_cifar")
+            self.backbone = HAIBackbone(backbone_width)
+        else:
+            self.backbone = build_backbone(backbone_name, width=backbone_width)
         projection_dim = int(model.get("projection_dim", 128))
-        if self.method in {"fastssl_barlow_twins", "fastssl_vicreg"}:
+        self.hai_heads = None
+        if self.method == "hai_simsiam":
+            self.hai_heads = HAISimSiamHeads(
+                self.backbone.stage_channels,
+                self.backbone.output_dim,
+                int(model.get("augmentation_embedding_dim", 128)),
+                int(model.get("projection_hidden_dim", 2048)),
+                projection_dim,
+                int(model.get("predictor_hidden_dim", 512)),
+            )
+        elif self.method in {"fastssl_barlow_twins", "fastssl_vicreg"}:
             self.projector = FastSSLProjector(self.backbone.output_dim, projection_dim)
         elif self.method == "frossl":
             self.projector = FroSSLProjector(
@@ -415,6 +430,23 @@ class BaselineSSL(L.LightningModule):
 
     def _shared_step(self, batch: Tuple[Tensor, Tensor, Tensor], split: str) -> Tensor:
         views = batch[0]
+        if self.method == "hai_simsiam":
+            if len(batch) < 4:
+                raise ValueError("HAI batches must include actual augmentation parameters")
+            assert self.hai_heads is not None
+            loss, stage_losses = self.hai_heads.loss(self.backbone, views, batch[3])
+            encoded_count = views.shape[0] * views.shape[1]
+            for index, stage_loss in enumerate(stage_losses, 1):
+                self.log(
+                    f"{split}/stage{index}_loss", stage_loss, on_step=False,
+                    on_epoch=True, sync_dist=True,
+                )
+            world_size = torch.distributed.get_world_size() if torch.distributed.is_available() and torch.distributed.is_initialized() else 1
+            self.log(f"{split}/loss", loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{split}/encoded_views", float(encoded_count * world_size), on_step=False, on_epoch=True, reduce_fx="sum", sync_dist=True)
+            if split == "val":
+                self.log("val_score", -loss, on_step=False, on_epoch=True, sync_dist=True)
+            return loss
         if views.shape[1] < 2:
             raise ValueError("SSL baselines require at least two views")
         multiview_methods = {"fastssl_barlow_twins", "fastssl_vicreg", "frossl"}
@@ -494,6 +526,12 @@ class BaselineSSL(L.LightningModule):
         if split == "val":
             self.log("val_score", -loss, on_step=False, on_epoch=True, sync_dist=True)
         return loss
+
+    def diagnostic_projection(self, features: Tensor) -> Tensor:
+        if self.method == "hai_simsiam":
+            assert self.hai_heads is not None
+            return self.hai_heads.diagnostic_projection(features)
+        return self.projector(features)
 
     def training_step(self, batch: Tuple[Tensor, Tensor, Tensor], batch_idx: int) -> Tensor:
         return self._shared_step(batch, "train")

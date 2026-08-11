@@ -1,0 +1,79 @@
+{
+  "experiment": {
+    "name": "cifar10-hai-simsiam-v8",
+    "family": "vision_ssl",
+    "method": "hai_simsiam",
+    "claim_id": "external-multilayer-baseline-hai-cvpr2022"
+  },
+  "seed": 20260821,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "cifar10",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10",
+    "n_calibration": 2500,
+    "n_val": 2500,
+    "num_views": 8,
+    "view_construction": "hai_hierarchical",
+    "batch_size": 256,
+    "num_workers": 8,
+    "augmentation": {
+      "random_resized_crop": true,
+      "min_scale": 0.08,
+      "color_jitter_probability": 0.8,
+      "color_jitter_strength": 1.0,
+      "grayscale_probability": 0.2,
+      "horizontal_flip_probability": 0.5,
+      "gaussian_blur_probability": 0.5,
+      "gaussian_blur_sigma": 1.0,
+      "mean": [0.4914, 0.4822, 0.4465],
+      "std": [0.2470, 0.2435, 0.2616]
+    }
+  },
+  "model": {
+    "backbone": "resnet18_cifar",
+    "backbone_width": 64,
+    "augmentation_embedding_dim": 512,
+    "projection_hidden_dim": 2048,
+    "projection_dim": 2048,
+    "predictor_hidden_dim": 512
+  },
+  "objective": {
+    "name": "trace",
+    "base_objective": "simsiam_symmetric_negative_cosine",
+    "stage_reduction": "sum",
+    "stop_gradient": true
+  },
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.05,
+    "momentum": 0.9,
+    "weight_decay": 0.0001,
+    "scheduler": "cosine",
+    "scheduler_t_max": 200
+  },
+  "trainer": {
+    "accelerator": "gpu",
+    "devices": 1,
+    "strategy": "auto",
+    "max_epochs": 200,
+    "precision": "32-true",
+    "gradient_clip_val": null,
+    "deterministic": true,
+    "log_every_n_steps": 20,
+    "enable_progress_bar": false
+  },
+  "probe": {
+    "n_val": 5000,
+    "batch_size": 256,
+    "num_workers": 8,
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "weight_decay": 0.0,
+    "max_epochs": 100,
+    "accelerator": "gpu",
+    "devices": 1,
+    "precision": "32-true",
+    "log_every_n_steps": 20,
+    "enable_progress_bar": false
+  }
+}

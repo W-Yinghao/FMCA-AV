@@ -42,7 +42,9 @@ def elapsed(left: object, right: object) -> float:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--state-file", required=True); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--state-file", required=True)
+    parser.add_argument("--output-subdir", default=""); args = parser.parse_args()
+    output = OUTPUT / args.output_subdir if args.output_subdir else OUTPUT
     state = read(Path(args.state_file))
     if state.get("scientific_correctness_version") != SCIENTIFIC_CORRECTNESS_VERSION:
         raise RuntimeError("refusing to aggregate another correctness version")
@@ -95,9 +97,9 @@ def main() -> int:
             "projector_mean_abs_offdiag_correlation": diagnostics["projector"]["mean_absolute_off_diagonal_correlation"],
             "projector_collapsed_dimension_fraction": diagnostics["projector"]["collapsed_dimension_fraction_std_lt_1e-2"],
         })
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=True)
     fields = list(rows[0])
-    csv_path = OUTPUT / "run_matrix.csv"; temporary = csv_path.with_suffix(".csv.tmp")
+    csv_path = output / "run_matrix.csv"; temporary = csv_path.with_suffix(".csv.tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n"); writer.writeheader(); writer.writerows(rows)
     temporary.replace(csv_path)
@@ -108,7 +110,7 @@ def main() -> int:
         ("frossl", 2): 92.8,
     }
     for method in sorted({str(row["method"]) for row in rows}):
-        for views in (2, 8):
+        for views in sorted({int(row["views"]) for row in rows if row["method"] == method}):
             group = [row for row in rows if row["method"] == method and row["views"] == views]
             values = [100 * float(row["linear_probe_accuracy"]) for row in group]
             target = official.get((method, views))
@@ -123,16 +125,17 @@ def main() -> int:
             })
     payload = {
         "scientific_correctness_version": SCIENTIFIC_CORRECTNESS_VERSION,
-        "scope": "CIFAR-10 only; FastSSL-Barlow-Twins, FastSSL-VICReg, and original FroSSL",
+        "scope": "CIFAR-10 external multi-view/multi-layer SSL baselines; state-file scoped",
         "source_lock": read(ROOT / "configs" / "external_baseline_sources.json"),
         "rows": rows, "summaries": summaries,
         "comparison_notes": {
             "fastssl_barlow_twins": "paper Table 7, projector 256, 100 pretraining epochs",
             "fastssl_vicreg": "paper plots but does not tabulate an exact CIFAR-10 2/8-view value",
             "frossl": "paper Table 5 reports CIFAR-10 only for 2 views and states 4/8-view gains were negligible",
+            "hai_simsiam": "faithful reimplementation; the HAI paper reports ImageNet/ImageNet-100, not CIFAR-10",
         },
     }
-    atomic_json(OUTPUT / "results.json", payload)
+    atomic_json(output / "results.json", payload)
     lines = [
         "# CIFAR-10 external multi-view SSL baselines", "",
         f"Scientific correctness version: `{SCIENTIFIC_CORRECTNESS_VERSION}`.", "",
@@ -148,9 +151,9 @@ def main() -> int:
             f"{item['gpu_hours_total']:.2f} | {target} | {delta} |"
         )
     lines.extend(["", "Full run-level cost and collapse/covariance diagnostics are in `run_matrix.csv`.", ""])
-    report = OUTPUT / "README.md"; temporary_report = report.with_suffix(".md.tmp")
+    report = output / "README.md"; temporary_report = report.with_suffix(".md.tmp")
     temporary_report.write_text("\n".join(lines), encoding="utf-8"); temporary_report.replace(report)
-    print(json.dumps({"rows": len(rows), "summaries": len(summaries), "output": str(OUTPUT)}, indent=2))
+    print(json.dumps({"rows": len(rows), "summaries": len(summaries), "output": str(output)}, indent=2))
     return 0
 
 

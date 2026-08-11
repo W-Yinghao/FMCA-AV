@@ -6,10 +6,12 @@ import torch
 import torch.nn.functional as functional
 
 from fmca_av.baselines import (
+    BaselineSSL,
     fastssl_barlow_twins_loss,
     fastssl_vicreg_loss,
     frossl_loss,
 )
+from fmca_av.data.cifar import HAIHierarchicalDataset, HAIViewTransform
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,6 +70,7 @@ class ExternalMultiviewBaselineTests(unittest.TestCase):
             "cifar10_fastssl_barlow_twins.json": ("fastssl_barlow_twins", 256, "adam"),
             "cifar10_fastssl_vicreg.json": ("fastssl_vicreg", 256, "adam"),
             "cifar10_frossl.json": ("frossl", 1024, "lars"),
+            "cifar10_hai_simsiam.json": ("hai_simsiam", 2048, "sgd"),
         }
         for filename, (method, projection, optimizer) in expected.items():
             payload = json.loads((ROOT / "configs" / "ssl" / filename).read_text(encoding="utf-8"))
@@ -76,6 +79,56 @@ class ExternalMultiviewBaselineTests(unittest.TestCase):
             self.assertEqual(payload["experiment"]["method"], method)
             self.assertEqual(payload["model"]["projection_dim"], projection)
             self.assertEqual(payload["optimizer"]["name"], optimizer)
+
+    def test_hai_add_one_dataset_returns_four_adjacent_pairs_and_parameters(self) -> None:
+        class OneImage(torch.utils.data.Dataset):
+            def __len__(self) -> int:
+                return 1
+
+            def __getitem__(self, index: int):
+                image = (torch.arange(3 * 32 * 32).reshape(3, 32, 32) % 256).to(torch.uint8)
+                return image.numpy(), 4
+
+        transform = HAIViewTransform({
+            "size": 32,
+            "min_scale": 0.5,
+            "color_jitter_probability": 1.0,
+            "color_jitter_strength": 0.5,
+            "grayscale_probability": 1.0,
+            "gaussian_blur_probability": 1.0,
+            "horizontal_flip_probability": 1.0,
+        })
+        dataset = HAIHierarchicalDataset(OneImage(), transform, deterministic_seed=17)
+        views, label, index, parameters = dataset[0]
+        self.assertEqual(views.shape, (8, 3, 32, 32))
+        self.assertEqual(parameters.shape, (8, 4))
+        self.assertTrue(torch.isfinite(views).all())
+        self.assertTrue(torch.isfinite(parameters).all())
+        self.assertEqual((label, index), (4, 0))
+
+    def test_hai_uses_all_stage_pairs_and_sums_stage_losses(self) -> None:
+        config = {
+            "experiment": {"method": "hai_simsiam"},
+            "model": {
+                "backbone": "resnet18_cifar", "backbone_width": 4,
+                "augmentation_embedding_dim": 4, "projection_hidden_dim": 8,
+                "projection_dim": 6, "predictor_hidden_dim": 5,
+            },
+            "objective": {},
+            "optimizer": {"name": "sgd", "learning_rate": 0.05, "scheduler": "none"},
+            "trainer": {"max_epochs": 1},
+        }
+        model = BaselineSSL(config)
+        model.log = lambda *args, **kwargs: None
+        views = torch.randn(3, 8, 3, 32, 32, requires_grad=True)
+        parameters = torch.randn(3, 8, 4)
+        loss, stage_losses = model.hai_heads.loss(model.backbone, views, parameters)
+        self.assertEqual(len(stage_losses), 4)
+        self.assertTrue(torch.allclose(loss, torch.stack(stage_losses).sum()))
+        loss.backward()
+        for stage in range(4):
+            pair_gradient = views.grad[:, 2 * stage:2 * stage + 2]
+            self.assertGreater(float(pair_gradient.abs().sum()), 0.0)
 
 
 if __name__ == "__main__":

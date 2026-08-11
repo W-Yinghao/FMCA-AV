@@ -8,7 +8,7 @@ Status: implementation validation in progress. This report is restricted to CIFA
 |---|---|---|---|---|---|
 | FastSSL-Barlow-Twins / FastSSL-VICReg | <https://github.com/kumarkrishna/fastssl> | `main` | `96dfa37be7d46f4814a410affd6269fefab9ec32` | `setup.py` declares MIT; the pinned tree has no root `LICENSE` file | The author objective and small projector are dependency-free ports into the existing Lightning harness; results are harness adaptations, not executions of the FFCV training script |
 | FroSSL | <https://github.com/OFSkean/FroSSL> | `main` | `e841c5769944d4d58feeaf0258aff27a9d3934b3` | `setup.py` and source headers declare MIT; the pinned tree has no root `LICENSE` file | The original linear-kernel multiview FroSSL objective, projector, and LARS optimizer are ported into the existing Lightning harness; EMP-FroSSL and all bundled alternative losses are excluded |
-| HAI | No author repository was found; paper: <https://openaccess.thecvf.com/content/CVPR2022/html/Zhang_Rethinking_the_Augmentation_Module_in_Contrastive_Learning_Learning_Hierarchical_Augmentation_CVPR_2022_paper.html> | n/a | n/a | paper only | Faithful reimplementation will start only after FastSSL/FroSSL validation passes; all under-specified CIFAR choices will be labeled as implementation assumptions |
+| HAI | No author repository was found; paper: <https://openaccess.thecvf.com/content/CVPR2022/html/Zhang_Rethinking_the_Augmentation_Module_in_Contrastive_Learning_Learning_Hierarchical_Augmentation_CVPR_2022_paper.html> | n/a | n/a | paper only | In-repository faithful `SimSiam + HAI` reimplementation; all under-specified CIFAR choices are labeled as implementation assumptions |
 
 The machine-readable source lock is `configs/external_baseline_sources.json`. Audit checkouts are detached at the commits above under `/projects/EEG-foundation-model/yinghao/FMCA-AV/external_sources/` and are not vendored into this repository.
 
@@ -22,6 +22,8 @@ FastSSL-VICReg retains the official linear-complexity estimator: each view is co
 
 FroSSL uses the official `multiview_frossl_loss_func` semantics: coordinate-wise normalization over parents, alignment to the mean view, trace-normalized linear Gram matrices, and the log Frobenius regularizer. The view-dependent invariance weights are 1.4 for two views and 2.0 for eight views. No EMP, MMCR, W-MSE, Barlow Twins, or VICReg component is present.
 
+HAI is implemented as the paper's generic wrapper around SimSiam, not as a renamed FMCA or plain multi-layer loss. For each image, four independently sampled add-one augmentation pairs use `crop+color`, then add grayscale, blur, and horizontal flip. The pairs supervise ResNet stages 1--4 respectively. Shallow features pass through 3/2/1 extra convolutional layers, stage 4 uses identity, and each stage has an independent three-layer projector and SimSiam predictor. The actual brightness/contrast/saturation/hue parameters are embedded by Linear-BN-ReLU and concatenated before each projector. The four symmetric stop-gradient negative-cosine losses are summed exactly as the paper's overall formula specifies.
+
 The pinned FroSSL class always calls `multiview_frossl_loss_func`, including for its two-view case. In that current function the kernel is fixed to linear and the configured `alpha`/`kernel_type` fields are not read; the adapter records those fields for provenance but does not invent an effect for them.
 
 ## Formal run matrix
@@ -33,9 +35,9 @@ The first formal matrix is three paired seeds for each of:
 | FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2/M=8 three-seed full chains passed |
 | FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 full chains and M=8 pretraining passed; remaining M=8 evaluations active |
 | FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | M=2 three-seed pretraining passed; downstream evaluations and M=8 pending |
-| HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | to be recorded | four stage heads | to be recorded | not started until the first three methods pass |
+| HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | CIFAR ResNet-18 | four independent three-layer heads | 200 | implementation regression passed; GPU validation/formal controller active |
 
-Each successful checkpoint receives the existing frozen linear probe and weighted kNN evaluation, clean-test backbone/projector covariance spectra, effective rank and collapse diagnostics. Run-level wall time, GPU model, peak memory, encoded views, throughput, parameters, GPU-hours, and supported-operator FLOPs are retained.
+Each successful checkpoint receives the existing frozen linear probe and weighted kNN evaluation, clean-test backbone/projector covariance spectra, effective rank and collapse diagnostics. HAI's clean-test projector diagnostic explicitly uses the neutral color transform vector `[1,1,1,0]`; downstream evaluation uses the backbone alone, as the paper discards auxiliary heads. Run-level wall time, GPU model, peak memory, encoded views, throughput, parameters, GPU-hours, and supported-operator FLOPs are retained.
 
 The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599 GFLOPs per encoded view for both controls. At two views this is 5.199 GFLOPs per parent and 10.398 GFLOPs for the profiled two-parent forward/objective/backward step; at eight views this is 20.794 GFLOPs per parent and 41.587 GFLOPs per profiled step. These are PyTorch-profiler supported-operator counts, not hardware-peak FLOPs.
 
@@ -49,6 +51,7 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - The official FroSSL class trains an online classifier on detached backbone features. Omitting that classifier does not change backbone gradients, but removes its small parameter/optimizer/time overhead; cost comparisons will identify this difference.
 - All formal jobs use one GPU, so the official per-device objective statistics are unchanged. The adapter supports global differentiable gathering if later invoked under DDP, but DDP is not part of this matrix.
 - Two attempts at one FastSSL-VICReg M=8 kNN evaluation landed on the same L40S host (`node51`) and failed while loading the checkpoint with an uncorrectable ECC error. The unchanged command succeeded when retried on H100. Remaining jobs are constrained to the existing A100/H100 partition policy; this is a hardware exclusion, not a scientific-configuration change.
+- The HAI paper trains ResNet-34/50 on ImageNet/ImageNet-100 and does not publish CIFAR-10 settings. The fair harness therefore uses its standard CIFAR ResNet-18, 45,000-image SSL split, and standard probe/kNN diagnostics. The unpublished shallow adapter details are fixed as 3x3 stride-2 Conv-BN-ReLU blocks that double channels. Projectors use the standard SimSiam 2048-dimensional output and each stage gets an independent predictor because projection dimensions and predictor-sharing details are unpublished. The paper's published 3/2/1 layer counts and 512-dimensional augmentation embedding are retained. These are explicit reimplementation assumptions, not attributed to the authors.
 
 ## Official CIFAR-10 comparison targets
 
@@ -98,6 +101,10 @@ All three M=2 raw chains are complete, but their aggregate and reproduction devi
 - `20260811-144755_external-c10-fastssl_vicreg-v8-seed1-knn` / Slurm `935856`: FAILED, identical uncorrectable ECC on the same host with the unchanged command.
 - `20260811-145224_external-c10-fastssl_vicreg-v8-seed1-knn` / Slurm `935877`: PASS after the unchanged command was explicitly retried on H100.
 - `20260811-145246_external-controller-a100-h100-policy-test` / Slurm `935881`: PASS, 2/2 controller tests after excluding the faulty L40S host from remaining submissions.
+- `20260811-211041_hai-cpu-regression` / Slurm `936655`: PASS, 6/6 scoped external-baseline tests, including HAI hierarchy, actual augmentation-parameter output, four-stage gradient participation, and stage-loss summation.
+- `20260811-211145_hai-c10-smoke` / Slurm `936666`: FAILED before model execution because the shared config validator accepts only its historical `trace`/`logdet` objective-name vocabulary. The configuration was corrected to retain validator-compatible `name=trace` while recording the actual `base_objective=simsiam_symmetric_negative_cosine`; no scientific code or result was produced by this failed launch.
+- `20260811-211352_hai-c10-smoke-retry`: PASS on A100 in 14 seconds. Two optimizer steps and one validation batch completed with finite losses; peak allocated memory was 1,089 MB.
+- `20260811-211553_hai-baseline-controller-v3`: active local watcher with a fixed 300-second poll. Its first refresh submitted FLOPs run `20260811-212127_hai-c10-flops` / Slurm `936682`, seed-1 pretraining `20260811-212127_hai-c10-seed1-pretrain` / Slurm `936683`, and seed-2 pretraining `20260811-212128_hai-c10-seed2-pretrain` / Slurm `936684`. All three landed on A100; seed 3 remains waiting for one of these slots to release under the six-GPU total limit.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.

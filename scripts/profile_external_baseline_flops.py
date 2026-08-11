@@ -34,16 +34,22 @@ def main() -> int:
     images = torch.randn(args.batch, args.views, 3, 32, 32, device="cuda")
     model.zero_grad(set_to_none=True)
     with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], with_flops=True) as trace:
-        projections = model.projector(model.backbone(images.flatten(0, 1))).reshape(args.batch, args.views, -1)
         objective = config["objective"]
+        if model.method == "hai_simsiam":
+            if args.views != 8:
+                raise ValueError("HAI FLOP profiling requires its eight hierarchical views")
+            parameters = torch.randn(args.batch, 8, 4, device="cuda")
+            loss, _ = model.hai_heads.loss(model.backbone, images, parameters)
+        else:
+            projections = model.projector(model.backbone(images.flatten(0, 1))).reshape(args.batch, args.views, -1)
         if model.method == "fastssl_barlow_twins":
             loss = fastssl_barlow_twins_loss(projections, objective["off_diagonal_weight"])
         elif model.method == "fastssl_vicreg":
             loss = fastssl_vicreg_loss(projections, objective["invariance_weight"], objective["variance_weight"])
         elif model.method == "frossl":
             loss = frossl_loss(projections, objective["invariance_weight"])
-        else:
-            raise ValueError("profile accepts FastSSL-Barlow-Twins, FastSSL-VICReg, or FroSSL")
+        elif model.method != "hai_simsiam":
+            raise ValueError("unsupported external baseline FLOP profile")
         loss.backward()
     torch.cuda.synchronize()
     flops = sum(int(event.flops or 0) for event in trace.key_averages())

@@ -95,7 +95,7 @@ def main() -> int:
     for images, _ in loader:
         images = images.to(device, non_blocking=True)
         backbone = model.backbone(images)
-        projection = model.projector(backbone)
+        projection = model.diagnostic_projection(backbone)
         take = min(len(images), args.max_samples - seen)
         backbone_values.append(backbone[:take].cpu())
         projection_values.append(projection[:take].cpu())
@@ -109,6 +109,10 @@ def main() -> int:
         "dataset": "cifar10-test-clean",
         "backbone": spectral_diagnostics(torch.cat(backbone_values)),
         "projector": spectral_diagnostics(torch.cat(projection_values)),
+        "projector_input_semantics": (
+            "HAI final-stage projector with neutral [brightness=1, contrast=1, saturation=1, hue=0] embedding"
+            if model.method == "hai_simsiam" else "baseline projector applied to frozen backbone representation"
+        ),
         "threshold_note": "numerical rank uses lambda > 1e-6 * lambda_max; collapsed dimensions use std < 1e-2",
     }
     output = Path(args.output).resolve() if args.output else Path(os.environ["FMCA_HARNESS_RUN_DIR"]) / "artifacts" / "diagnostics.json"
