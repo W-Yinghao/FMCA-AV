@@ -207,6 +207,9 @@ def main() -> int:
         if any(record.get("run_id") for record in records.values()):
             refresh()
             state["last_polled_at"] = now()
+            # Persist every scheduled refresh even when no run changes state.
+            # This keeps the on-disk heartbeat truthful without adding polls.
+            write(state_file, state)
         changed = False
         for record in records.values():
             run_id = str(record.get("run_id", ""))

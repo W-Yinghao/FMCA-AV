@@ -61,6 +61,7 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - `20260811-034147_external-baselines-cpu-tests`: PASS, 4/4 formula/config tests.
 - `20260811-034825_external-baselines-regression`: PASS, 52/52 existing and new discovered tests.
 - `20260811-035348_external-controller-regression`: PASS, 6/6 scoped formula/config/controller tests.
+- `20260811-042332_external-controller-heartbeat-test` / Slurm `934572`: PASS, 2/2 controller tests after making every scheduled 300-second refresh persist its on-disk heartbeat even when no run changes state.
 - `20260811-040046_external-c10-fastssl_barlow_twins-v8-smoke` / Slurm `934540`: PASS on A100, finite train/validation losses.
 - `20260811-040047_external-c10-fastssl_vicreg-v8-smoke` / Slurm `934541`: PASS on A100, finite train/validation losses.
 - `20260811-040047_external-c10-frossl-v8-smoke` / Slurm `934542`: PASS on A100, finite train/validation losses.
