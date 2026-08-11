@@ -63,6 +63,7 @@ These rows are emitted only after the full per-seed pretrain/probe/kNN/diagnosti
 | Method | Views | Seed | Linear probe test | kNN test | Backbone effective rank | Backbone numerical rank | Projector effective rank | Mean absolute projector off-diagonal correlation |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | FastSSL-Barlow-Twins | 2 | 20260821 | 84.63% | 78.98% | 1.269 / 2048 | 575 / 2048 | 1.005 / 256 | 0.9746 |
+| FastSSL-Barlow-Twins | 2 | 20260822 | 84.12% | 79.18% | 1.557 / 2048 | 884 / 2048 | 1.011 / 256 | 0.9427 |
 
 The first seed's linear probe is 1.80 percentage points below the paper's 86.43% two-view mean. This is not yet a three-seed reproduction deviation. The result also uses the declared harness adaptations (45,000-image SSL split and the harness probe rather than the official 200-epoch Adam probe), so the gap cannot be attributed to one cause. Although the covariance entropy effective ranks are very low, the backbone retains 575 modes under the reported relative numerical-rank threshold and reaches 84.63% linear-probe accuracy; the diagnostics are reported as anisotropy/collapse evidence rather than converted into a binary post-hoc label.
 
@@ -85,6 +86,9 @@ The first seed's linear probe is 1.80 percentage points below the paper's 86.43%
 - `20260811-044555_external-c10-fastssl_barlow_twins-v2-seed1-linear-probe` / Slurm `934595`: PASS, 84.63% top-1 and 99.35% top-5 test accuracy; best validation accuracy 84.52%.
 - `20260811-045556_external-c10-fastssl_barlow_twins-v2-seed1-knn` / Slurm `934616`: PASS, 78.98% weighted 20-NN test accuracy with a 50,000-sample bank.
 - `20260811-045557_external-c10-fastssl_barlow_twins-v2-seed1-diagnostics` / Slurm `934617`: PASS. The clean-test backbone covariance has effective rank 1.269, relative numerical rank 575/2048, and 0.88% dimensions below standard deviation 0.01; the projector has effective rank 1.005, numerical rank 39/256, and mean absolute off-diagonal correlation 0.9746.
+- `20260811-050058_external-c10-fastssl_barlow_twins-v2-seed2-linear-probe` / Slurm `934630`: PASS, 84.12% top-1 and 99.44% top-5 test accuracy; best validation accuracy 84.02%.
+- `20260811-050058_external-c10-fastssl_barlow_twins-v2-seed2-knn` / Slurm `934631`: PASS, 79.18% weighted 20-NN test accuracy with a 50,000-sample bank.
+- `20260811-050059_external-c10-fastssl_barlow_twins-v2-seed2-diagnostics` / Slurm `934632`: PASS. The clean-test backbone covariance has effective rank 1.557 and relative numerical rank 884/2048; the projector has effective rank 1.011, numerical rank 41/256, and mean absolute off-diagonal correlation 0.9427.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
