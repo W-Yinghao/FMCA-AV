@@ -30,9 +30,9 @@ The first formal matrix is three paired seeds for each of:
 
 | Method | Views | Backbone | Projector | Pretraining epochs | State |
 |---|---:|---|---|---:|---|
-| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 three-seed full chains passed; M=8 three-seed pretraining active |
-| FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs pending capacity |
-| FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | objective and official-batch scheduler smokes passed; formal runs pending capacity |
+| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2/M=8 three-seed full chains passed |
+| FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 full chains and M=8 pretraining passed; remaining M=8 evaluations active |
+| FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | M=2 three-seed pretraining passed; downstream evaluations and M=8 pending |
 | HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | to be recorded | four stage heads | to be recorded | not started until the first three methods pass |
 
 Each successful checkpoint receives the existing frozen linear probe and weighted kNN evaluation, clean-test backbone/projector covariance spectra, effective rank and collapse diagnostics. Run-level wall time, GPU model, peak memory, encoded views, throughput, parameters, GPU-hours, and supported-operator FLOPs are retained.
@@ -48,6 +48,7 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - FroSSL's paper specifies random resized crop and weight decay (10^{-6}), while the pinned CIFAR YAML disables random resized crop and contains weight decay (10^{-4}). The formal runs follow the paper protocol. This repository discrepancy is not presented as an experimental choice made by the paper.
 - The official FroSSL class trains an online classifier on detached backbone features. Omitting that classifier does not change backbone gradients, but removes its small parameter/optimizer/time overhead; cost comparisons will identify this difference.
 - All formal jobs use one GPU, so the official per-device objective statistics are unchanged. The adapter supports global differentiable gathering if later invoked under DDP, but DDP is not part of this matrix.
+- Two attempts at one FastSSL-VICReg M=8 kNN evaluation landed on the same L40S host (`node51`) and failed while loading the checkpoint with an uncorrectable ECC error. The unchanged command succeeded when retried on H100. Remaining jobs are constrained to the existing A100/H100 partition policy; this is a hardware exclusion, not a scientific-configuration change.
 
 ## Official CIFAR-10 comparison targets
 
@@ -93,6 +94,10 @@ All three M=2 raw chains are complete, but their aggregate and reproduction devi
 - `20260811-050600_external-c10-fastssl_barlow_twins-v2-seed3-linear-probe` / Slurm `934645`: PASS, 83.18% top-1 and 99.11% top-5 test accuracy; best validation accuracy 84.26%.
 - `20260811-050601_external-c10-fastssl_barlow_twins-v2-seed3-knn` / Slurm `934646`: PASS, 79.10% weighted 20-NN test accuracy with a 50,000-sample bank.
 - `20260811-050631_external-c10-fastssl_barlow_twins-v2-seed3-diagnostics` / Slurm `934647`: PASS. The clean-test backbone covariance has effective rank 1.055 and relative numerical rank 182/2048; the projector has effective rank 1.001, numerical rank 29/256, and mean absolute off-diagonal correlation 0.9797.
+- `20260811-102222_external-c10-fastssl_vicreg-v8-seed1-knn` / Slurm `935001`: FAILED, uncorrectable ECC on L40S host `node51` while loading the checkpoint.
+- `20260811-144755_external-c10-fastssl_vicreg-v8-seed1-knn` / Slurm `935856`: FAILED, identical uncorrectable ECC on the same host with the unchanged command.
+- `20260811-145224_external-c10-fastssl_vicreg-v8-seed1-knn` / Slurm `935877`: PASS after the unchanged command was explicitly retried on H100.
+- `20260811-145246_external-controller-a100-h100-policy-test` / Slurm `935881`: PASS, 2/2 controller tests after excluding the faulty L40S host from remaining submissions.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.

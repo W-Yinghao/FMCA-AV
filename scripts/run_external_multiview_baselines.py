@@ -167,8 +167,9 @@ def submit(record: dict[str, object], records: dict[str, dict[str, object]], sta
     name, gpus, payload = command(record, records, state_file)
     argv = ["python3", "-m", "harness.cli", "submit", "--name", name, "--gpus", str(gpus)]
     if gpus:
-        # This profile is a resource policy: it permits A100/L40S/H100 and excludes V100.
-        argv.extend(["--profile", "imagenet"])
+        # This resource policy permits A100/H100 and excludes V100 plus the
+        # L40S node that reported repeated uncorrectable ECC failures.
+        argv.extend(["--profile", "imagenet_ddp"])
     argv.extend(["--", *payload])
     result = subprocess.run(argv, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode:
