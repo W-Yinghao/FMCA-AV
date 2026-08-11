@@ -201,7 +201,12 @@ def main() -> int:
     state["records"] = records; state["state"] = "RUNNING"; write(state_file, state)
 
     while True:
-        refresh()
+        # A brand-new state has nothing to poll: submit its root smokes first.
+        # Every later cycle has run IDs and therefore performs one squeue-backed
+        # harness refresh after the fixed 300-second sleep.
+        if any(record.get("run_id") for record in records.values()):
+            refresh()
+            state["last_polled_at"] = now()
         changed = False
         for record in records.values():
             run_id = str(record.get("run_id", ""))
