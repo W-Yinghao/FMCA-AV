@@ -30,7 +30,7 @@ The first formal matrix is three paired seeds for each of:
 
 | Method | Views | Backbone | Projector | Pretraining epochs | State |
 |---|---:|---|---|---:|---|
-| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 three-seed pretraining passed; downstream evaluations and M=8 active/pending |
+| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 three-seed full chains passed; M=8 three-seed pretraining active |
 | FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs pending capacity |
 | FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | objective and official-batch scheduler smokes passed; formal runs pending capacity |
 | HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | to be recorded | four stage heads | to be recorded | not started until the first three methods pass |
@@ -64,8 +64,9 @@ These rows are emitted only after the full per-seed pretrain/probe/kNN/diagnosti
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | FastSSL-Barlow-Twins | 2 | 20260821 | 84.63% | 78.98% | 1.269 / 2048 | 575 / 2048 | 1.005 / 256 | 0.9746 |
 | FastSSL-Barlow-Twins | 2 | 20260822 | 84.12% | 79.18% | 1.557 / 2048 | 884 / 2048 | 1.011 / 256 | 0.9427 |
+| FastSSL-Barlow-Twins | 2 | 20260823 | 83.18% | 79.10% | 1.055 / 2048 | 182 / 2048 | 1.001 / 256 | 0.9797 |
 
-The first seed's linear probe is 1.80 percentage points below the paper's 86.43% two-view mean. This is not yet a three-seed reproduction deviation. The result also uses the declared harness adaptations (45,000-image SSL split and the harness probe rather than the official 200-epoch Adam probe), so the gap cannot be attributed to one cause. Although the covariance entropy effective ranks are very low, the backbone retains 575 modes under the reported relative numerical-rank threshold and reaches 84.63% linear-probe accuracy; the diagnostics are reported as anisotropy/collapse evidence rather than converted into a binary post-hoc label.
+All three M=2 raw chains are complete, but their aggregate and reproduction deviation remain deferred to the existing final aggregation job rather than being calculated by a new side path. The results use the declared harness adaptations (45,000-image SSL split and the harness probe rather than the official 200-epoch Adam probe), so any final gap cannot be attributed to one cause. Although the covariance entropy effective ranks are very low, the backbones retain nontrivial relative numerical ranks and reach 83.18--84.63% linear-probe accuracy; the diagnostics are reported as anisotropy/collapse evidence rather than converted into a binary post-hoc label.
 
 ## Validation and results
 
@@ -89,6 +90,9 @@ The first seed's linear probe is 1.80 percentage points below the paper's 86.43%
 - `20260811-050058_external-c10-fastssl_barlow_twins-v2-seed2-linear-probe` / Slurm `934630`: PASS, 84.12% top-1 and 99.44% top-5 test accuracy; best validation accuracy 84.02%.
 - `20260811-050058_external-c10-fastssl_barlow_twins-v2-seed2-knn` / Slurm `934631`: PASS, 79.18% weighted 20-NN test accuracy with a 50,000-sample bank.
 - `20260811-050059_external-c10-fastssl_barlow_twins-v2-seed2-diagnostics` / Slurm `934632`: PASS. The clean-test backbone covariance has effective rank 1.557 and relative numerical rank 884/2048; the projector has effective rank 1.011, numerical rank 41/256, and mean absolute off-diagonal correlation 0.9427.
+- `20260811-050600_external-c10-fastssl_barlow_twins-v2-seed3-linear-probe` / Slurm `934645`: PASS, 83.18% top-1 and 99.11% top-5 test accuracy; best validation accuracy 84.26%.
+- `20260811-050601_external-c10-fastssl_barlow_twins-v2-seed3-knn` / Slurm `934646`: PASS, 79.10% weighted 20-NN test accuracy with a 50,000-sample bank.
+- `20260811-050631_external-c10-fastssl_barlow_twins-v2-seed3-diagnostics` / Slurm `934647`: PASS. The clean-test backbone covariance has effective rank 1.055 and relative numerical rank 182/2048; the projector has effective rank 1.001, numerical rank 29/256, and mean absolute off-diagonal correlation 0.9797.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
