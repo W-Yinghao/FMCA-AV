@@ -1,0 +1,69 @@
+{
+  "experiment": {
+    "name": "cifar10-fastssl-barlow-twins-v8",
+    "family": "vision_ssl",
+    "method": "fastssl_barlow_twins",
+    "claim_id": "external-multiview-baseline-fastssl"
+  },
+  "seed": 20260821,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "cifar10",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10",
+    "n_calibration": 2500,
+    "n_val": 2500,
+    "num_views": 8,
+    "batch_size": 256,
+    "num_workers": 8,
+    "augmentation": {
+      "min_scale": 0.08,
+      "color_jitter_probability": 0.8,
+      "color_jitter_strength": 0.5,
+      "grayscale_probability": 0.2,
+      "horizontal_flip_probability": 0.5,
+      "mean": [0.4914, 0.4822, 0.4465],
+      "std": [0.2023, 0.1994, 0.2010]
+    }
+  },
+  "model": {
+    "backbone": "resnet50_cifar",
+    "backbone_width": 64,
+    "projection_dim": 256,
+    "centered": true
+  },
+  "objective": {
+    "name": "trace",
+    "off_diagonal_weight": 0.00390625
+  },
+  "optimizer": {
+    "name": "adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.000001,
+    "scheduler": "none"
+  },
+  "trainer": {
+    "accelerator": "gpu",
+    "devices": 1,
+    "strategy": "auto",
+    "max_epochs": 100,
+    "precision": "16-mixed",
+    "gradient_clip_val": null,
+    "deterministic": true,
+    "log_every_n_steps": 20,
+    "enable_progress_bar": false
+  },
+  "probe": {
+    "n_val": 5000,
+    "batch_size": 256,
+    "num_workers": 8,
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "weight_decay": 0.0,
+    "max_epochs": 100,
+    "accelerator": "gpu",
+    "devices": 1,
+    "precision": "32-true",
+    "log_every_n_steps": 20,
+    "enable_progress_bar": false
+  }
+}

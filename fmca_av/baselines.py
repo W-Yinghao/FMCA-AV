@@ -1,4 +1,11 @@
-"""Lightning SSL baselines sharing the FMCA-AV data and backbone pipeline."""
+"""Lightning SSL baselines sharing the FMCA-AV data and backbone pipeline.
+
+The FastSSL and FroSSL objectives below are small, dependency-free ports from
+the authors' pinned repositories.  Keeping the objective functions separate
+from :class:`BaselineSSL` makes the provenance-bearing formulas independently
+testable and prevents them from silently falling back to the ordinary paired
+Barlow Twins/VICReg implementations.
+"""
 
 import copy
 from typing import Any, Dict, Tuple
@@ -9,6 +16,7 @@ from torch import Tensor, nn
 import torch.nn.functional as functional
 
 from .backbones import build_backbone
+from .lars import LARS
 from .models import MLP
 from .objectives import trace_score
 from .operators import estimate_moments, whitened_cross_operator
@@ -21,6 +29,145 @@ def _off_diagonal(matrix: Tensor) -> Tensor:
     return matrix.flatten()[:-1].view(size - 1, size + 1)[:, 1:].flatten()
 
 
+class FastSSLProjector(nn.Module):
+    """Small two-layer projector used by the pinned FastSSL implementation."""
+
+    def __init__(self, input_dim: int, projection_dim: int) -> None:
+        super().__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, projection_dim, bias=False),
+            nn.BatchNorm1d(projection_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(projection_dim, projection_dim, bias=True),
+        )
+
+    def forward(self, values: Tensor) -> Tensor:
+        return self.network(values)
+
+
+class FroSSLProjector(nn.Module):
+    """Three-layer projector from the official FroSSL CIFAR configuration."""
+
+    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int) -> None:
+        super().__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_dim, output_dim),
+        )
+
+    def forward(self, values: Tensor) -> Tensor:
+        return self.network(values)
+
+
+def fastssl_barlow_twins_loss(projections: Tensor, off_diagonal_weight: float) -> Tensor:
+    """FastSSL's O(M) multi-augmentation Barlow Twins estimator.
+
+    Source: ``fastssl/models/barlow_twins.py`` at the pinned FastSSL commit.
+    The official model L2-normalizes each projection before jointly
+    standardizing all views, so both operations are intentionally retained.
+    """
+
+    if projections.ndim != 3 or projections.shape[1] < 2:
+        raise ValueError("FastSSL Barlow Twins expects [batch, views>=2, features]")
+    batch, views, features = projections.shape
+    values = functional.normalize(projections, dim=-1)
+    flattened = values.reshape(batch * views, features)
+    standard_deviation = flattened.std(0, unbiased=True)
+    epsilon = torch.finfo(flattened.dtype).eps
+    normalized = ((flattened - flattened.mean(0)) / standard_deviation.clamp_min(epsilon)).reshape(
+        batch, views, features
+    )
+    if views == 2:
+        correlation = normalized[:, 0].transpose(0, 1) @ normalized[:, 1] / batch
+        diagonal = (torch.diagonal(correlation) - 1).square().sum()
+        redundancy = _off_diagonal(correlation).square().sum()
+        return diagonal + float(off_diagonal_weight) * redundancy
+
+    mean_projection = normalized.mean(dim=1)
+    # The per-view diagonal estimator and the mean-view autocorrelation are the
+    # two defining O(M) ingredients of the authors' multipatch-v3 recipe.
+    diagonal = ((normalized * mean_projection.unsqueeze(1)).mean(dim=0) - 1).square().sum() / views
+    auto_correlation = mean_projection.transpose(0, 1) @ mean_projection / batch
+    redundancy = _off_diagonal(auto_correlation).square().sum()
+    return diagonal + float(off_diagonal_weight) * redundancy
+
+
+def fastssl_vicreg_loss(
+    projections: Tensor,
+    invariance_weight: float,
+    variance_weight: float,
+) -> Tensor:
+    """FastSSL's O(M) multi-augmentation VICReg objective.
+
+    Each view is compared with the mean of all *other* views, exactly as in
+    ``fastssl/models/vicreg.py`` at the pinned commit.  The two-view control
+    evaluates the single non-redundant pair, matching the official branch.
+    """
+
+    if projections.ndim != 3 or projections.shape[1] < 2:
+        raise ValueError("FastSSL VICReg expects [batch, views>=2, features]")
+    batch, views, features = projections.shape
+    if batch < 2:
+        raise ValueError("FastSSL VICReg requires at least two parents per batch")
+    centered = projections - projections.mean(dim=0, keepdim=True)
+    projection_sum = projections.sum(dim=1)
+    centered_sum = centered.sum(dim=1)
+    indices = range(1) if views == 2 else range(views)
+    total = projections.new_zeros(())
+    for index in indices:
+        left = projections[:, index]
+        left_centered = centered[:, index]
+        right = (projection_sum - left) / (views - 1)
+        right_centered = (centered_sum - left_centered) / (views - 1)
+        invariance = functional.mse_loss(left, right)
+        # torch.std defaults to the unbiased convention used by the official code.
+        variance = 0.5 * functional.relu(1 - left.std(0)).mean()
+        variance = variance + 0.5 * functional.relu(1 - right.std(0)).mean()
+        covariance_left = left_centered.transpose(0, 1) @ left_centered / (batch - 1)
+        covariance_right = right_centered.transpose(0, 1) @ right_centered / (batch - 1)
+        covariance = (
+            _off_diagonal(covariance_left).square().sum()
+            + _off_diagonal(covariance_right).square().sum()
+        ) / features
+        total = total + float(invariance_weight) * invariance + float(variance_weight) * variance + covariance
+    return total if views == 2 else total / views
+
+
+def frossl_loss(projections: Tensor, invariance_weight: float = 1.0) -> Tensor:
+    """Original linear-kernel multiview FroSSL objective.
+
+    This ports ``multiview_frossl_loss_func`` from the pinned official FroSSL
+    repository.  It is deliberately not EMP-FroSSL and contains no other
+    solo-learn loss.  FroSSL normalizes each feature coordinate across parents,
+    aligns every view to the view mean, and maximizes matrix Rényi entropy via
+    the negative log Frobenius norm of the trace-normalized Gram matrix.
+    """
+
+    if projections.ndim != 3 or projections.shape[1] < 2:
+        raise ValueError("FroSSL expects [batch, views>=2, features]")
+    batch, views, features = projections.shape
+    normalized = functional.normalize(projections, p=2, dim=0)
+    mean_projection = normalized.mean(dim=1)
+    total = projections.new_zeros(())
+    tiny = torch.finfo(projections.dtype).tiny
+    for index in range(views):
+        values = normalized[:, index]
+        gram = values.transpose(0, 1) @ values if batch > features else values @ values.transpose(0, 1)
+        # The official implementation removes trace from the gradient using
+        # ``.item()``; detach preserves that behavior without a device sync.
+        gram = gram / gram.trace().detach().clamp_min(tiny)
+        frobenius = torch.linalg.matrix_norm(gram, ord="fro").clamp_min(tiny)
+        entropy_regularizer = 2 * torch.log(frobenius)
+        invariance = views * functional.mse_loss(values, mean_projection) * features
+        total = total + entropy_regularizer + float(invariance_weight) * invariance
+    return total
+
+
 class BaselineSSL(L.LightningModule):
     def __init__(self, config: Dict[str, Any]) -> None:
         super().__init__()
@@ -30,6 +177,7 @@ class BaselineSSL(L.LightningModule):
         supported = {
             "simclr", "barlow_twins", "vicreg", "spectral_contrastive",
             "fastsiam", "byol", "moco_v2", "dino", "dcca", "vamp2",
+            "fastssl_barlow_twins", "fastssl_vicreg", "frossl",
         }
         if self.method not in supported:
             raise ValueError("unsupported baseline method: " + self.method)
@@ -38,12 +186,21 @@ class BaselineSSL(L.LightningModule):
             width=int(model.get("backbone_width", 64)),
         )
         projection_dim = int(model.get("projection_dim", 128))
-        self.projector = MLP(
-            self.backbone.output_dim,
-            projection_dim,
-            model.get("projection_hidden_dims", [2048, 2048]),
-            str(model.get("activation", "gelu")),
-        )
+        if self.method in {"fastssl_barlow_twins", "fastssl_vicreg"}:
+            self.projector = FastSSLProjector(self.backbone.output_dim, projection_dim)
+        elif self.method == "frossl":
+            self.projector = FroSSLProjector(
+                self.backbone.output_dim,
+                int(model.get("projection_hidden_dim", 2048)),
+                projection_dim,
+            )
+        else:
+            self.projector = MLP(
+                self.backbone.output_dim,
+                projection_dim,
+                model.get("projection_hidden_dims", [2048, 2048]),
+                str(model.get("activation", "gelu")),
+            )
         self.momentum = float(config["objective"].get("momentum", 0.996))
         self.predictor = None
         self.target_backbone = None
@@ -260,7 +417,8 @@ class BaselineSSL(L.LightningModule):
         views = batch[0]
         if views.shape[1] < 2:
             raise ValueError("SSL baselines require at least two views")
-        if views.shape[1] % 2:
+        multiview_methods = {"fastssl_barlow_twins", "fastssl_vicreg", "frossl"}
+        if views.shape[1] % 2 and self.method not in multiview_methods:
             raise ValueError("matched-view baselines require an even number of views")
         pairs = [(index, index + 1) for index in range(0, views.shape[1], 2)]
         if self.method == "moco_v2":
@@ -272,41 +430,63 @@ class BaselineSSL(L.LightningModule):
         else:
             flattened = views.flatten(0, 1)
             projections = self.projector(self.backbone(flattened)).reshape(views.shape[0], views.shape[1], -1)
-            target = None
-            if self.method == "byol":
-                with torch.no_grad():
-                    target = self.target_projector(self.target_backbone(flattened)).reshape(views.shape[0], views.shape[1], -1)
-            pair_losses = []
-            for left_index, right_index in pairs:
-                left, right = projections[:, left_index], projections[:, right_index]
-                if self.method in {"simclr", "barlow_twins", "vicreg", "spectral_contrastive", "dcca", "vamp2"}:
-                    left = self._distributed_concat_grad(left)
-                    right = self._distributed_concat_grad(right)
-                if self.method == "simclr":
-                    pair_loss = self._simclr(left, right)
-                elif self.method == "barlow_twins":
-                    pair_loss = self._barlow(left, right)
-                elif self.method == "vicreg":
-                    pair_loss = self._vicreg(left, right)
-                elif self.method == "spectral_contrastive":
-                    pair_loss = self._spectral_contrastive(left, right)
-                elif self.method in {"dcca", "vamp2"}:
-                    pair_loss = self._operator_objective(left, right)
-                elif self.method == "fastsiam":
-                    pair_loss = 0.5 * (
-                        self._negative_cosine(self.predictor(left), right)
-                        + self._negative_cosine(self.predictor(right), left)
+            if self.method in multiview_methods:
+                # FastSSL requires global-batch statistics; gathering FroSSL as
+                # well gives DDP the same objective as a single global batch.
+                projections = self._distributed_concat_grad(projections)
+                objective = self.config["objective"]
+                if self.method == "fastssl_barlow_twins":
+                    loss = fastssl_barlow_twins_loss(
+                        projections,
+                        float(objective.get("off_diagonal_weight", 1.0 / projections.shape[-1])),
                     )
-                elif self.method == "byol":
-                    assert target is not None
-                    pair_loss = 0.5 * (
-                        self._negative_cosine(self.predictor(left), target[:, right_index])
-                        + self._negative_cosine(self.predictor(right), target[:, left_index])
+                elif self.method == "fastssl_vicreg":
+                    loss = fastssl_vicreg_loss(
+                        projections,
+                        float(objective.get("invariance_weight", 25.0)),
+                        float(objective.get("variance_weight", 25.0)),
                     )
                 else:
-                    raise RuntimeError("unhandled baseline method")
-                pair_losses.append(pair_loss)
-            loss = torch.stack(pair_losses).mean()
+                    loss = frossl_loss(
+                        projections,
+                        float(objective.get("invariance_weight", 1.0)),
+                    )
+            else:
+                target = None
+                if self.method == "byol":
+                    with torch.no_grad():
+                        target = self.target_projector(self.target_backbone(flattened)).reshape(views.shape[0], views.shape[1], -1)
+                pair_losses = []
+                for left_index, right_index in pairs:
+                    left, right = projections[:, left_index], projections[:, right_index]
+                    if self.method in {"simclr", "barlow_twins", "vicreg", "spectral_contrastive", "dcca", "vamp2"}:
+                        left = self._distributed_concat_grad(left)
+                        right = self._distributed_concat_grad(right)
+                    if self.method == "simclr":
+                        pair_loss = self._simclr(left, right)
+                    elif self.method == "barlow_twins":
+                        pair_loss = self._barlow(left, right)
+                    elif self.method == "vicreg":
+                        pair_loss = self._vicreg(left, right)
+                    elif self.method == "spectral_contrastive":
+                        pair_loss = self._spectral_contrastive(left, right)
+                    elif self.method in {"dcca", "vamp2"}:
+                        pair_loss = self._operator_objective(left, right)
+                    elif self.method == "fastsiam":
+                        pair_loss = 0.5 * (
+                            self._negative_cosine(self.predictor(left), right)
+                            + self._negative_cosine(self.predictor(right), left)
+                        )
+                    elif self.method == "byol":
+                        assert target is not None
+                        pair_loss = 0.5 * (
+                            self._negative_cosine(self.predictor(left), target[:, right_index])
+                            + self._negative_cosine(self.predictor(right), target[:, left_index])
+                        )
+                    else:
+                        raise RuntimeError("unhandled baseline method")
+                    pair_losses.append(pair_loss)
+                loss = torch.stack(pair_losses).mean()
             encoded_count = flattened.shape[0]
         world_size = torch.distributed.get_world_size() if torch.distributed.is_available() and torch.distributed.is_initialized() else 1
         self.log(f"{split}/loss", loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
@@ -341,12 +521,61 @@ class BaselineSSL(L.LightningModule):
                 lr=float(config["learning_rate"]),
                 weight_decay=float(config.get("weight_decay", 0.0)),
             )
+        elif name == "adam":
+            optimizer = torch.optim.Adam(
+                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                lr=float(config["learning_rate"]),
+                weight_decay=float(config.get("weight_decay", 0.0)),
+            )
+        elif name == "lars":
+            optimizer = LARS(
+                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                lr=float(config["learning_rate"]),
+                momentum=float(config.get("momentum", 0.9)),
+                weight_decay=float(config.get("weight_decay", 0.0)),
+                eta=float(config.get("eta", 0.001)),
+                clip_lr=bool(config.get("clip_lr", False)),
+                exclude_bias_n_norm=bool(config.get("exclude_bias_n_norm", False)),
+            )
         else:
-            raise ValueError("baseline optimizer must be sgd or adamw")
-        if str(config.get("scheduler", "cosine")) == "cosine":
+            raise ValueError("baseline optimizer must be sgd, adam, adamw, or lars")
+        scheduler_name = str(config.get("scheduler", "cosine"))
+        if scheduler_name == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer,
                 T_max=int(config.get("scheduler_t_max", self.config["trainer"]["max_epochs"])),
             )
             return {"optimizer": optimizer, "lr_scheduler": scheduler}
+        if scheduler_name == "warmup_cosine":
+            epochs = int(config.get("scheduler_t_max", self.config["trainer"]["max_epochs"]))
+            warmup = int(config.get("warmup_epochs", 10))
+            if not 0 < warmup < epochs:
+                raise ValueError("warmup_epochs must lie strictly between zero and total epochs")
+            interval = str(config.get("scheduler_interval", "epoch"))
+            if interval not in {"epoch", "step"}:
+                raise ValueError("scheduler_interval must be epoch or step")
+            if interval == "step":
+                total_iterations = int(self.trainer.estimated_stepping_batches)
+                warmup_iterations = max(1, round(warmup * total_iterations / epochs))
+            else:
+                total_iterations = epochs
+                warmup_iterations = warmup
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer,
+                start_factor=float(config.get("warmup_start_factor", 1e-4)),
+                total_iters=warmup_iterations,
+            )
+            cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=total_iterations - warmup_iterations,
+                eta_min=float(config.get("minimum_learning_rate", 0.0)),
+            )
+            scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer,
+                schedulers=[warmup_scheduler, cosine_scheduler],
+                milestones=[warmup_iterations],
+            )
+            return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": interval}}
+        if scheduler_name != "none":
+            raise ValueError("baseline scheduler must be cosine, warmup_cosine, or none")
         return optimizer

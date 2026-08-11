@@ -61,6 +61,7 @@ def _random_uniform(generator: Optional[torch.Generator], low: float, high: floa
 class CIFARViewTransform:
     def __init__(self, config: Dict[str, object]) -> None:
         self.size = int(config.get("size", 32))
+        self.random_resized_crop = bool(config.get("random_resized_crop", True))
         self.min_scale = float(config.get("min_scale", 0.08))
         self.color_jitter_probability = float(config.get("color_jitter_probability", 0.8))
         self.color_jitter_strength = float(config.get("color_jitter_strength", 0.5))
@@ -105,7 +106,9 @@ class CIFARViewTransform:
 
     def __call__(self, channels_first: np.ndarray, generator: Optional[torch.Generator] = None) -> Tensor:
         image = Image.fromarray(np.transpose(channels_first, (1, 2, 0)), mode="RGB")
-        image = self._crop(image, generator)
+        image = self._crop(image, generator) if self.random_resized_crop else image.resize(
+            (self.size, self.size), Image.Resampling.BICUBIC
+        )
         if float(torch.rand((), generator=generator)) < self.horizontal_flip_probability:
             image = ImageOps.mirror(image)
         if self.rotation_degrees > 0:

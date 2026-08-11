@@ -134,6 +134,13 @@ def train(args: argparse.Namespace) -> int:
             "best_validation_score": float(callback.best_model_score) if callback.best_model_score is not None else None,
             "trainable_parameters": sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad),
             "total_parameters": sum(parameter.numel() for parameter in model.parameters()),
+            "num_views": int(config["data"].get("num_views", 1)),
+            "backbone": str(config["model"].get("backbone", "")),
+            "projection_dim": int(config["model"].get("projection_dim", 0)),
+            "optimizer_name": str(config["optimizer"].get("name", "")),
+            "configured_max_epochs": int(config["trainer"]["max_epochs"]),
+            "precision": str(config["trainer"].get("precision", "32-true")),
+            "objective_configuration": dict(config["objective"]),
         }
         world_size = int(getattr(trainer, "world_size", 1)); global_step = int(trainer.global_step)
         completed_steps = max(0, global_step - int(step_recorder.start_step))

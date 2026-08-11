@@ -1,0 +1,40 @@
+{
+  "fastssl": {
+    "url": "https://github.com/kumarkrishna/fastssl.git",
+    "paper_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/464d8334dfca732d538ac050e45c6dc7-Paper-Conference.pdf",
+    "branch": "main",
+    "commit": "96dfa37be7d46f4814a410affd6269fefab9ec32",
+    "license": "MIT declared in setup.py; no root LICENSE file at the pinned commit",
+    "local_audit_checkout": "/projects/EEG-foundation-model/yinghao/FMCA-AV/external_sources/fastssl",
+    "adapted_files": [
+      "configs/cc_barlow_twins.yaml",
+      "configs/cc_VICReg.yaml",
+      "fastssl/models/barlow_twins.py",
+      "fastssl/models/vicreg.py",
+      "fastssl/models/backbone.py",
+      "scripts/train_model.py"
+    ]
+  },
+  "frossl": {
+    "url": "https://github.com/OFSkean/FroSSL.git",
+    "paper_url": "https://arxiv.org/pdf/2310.02903",
+    "branch": "main",
+    "commit": "e841c5769944d4d58feeaf0258aff27a9d3934b3",
+    "license": "MIT declared in setup.py and source headers; no root LICENSE file at the pinned commit",
+    "local_audit_checkout": "/projects/EEG-foundation-model/yinghao/FMCA-AV/external_sources/FroSSL",
+    "adapted_files": [
+      "run_cifar10.sh",
+      "pretrain_then_linear.sh",
+      "scripts/pretrain/cifar/frossl.yaml",
+      "scripts/pretrain/cifar/augmentations/symmetric.yaml",
+      "solo/losses/frossl.py",
+      "solo/methods/frossl.py",
+      "solo/utils/lars.py"
+    ]
+  },
+  "hai": {
+    "paper_url": "https://openaccess.thecvf.com/content/CVPR2022/html/Zhang_Rethinking_the_Augmentation_Module_in_Contrastive_Learning_Learning_Hierarchical_Augmentation_CVPR_2022_paper.html",
+    "official_repository": null,
+    "implementation": "faithful reimplementation after FastSSL and FroSSL validation"
+  }
+}
