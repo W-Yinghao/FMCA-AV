@@ -1,6 +1,7 @@
 # FMCA-AV experiment status
 
-Snapshot: 2026-08-10 22:51 CEST. The experiment program is running and is not yet complete.
+Snapshot: 2026-08-11 02:30 CEST. Experiment submission is paused; only
+already-submitted jobs are draining naturally.
 
 ## Scientific version boundary
 
@@ -32,6 +33,11 @@ The detailed formula changes, validation, and affected-result audit are in `SERV
 - ImageNet-100 is conditional on stable paired CIFAR-10/100 evidence, and
   ImageNet-1K remains paused.
 - Scheduler monitoring and orchestration use a 300-second polling interval and `squeue`; no experiment computation runs on the login node.
+- At the operator's request, all successor submission controllers are stopped.
+  The three already-running BYOL jobs `933785`, `933985`, and `934278` are not
+  cancelled or modified.  When they finish, no probe, retry, or new experiment
+  is submitted automatically; the read-only 300-second `squeue` monitor remains
+  active.
 - Checkpoints, raw runs, logs, datasets, and mutable scheduler state remain server-local and are not committed.
 
 Published correction commits:
