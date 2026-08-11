@@ -30,7 +30,7 @@ The first formal matrix is three paired seeds for each of:
 
 | Method | Views | Backbone | Projector | Pretraining epochs | State |
 |---|---:|---|---|---:|---|
-| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs active |
+| FastSSL-Barlow-Twins | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | M=2 seed 1 pretraining passed; remaining formal runs/evaluations active |
 | FastSSL-VICReg | 2, 8 | CIFAR ResNet-50 | 256-d small projector | 100 | GPU smoke passed; formal runs pending capacity |
 | FroSSL | 2, 8 | CIFAR ResNet-18 | 2048-2048-1024 | 1000 | objective and official-batch scheduler smokes passed; formal runs pending capacity |
 | HAI faithful reimplementation | 8 expanded views (four hierarchical pairs) | to be recorded | four stage heads | to be recorded | not started until the first three methods pass |
@@ -69,6 +69,7 @@ The completed supported-operator profiles for FastSSL-Barlow-Twins measure 2.599
 - `20260811-040707_external-c10-frossl-scheduler-b256-smoke` / Slurm `934550`: PASS on A100. With the official batch size 256 and real LARS/warmup-cosine schedule, two optimizer steps produced finite train losses 336.98 and 330.43 and finite validation losses 169.76 and 105.05. Peak memory was 9,620 MB.
 - `20260811-040548_external-c10-fastssl_barlow_twins-v2-flops` / Slurm `934547`: PASS, 10.398 supported-operator GFLOPs per two-parent training step.
 - `20260811-040549_external-c10-fastssl_barlow_twins-v8-flops` / Slurm `934548`: PASS, 41.587 supported-operator GFLOPs per two-parent training step.
+- `20260811-040549_external-c10-fastssl_barlow_twins-v2-seed1-pretrain` / Slurm `934549`: PASS, 100/100 epochs on A100-SXM4-40GB. The run encoded 8,960,000 views in 2,200.53 seconds (0.6113 GPU-hours, 4,071.7 views/s), peaked at 6,730 MB, and finished with finite train loss 13.2991 and validation loss 13.8442. Its downstream evaluations remain active/pending and no accuracy is inferred from the pretraining loss.
 - Formal runs, linear probes, kNN, collapse diagnostics, FLOPs, and final numerical summaries: active/pending.
 
 Post-fix aggregate artifacts will be written only after all required actions succeed under `results/postfix/20260809_scientific_correctness_v1/external_multiview_baselines/`. No running or failed result is mixed into the final table.
