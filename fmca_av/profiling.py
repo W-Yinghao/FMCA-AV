@@ -36,6 +36,25 @@ class ExecutedStepRecorder(Callback):
         self.start_step = int(trainer.global_step)
 
 
+class MilestoneCheckpoint(Callback):
+    """Save explicitly preregistered epoch checkpoints without changing selection."""
+
+    def __init__(self, directory: Path, epochs: List[int]) -> None:
+        super().__init__()
+        self.directory = directory
+        self.epochs = {int(value) for value in epochs}
+        if any(value < 1 for value in self.epochs):
+            raise ValueError("checkpoint milestones must be positive epochs")
+
+    def on_train_epoch_end(self, trainer: L.Trainer, pl_module: L.LightningModule) -> None:
+        del pl_module
+        completed_epoch = int(trainer.current_epoch) + 1
+        if completed_epoch not in self.epochs:
+            return
+        self.directory.mkdir(parents=True, exist_ok=True)
+        trainer.save_checkpoint(self.directory / f"epoch-{completed_epoch:04d}.ckpt")
+
+
 class BatchTimingRecorder(Callback):
     """Persist device-compute and inter-batch timing for opt-in profiling runs."""
 

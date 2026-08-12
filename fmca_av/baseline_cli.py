@@ -20,7 +20,7 @@ from .data.imagenet import ImageNetDataModule, ImageNetProbeDataModule
 from .data.small_vision import SmallVisionDataModule, SmallVisionProbeDataModule
 from .operators import SCIENTIFIC_CORRECTNESS_VERSION
 from .probe_module import FineTuneClassifier, LinearProbe
-from .profiling import BatchTimingRecorder, ExecutedStepRecorder
+from .profiling import BatchTimingRecorder, ExecutedStepRecorder, MilestoneCheckpoint
 
 
 def _write_json(path: Path, payload: Dict[str, Any]) -> None:
@@ -92,6 +92,9 @@ def train(args: argparse.Namespace) -> int:
     trainer_config = config["trainer"]
     step_recorder = ExecutedStepRecorder()
     callbacks: list[Callback] = [callback, step_recorder]
+    milestones = [int(value) for value in trainer_config.get("checkpoint_milestones", [])]
+    if milestones:
+        callbacks.append(MilestoneCheckpoint(run_dir / "checkpoints", milestones))
     if bool(trainer_config.get("profile_batches", False)):
         callbacks.append(BatchTimingRecorder(run_dir / "batch_profile.json"))
     trainer = L.Trainer(

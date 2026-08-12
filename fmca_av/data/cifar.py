@@ -311,6 +311,8 @@ class CIFARDataModule:
         calibration_indices = permutation[:calibration_size]
         validation_indices = permutation[calibration_size:calibration_size + validation_size]
         training_indices = permutation[calibration_size + validation_size:]
+        if bool(self.config.get("ssl_use_full_train", False)):
+            training_indices = list(range(len(base_train)))
         augmentation = self.config.get("augmentation", {})
         view_construction = str(self.config.get("view_construction", "independent"))
         if view_construction not in {"independent", "hai_hierarchical"}:

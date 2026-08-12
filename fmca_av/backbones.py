@@ -30,6 +30,17 @@ class VGGFeatureBackbone(nn.Module):
 def build_backbone(name: str, width: int = 64) -> nn.Module:
     if name == "resnet18_cifar":
         return resnet18_cifar(width=width)
+    if name == "resnet18_frossl_cifar":
+        if width != 64:
+            raise ValueError("resnet18_frossl_cifar requires the official width 64")
+        network = models.resnet18(weights=None)
+        # Pinned FroSSL/solo-learn BaseMethod uses padding=2 here (not the
+        # usual CIFAR padding=1), and removes maxpool and the classifier.
+        network.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+        network.maxpool = nn.Identity()
+        output_dim = int(network.fc.in_features)
+        network.fc = nn.Identity()
+        return TorchvisionBackbone(network, output_dim)
     if name == "resnet50_cifar":
         if width != 64:
             raise ValueError("resnet50_cifar currently supports the official width 64 only")
@@ -74,6 +85,6 @@ def build_backbone(name: str, width: int = 64) -> nn.Module:
         network.heads.head = nn.Identity()
         return TorchvisionBackbone(network, 384)
     raise ValueError(
-        "unsupported backbone; expected resnet18_cifar, resnet50_cifar, resnet18_imagenet, "
+        "unsupported backbone; expected resnet18_cifar, resnet18_frossl_cifar, resnet50_cifar, resnet18_imagenet, "
         "resnet50_imagenet, convnext_tiny, vgg16_bn, vit_s_16, or vit_b_16"
     )

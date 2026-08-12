@@ -1,0 +1,39 @@
+{
+  "scope": "CIFAR-10 FroSSL M=8 collapse mechanism controls",
+  "fixed_horizon_epochs": 200,
+  "checkpoint_milestones": [25, 50, 100, 200],
+  "fixed_seed": 20260831,
+  "fixed_unique_parent_batch_size": 256,
+  "fixed_views": 8,
+  "fixed_invariance_weight": 2.0,
+  "controls": {
+    "B": {
+      "view_forward_mode": "sequential",
+      "random_resized_crop": true,
+      "description": "official-code-style per-view forward with the strong FMCA-AV augmentation"
+    },
+    "C": {
+      "view_forward_mode": "flattened",
+      "random_resized_crop": false,
+      "description": "current flattened forward with random resized crop disabled"
+    },
+    "D": {
+      "view_forward_mode": "sequential",
+      "random_resized_crop": false,
+      "description": "joint BN-forward and augmentation control; conditional on B and C both failing"
+    }
+  },
+  "preregistered_recovery_gate": {
+    "checkpoint_epoch": 200,
+    "clean_knn_accuracy_minimum": 0.6,
+    "backbone_centered_effective_rank_minimum": 20.0,
+    "backbone_centered_top_eigenvalue_share_maximum": 0.8,
+    "rule": "a control recovers only if all three thresholds pass"
+  },
+  "next_stage_if_b_and_c_fail": "run D",
+  "next_stage_if_either_b_or_c_recovers": "do not run D; confirm the recovered mechanism before objective changes",
+  "objective_level_controls_deferred": [
+    "paper-centered multiview FroSSL",
+    "pair-normalized invariance"
+  ]
+}

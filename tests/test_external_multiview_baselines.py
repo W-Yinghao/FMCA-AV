@@ -10,7 +10,9 @@ from fmca_av.baselines import (
     fastssl_barlow_twins_loss,
     fastssl_vicreg_loss,
     frossl_loss,
+    frossl_loss_components,
 )
+from fmca_av.backbones import build_backbone
 from fmca_av.data.cifar import HAIHierarchicalDataset, HAIViewTransform
 
 
@@ -64,6 +66,69 @@ class ExternalMultiviewBaselineTests(unittest.TestCase):
         self.assertTrue(torch.allclose(actual, expected, atol=1e-12, rtol=1e-12))
         actual.backward()
         self.assertTrue(torch.isfinite(values.grad).all())
+
+    def test_frossl_components_sum_to_exact_objective(self) -> None:
+        torch.manual_seed(41)
+        values = torch.randn(6, 8, 7, dtype=torch.float64)
+        total, invariance, regularization = frossl_loss_components(values, 2.0)
+        self.assertTrue(torch.allclose(total, invariance + regularization))
+        self.assertTrue(torch.allclose(total, frossl_loss(values, 2.0)))
+        self.assertGreater(float(invariance), 0.0)
+        self.assertLessEqual(float(regularization), 0.0)
+
+    def test_frossl_sequential_forward_preserves_view_axis(self) -> None:
+        config = {
+            "experiment": {"method": "frossl"},
+            "model": {
+                "backbone": "resnet18_cifar", "backbone_width": 4,
+                "projection_hidden_dim": 8, "projection_dim": 6,
+                "view_forward_mode": "sequential",
+            },
+            "objective": {"invariance_weight": 2.0},
+            "optimizer": {"name": "sgd", "learning_rate": 0.05, "scheduler": "none"},
+            "trainer": {"max_epochs": 1},
+        }
+        model = BaselineSSL(config)
+        model.log = lambda *args, **kwargs: None
+        views = torch.randn(3, 4, 3, 32, 32)
+        loss = model._shared_step((views, torch.zeros(3, dtype=torch.long), torch.arange(3)), "train")
+        self.assertTrue(torch.isfinite(loss))
+        self.assertEqual(model.view_forward_mode, "sequential")
+
+    def test_frossl_official_online_classifier_is_backbone_detached(self) -> None:
+        config = {
+            "experiment": {"method": "frossl"},
+            "data": {"dataset": "cifar10"},
+            "model": {
+                "backbone": "resnet18_cifar", "backbone_width": 4,
+                "projection_hidden_dim": 8, "projection_dim": 6,
+                "view_forward_mode": "sequential",
+            },
+            "objective": {"invariance_weight": 1.0, "online_classifier": True},
+            "optimizer": {"name": "sgd", "learning_rate": 0.05, "scheduler": "none"},
+            "trainer": {"max_epochs": 1},
+        }
+        model = BaselineSSL(config)
+        self.assertIsNotNone(model.online_classifier)
+        features = torch.randn(5, model.backbone.output_dim, requires_grad=True)
+        labels = torch.arange(5) % 10
+        classifier_loss = torch.nn.functional.cross_entropy(
+            model.online_classifier(features.detach()), labels
+        )
+        classifier_loss.backward()
+        self.assertIsNone(features.grad)
+        self.assertIsNotNone(model.online_classifier.weight.grad)
+        optimizer = model.configure_optimizers()
+        self.assertEqual(len(optimizer.param_groups), 2)
+        self.assertAlmostEqual(optimizer.param_groups[1]["lr"], 0.1)
+        self.assertEqual(optimizer.param_groups[1]["weight_decay"], 0.0)
+
+    def test_frossl_official_cifar_stem_matches_pinned_repository(self) -> None:
+        backbone = build_backbone("resnet18_frossl_cifar", width=64)
+        self.assertEqual(backbone.network.conv1.kernel_size, (3, 3))
+        self.assertEqual(backbone.network.conv1.stride, (1, 1))
+        self.assertEqual(backbone.network.conv1.padding, (2, 2))
+        self.assertIsInstance(backbone.network.maxpool, torch.nn.Identity)
 
     def test_formal_configs_pin_defining_mechanisms(self) -> None:
         expected = {

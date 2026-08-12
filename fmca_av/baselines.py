@@ -139,7 +139,9 @@ def fastssl_vicreg_loss(
     return total if views == 2 else total / views
 
 
-def frossl_loss(projections: Tensor, invariance_weight: float = 1.0) -> Tensor:
+def frossl_loss_components(
+    projections: Tensor, invariance_weight: float = 1.0
+) -> tuple[Tensor, Tensor, Tensor]:
     """Original linear-kernel multiview FroSSL objective.
 
     This ports ``multiview_frossl_loss_func`` from the pinned official FroSSL
@@ -154,7 +156,8 @@ def frossl_loss(projections: Tensor, invariance_weight: float = 1.0) -> Tensor:
     batch, views, features = projections.shape
     normalized = functional.normalize(projections, p=2, dim=0)
     mean_projection = normalized.mean(dim=1)
-    total = projections.new_zeros(())
+    invariance_total = projections.new_zeros(())
+    regularization_total = projections.new_zeros(())
     tiny = torch.finfo(projections.dtype).tiny
     for index in range(views):
         values = normalized[:, index]
@@ -163,10 +166,18 @@ def frossl_loss(projections: Tensor, invariance_weight: float = 1.0) -> Tensor:
         # ``.item()``; detach preserves that behavior without a device sync.
         gram = gram / gram.trace().detach().clamp_min(tiny)
         frobenius = torch.linalg.matrix_norm(gram, ord="fro").clamp_min(tiny)
-        entropy_regularizer = 2 * torch.log(frobenius)
+        # The official loss adds +2 log(||K||_F), the negative of its
+        # Rényi-entropy quantity.  Keep that signed contribution explicit.
+        regularization = 2 * torch.log(frobenius)
         invariance = views * functional.mse_loss(values, mean_projection) * features
-        total = total + entropy_regularizer + float(invariance_weight) * invariance
-    return total
+        regularization_total = regularization_total + regularization
+        invariance_total = invariance_total + float(invariance_weight) * invariance
+    return invariance_total + regularization_total, invariance_total, regularization_total
+
+
+def frossl_loss(projections: Tensor, invariance_weight: float = 1.0) -> Tensor:
+    """Return the exact pinned-repository multiview FroSSL objective."""
+    return frossl_loss_components(projections, invariance_weight)[0]
 
 
 class BaselineSSL(L.LightningModule):
@@ -175,6 +186,9 @@ class BaselineSSL(L.LightningModule):
         self.save_hyperparameters({"config": config})
         model = config["model"]
         self.method = str(config["experiment"]["method"])
+        self.view_forward_mode = str(model.get("view_forward_mode", "flattened"))
+        if self.view_forward_mode not in {"flattened", "sequential"}:
+            raise ValueError("model.view_forward_mode must be flattened or sequential")
         supported = {
             "simclr", "barlow_twins", "vicreg", "spectral_contrastive",
             "fastsiam", "byol", "moco_v2", "dino", "dcca", "vamp2",
@@ -216,6 +230,14 @@ class BaselineSSL(L.LightningModule):
                 model.get("projection_hidden_dims", [2048, 2048]),
                 str(model.get("activation", "gelu")),
             )
+        self.online_classifier = None
+        if self.method == "frossl" and bool(config["objective"].get("online_classifier", False)):
+            classes = {"cifar10": 10, "cifar100": 100}.get(str(config["data"]["dataset"]))
+            if classes is None:
+                raise ValueError("FroSSL online classifier is currently scoped to CIFAR")
+            # solo-learn trains this detached online classifier during pretraining.
+            # It contributes cost/monitoring but no gradient to the representation.
+            self.online_classifier = nn.Linear(self.backbone.output_dim, classes)
         self.momentum = float(config["objective"].get("momentum", 0.996))
         self.predictor = None
         self.target_backbone = None
@@ -461,7 +483,22 @@ class BaselineSSL(L.LightningModule):
             encoded_count = views.shape[0] * (views.shape[1] + min(2, views.shape[1]))
         else:
             flattened = views.flatten(0, 1)
-            projections = self.projector(self.backbone(flattened)).reshape(views.shape[0], views.shape[1], -1)
+            if self.view_forward_mode == "sequential":
+                # The pinned solo-learn BaseMethod forwards each crop in a
+                # separate call.  This preserves per-view BN statistics and V
+                # running-stat updates per optimizer step.
+                encoded_list = [self.backbone(views[:, index]) for index in range(views.shape[1])]
+                encoded_features = torch.stack(encoded_list, dim=1)
+                projections = torch.stack(
+                    [self.projector(value) for value in encoded_list], dim=1
+                )
+            else:
+                encoded_features = self.backbone(flattened).reshape(
+                    views.shape[0], views.shape[1], -1
+                )
+                projections = self.projector(encoded_features.flatten(0, 1)).reshape(
+                    views.shape[0], views.shape[1], -1
+                )
             if self.method in multiview_methods:
                 # FastSSL requires global-batch statistics; gathering FroSSL as
                 # well gives DDP the same objective as a single global batch.
@@ -479,10 +516,37 @@ class BaselineSSL(L.LightningModule):
                         float(objective.get("variance_weight", 25.0)),
                     )
                 else:
-                    loss = frossl_loss(
+                    loss, invariance_component, regularization_component = frossl_loss_components(
                         projections,
                         float(objective.get("invariance_weight", 1.0)),
                     )
+                    self.log(
+                        f"{split}/invariance_component", invariance_component,
+                        on_step=False, on_epoch=True, sync_dist=True,
+                    )
+                    self.log(
+                        f"{split}/regularization_component", regularization_component,
+                        on_step=False, on_epoch=True, sync_dist=True,
+                    )
+                    ratio = invariance_component / regularization_component.abs().clamp_min(
+                        torch.finfo(invariance_component.dtype).tiny
+                    )
+                    self.log(
+                        f"{split}/invariance_regularization_ratio", ratio,
+                        on_step=False, on_epoch=True, sync_dist=True,
+                    )
+                    if self.online_classifier is not None:
+                        labels = batch[1].to(encoded_features.device)
+                        expanded_labels = labels[:, None].expand(-1, views.shape[1]).reshape(-1)
+                        online_loss = functional.cross_entropy(
+                            self.online_classifier(encoded_features.detach().flatten(0, 1)),
+                            expanded_labels,
+                        )
+                        loss = loss + online_loss
+                        self.log(
+                            f"{split}/online_classifier_loss", online_loss,
+                            on_step=False, on_epoch=True, sync_dist=True,
+                        )
             else:
                 target = None
                 if self.method == "byol":
@@ -546,28 +610,42 @@ class BaselineSSL(L.LightningModule):
     def configure_optimizers(self) -> object:
         config = self.config["optimizer"]
         name = str(config.get("name", "sgd"))
+        parameters: object = (parameter for parameter in self.parameters() if parameter.requires_grad)
+        if self.online_classifier is not None:
+            representation_parameters = [
+                parameter for parameter_name, parameter in self.named_parameters()
+                if parameter.requires_grad and not parameter_name.startswith("online_classifier.")
+            ]
+            parameters = [
+                {"params": representation_parameters},
+                {
+                    "params": list(self.online_classifier.parameters()),
+                    "lr": float(self.config["objective"].get("online_classifier_lr", 0.1)),
+                    "weight_decay": 0.0,
+                },
+            ]
         if name == "sgd":
             optimizer: torch.optim.Optimizer = torch.optim.SGD(
-                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                parameters,
                 lr=float(config["learning_rate"]),
                 momentum=float(config.get("momentum", 0.9)),
                 weight_decay=float(config.get("weight_decay", 0.0)),
             )
         elif name == "adamw":
             optimizer = torch.optim.AdamW(
-                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                parameters,
                 lr=float(config["learning_rate"]),
                 weight_decay=float(config.get("weight_decay", 0.0)),
             )
         elif name == "adam":
             optimizer = torch.optim.Adam(
-                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                parameters,
                 lr=float(config["learning_rate"]),
                 weight_decay=float(config.get("weight_decay", 0.0)),
             )
         elif name == "lars":
             optimizer = LARS(
-                (parameter for parameter in self.parameters() if parameter.requires_grad),
+                parameters,
                 lr=float(config["learning_rate"]),
                 momentum=float(config.get("momentum", 0.9)),
                 weight_decay=float(config.get("weight_decay", 0.0)),
