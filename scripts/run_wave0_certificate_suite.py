@@ -283,6 +283,12 @@ def main() -> None:
     parser.add_argument("--group", choices=["A", "B", "C", "all"], default="all")
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--unit", default=None)
+    parser.add_argument(
+        "--unit-prefix",
+        default=None,
+        help="run only units whose real key starts with this prefix (sharding across "
+        "SLURM jobs; execution parallelism only, no preregistered quantity changes)",
+    )
     arguments = parser.parse_args()
     output_root = Path(arguments.output_root)
 
@@ -293,6 +299,10 @@ def main() -> None:
         units.extend(group_b_units())
     if arguments.probe:
         units = [unit for unit in units if unit[0] == "A/closed_chain/N1000/M4/seed1"]
+    if arguments.unit_prefix is not None:
+        units = [unit for unit in units if unit[0].startswith(arguments.unit_prefix)]
+        if not units:
+            raise SystemExit(f"no units match prefix {arguments.unit_prefix!r}")
     if arguments.unit is not None:
         units = [unit for unit in units if unit[0] == arguments.unit]
         if not units:
