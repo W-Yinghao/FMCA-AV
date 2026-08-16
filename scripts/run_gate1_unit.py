@@ -260,6 +260,7 @@ def main() -> None:
             logger=CSVLogger(str(unit_dir), name="train_logs"),
             enable_progress_bar=False,
             num_sanity_val_steps=0,
+            gradient_clip_val=1.0,
         )
         last = unit_dir / "checkpoints" / "last.ckpt"
         trainer.fit(

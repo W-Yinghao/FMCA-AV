@@ -36,6 +36,24 @@ def frobenius_score(operator: Tensor) -> Tensor:
     return operator.square().sum()
 
 
+def normalized_score(operator: Tensor) -> Tensor:
+    """||C||_F^2 / min(K_in, K_out): average squared singular mass per mode.
+
+    Dimension normalization keeps every training term O(1) regardless of
+    feature width; the raw K^2-entry sums explode the whitening penalty at
+    K = 128 and blow up SGD within a few steps (gate probe 945112).
+    """
+
+    return operator.square().sum() / min(operator.shape)
+
+
+def identity_penalty(moment: Tensor) -> Tensor:
+    """Per-entry mean of (R - I)^2, the dimension-normalized whitening term."""
+
+    identity = torch.eye(moment.shape[0], dtype=moment.dtype, device=moment.device)
+    return (moment - identity).square().mean()
+
+
 def batch_level_statistics(batch: ChainFeatureBatch) -> Tuple[List[Tensor], List[Tensor]]:
     """One shared (mean, second moment) per level from all its batch samples.
 
@@ -118,18 +136,15 @@ def certificate_training_loss(
     if c_dir.shape != c_comp.shape:
         raise ValueError("endpoint and composed operators must share a shape")
 
-    endpoint_score = frobenius_score(c_dir)
+    endpoint_score = normalized_score(c_dir)
+    raw_endpoint = frobenius_score(c_dir)
     closure_target = c_dir.detach() if closure_stop_grad else c_dir
     closure_denominator = (
-        endpoint_score.detach() if closure_stop_grad else endpoint_score
+        raw_endpoint.detach() if closure_stop_grad else raw_endpoint
     )
     closure_ratio = frobenius_score(closure_target - c_comp) / (closure_denominator + epsilon)
-    identity_penalties = [
-        frobenius_score(moment - torch.eye(moment.shape[0], dtype=moment.dtype, device=moment.device))
-        for moment in moments
-    ]
-    whitening_penalty = torch.stack(identity_penalties).sum()
-    edge_score_sum = torch.stack([frobenius_score(edge) for edge in edges]).sum()
+    whitening_penalty = torch.stack([identity_penalty(moment) for moment in moments]).sum()
+    edge_score_sum = torch.stack([normalized_score(edge) for edge in edges]).sum()
 
     total = (
         -endpoint_score
@@ -165,4 +180,4 @@ def cross_pair_score(
     parent = batch.chain[level_from] - means[level_from]
     children = batch.children[level_to - 1] - means[level_to].unsqueeze(0)
     operator = parent.transpose(0, 1) @ children.mean(dim=1) / parent.shape[0]
-    return frobenius_score(operator)
+    return normalized_score(operator)

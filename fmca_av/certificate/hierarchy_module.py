@@ -29,7 +29,8 @@ from .objective import (
     batch_level_statistics,
     certificate_training_loss,
     cross_pair_score,
-    frobenius_score,
+    identity_penalty,
+    normalized_score,
     train_edge_operators,
     train_endpoint_operator,
 )
@@ -132,18 +133,7 @@ class HierarchyCertificateModule(L.LightningModule):
         )
 
     def _whitening_penalty(self, moments: List[Tensor], levels: Sequence[int]) -> Tensor:
-        penalties = [
-            frobenius_score(
-                moments[level]
-                - torch.eye(
-                    moments[level].shape[0],
-                    dtype=moments[level].dtype,
-                    device=moments[level].device,
-                )
-            )
-            for level in levels
-        ]
-        return torch.stack(penalties).sum()
+        return torch.stack([identity_penalty(moments[level]) for level in levels]).sum()
 
     def _flat_leaf_loss(self, features: ChainFeatureBatch, views: int) -> Tuple[Tensor, Dict[str, float]]:
         """Flat FMCA row: independent full-path descendants of the root are
@@ -166,12 +156,11 @@ class HierarchyCertificateModule(L.LightningModule):
         f_side = centered[:, :half].mean(dim=1)
         g_side = centered[:, half:]
         cross = f_side.transpose(0, 1) @ g_side.mean(dim=1) / f_side.shape[0]
-        score = frobenius_score(cross)
+        score = normalized_score(cross)
         moment_f = f_side.transpose(0, 1) @ f_side / f_side.shape[0]
         pooled_g = g_side.flatten(0, 1)
         moment_g = pooled_g.transpose(0, 1) @ pooled_g / pooled_g.shape[0]
-        identity = torch.eye(moment_g.shape[0], dtype=moment_g.dtype, device=moment_g.device)
-        whitening = frobenius_score(moment_f - identity) + frobenius_score(moment_g - identity)
+        whitening = identity_penalty(moment_f) + identity_penalty(moment_g)
         total = -score + self.gamma * whitening
         return total, {"leaf_score": float(score.detach()), "whitening": float(whitening.detach())}
 
@@ -187,7 +176,7 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant in {"additive_2view", "additive_mview"}:
             means, moments = batch_level_statistics(features)
             edges = train_edge_operators(features, means)
-            score = torch.stack([frobenius_score(edge) for edge in edges]).sum()
+            score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"edge_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
@@ -204,7 +193,7 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "product_only":
             means, moments = batch_level_statistics(features)
             edges = train_edge_operators(features, means)
-            score = frobenius_score(compose_edge_operators(edges))
+            score = normalized_score(compose_edge_operators(edges))
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"product_score": float(score.detach()), "whitening": float(whitening.detach())}
@@ -260,9 +249,21 @@ class HierarchyCertificateModule(L.LightningModule):
         else:
             raise ValueError("optimizer.name must be adamw or sgd")
         if str(config.get("scheduler", "none")) == "cosine":
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer,
-                T_max=int(config.get("scheduler_t_max", self.config["trainer"]["max_epochs"])),
+            total_epochs = int(config.get("scheduler_t_max", self.config["trainer"]["max_epochs"]))
+            warmup_epochs = min(int(config.get("warmup_epochs", 10)), max(total_epochs - 1, 1))
+            cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=max(total_epochs - warmup_epochs, 1)
             )
+            if warmup_epochs > 0:
+                warmup = torch.optim.lr_scheduler.LinearLR(
+                    optimizer, start_factor=0.01, total_iters=warmup_epochs
+                )
+                scheduler: torch.optim.lr_scheduler.LRScheduler = (
+                    torch.optim.lr_scheduler.SequentialLR(
+                        optimizer, [warmup, cosine], milestones=[warmup_epochs]
+                    )
+                )
+            else:
+                scheduler = cosine
             return {"optimizer": optimizer, "lr_scheduler": scheduler}
         return optimizer

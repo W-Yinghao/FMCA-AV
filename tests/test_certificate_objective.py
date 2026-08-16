@@ -22,7 +22,8 @@ class ObjectiveSemanticsTests(unittest.TestCase):
     def test_closed_chain_has_small_closure_ratio(self) -> None:
         terms = certificate_training_loss(_sample(case_closed_chain(), 8000, seed=1))
         self.assertLess(float(terms.closure_ratio), 0.05)
-        self.assertGreater(float(terms.endpoint_score), 0.5)
+        # Dimension-normalized score: ||C_dir||_F^2 / K = 0.735 / 3.
+        self.assertGreater(float(terms.endpoint_score), 0.2)
 
     def test_hallucinated_path_is_punished_by_the_closure_term(self) -> None:
         terms = certificate_training_loss(_sample(case_hallucinated_path(), 8000, seed=2))

@@ -98,7 +98,8 @@ class HierarchyModuleTests(unittest.TestCase):
         product = HierarchyCertificateModule(_config("product_only"))
         _, additive_metrics = additive._variant_loss(features)
         _, product_metrics = product._variant_loss(features)
-        self.assertGreater(additive_metrics["edge_score_sum"], 1.5)
+        # Dimension-normalized per-edge scores: 1.0/2 per nilpotent edge.
+        self.assertGreater(additive_metrics["edge_score_sum"], 0.8)
         self.assertLess(product_metrics["product_score"], 0.05)
 
     def test_decreasing_or_repeated_level_stages_are_rejected(self) -> None:
