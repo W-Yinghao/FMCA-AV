@@ -64,6 +64,35 @@ VARIANT_TAGS = {
 }
 
 
+def resumable_checkpoint(unit_dir: Path) -> "str | None":
+    """Return last.ckpt only if it is loadable with finite weights.
+
+    A NaN-poisoned or format-incompatible checkpoint (e.g. saved by a
+    pre-stability-fix scheduler) is quarantined loudly and training starts
+    fresh; silently resuming poisoned state manufactures fake results.
+    """
+
+    last = unit_dir / "checkpoints" / "last.ckpt"
+    if not last.is_file():
+        return None
+    try:
+        payload = torch.load(str(last), map_location="cpu", weights_only=False)
+        for name, value in payload["state_dict"].items():
+            if value.is_floating_point() and not torch.isfinite(value).all():
+                raise ValueError(f"non-finite weights in {name}")
+        for state in payload.get("lr_schedulers", []):
+            # The warmup+cosine SequentialLR stores child states under this
+            # key; a checkpoint from any other scheduler cannot restore.
+            if "_schedulers" not in state:
+                raise ValueError("lr scheduler state predates the warmup scheduler")
+        return str(last)
+    except Exception as error:
+        quarantine = last.with_name("last.quarantined.ckpt")
+        last.rename(quarantine)
+        print(f"QUARANTINED incompatible checkpoint ({error!r}); starting fresh")
+        return None
+
+
 def _move_batch(batch, device):
     return {
         "chain": [images.to(device) for images in batch["chain"]],
@@ -262,12 +291,11 @@ def main() -> None:
             num_sanity_val_steps=0,
             gradient_clip_val=1.0,
         )
-        last = unit_dir / "checkpoints" / "last.ckpt"
         trainer.fit(
             module,
             data_module.train_dataloader(),
             data_module.val_dataloader(),
-            ckpt_path=str(last) if last.is_file() else None,
+            ckpt_path=resumable_checkpoint(unit_dir),
         )
         module = module.to(device)
         certificate = certificate_evaluation(module, data_module, device, arguments.seed)
