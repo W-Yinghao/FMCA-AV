@@ -146,11 +146,11 @@ class HierarchyCertificateModule(L.LightningModule):
         return torch.stack(penalties).sum()
 
     def _flat_leaf_loss(self, features: ChainFeatureBatch, views: int) -> Tuple[Tensor, Dict[str, float]]:
-        """Flat FMCA row: parent = conditional view mean over INDEPENDENT
-        full-path descendants of the root (the star p(Y|X0) semantics of the
-        classical flat method), never the masked siblings of one realized
-        local crop.  The exact f-side design (separate f-head as in
-        VisionFMCAAV) is a pending gate-prereg decision."""
+        """Flat FMCA row: independent full-path descendants of the root are
+        the star p(Y|X0) views of the classical flat method.  The parent
+        feature is the conditional mean of the FIRST half of the views and
+        the g side is the disjoint second half, so the cross moment carries
+        no shared view noise (no I/M identity floor)."""
 
         if features.endpoint_descendants is None:
             raise ValueError(
@@ -160,17 +160,18 @@ class HierarchyCertificateModule(L.LightningModule):
         leaf = features.endpoint_descendants[:, :views]
         if leaf.shape[1] < 2:
             raise ValueError("flat variants need at least two independent root views")
+        half = leaf.shape[1] // 2
         mean = leaf.flatten(0, 1).mean(dim=0, keepdim=True)
         centered = leaf - mean.unsqueeze(0)
-        pooled = centered.flatten(0, 1)
-        moment = pooled.transpose(0, 1) @ pooled / pooled.shape[0]
-        parent = centered.mean(dim=1)
-        operator = parent.transpose(0, 1) @ parent / parent.shape[0]
-        # S of the parent-to-views cross moment: with the conditional mean as
-        # the parent feature, the cross moment equals the parent second moment.
-        score = frobenius_score(operator)
-        identity = torch.eye(moment.shape[0], dtype=moment.dtype, device=moment.device)
-        whitening = frobenius_score(moment - identity)
+        f_side = centered[:, :half].mean(dim=1)
+        g_side = centered[:, half:]
+        cross = f_side.transpose(0, 1) @ g_side.mean(dim=1) / f_side.shape[0]
+        score = frobenius_score(cross)
+        moment_f = f_side.transpose(0, 1) @ f_side / f_side.shape[0]
+        pooled_g = g_side.flatten(0, 1)
+        moment_g = pooled_g.transpose(0, 1) @ pooled_g / pooled_g.shape[0]
+        identity = torch.eye(moment_g.shape[0], dtype=moment_g.dtype, device=moment_g.device)
+        whitening = frobenius_score(moment_f - identity) + frobenius_score(moment_g - identity)
         total = -score + self.gamma * whitening
         return total, {"leaf_score": float(score.detach()), "whitening": float(whitening.detach())}
 
