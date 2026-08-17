@@ -35,6 +35,9 @@ class CropLevelSpec:
     max_scale: float = 0.8
     size: int = 32
     noise_std: float = 0.0
+    color_jitter_probability: float = 0.0
+    color_jitter_strength: float = 0.5
+    grayscale_probability: float = 0.0
 
 
 @dataclass
@@ -43,6 +46,8 @@ class MaskLevelSpec:
     patch_fraction: float = 0.35
     patches: int = 1
     noise_std: float = 0.0
+    grayscale_probability: float = 0.0
+    blur_probability: float = 0.0
 
 
 LevelSpec = object
@@ -114,6 +119,46 @@ def _resize(pixels: Tensor, size: int) -> Tensor:
     return torch.nn.functional.interpolate(
         pixels.unsqueeze(0), size=(size, size), mode="bicubic", align_corners=False
     ).squeeze(0).clamp(0.0, 1.0)
+
+
+_LUMA = torch.tensor([0.299, 0.587, 0.114]).view(3, 1, 1)
+
+
+def _luminance(pixels: Tensor) -> Tensor:
+    return (pixels * _LUMA).sum(dim=0, keepdim=True)
+
+
+def _color_jitter(pixels: Tensor, strength: float, generator: Optional[torch.Generator]) -> Tensor:
+    """Tensor-native brightness/contrast/saturation jitter (SimCLR ranges).
+
+    Hue rotation is deliberately omitted (tensor-native hue needs an HSV
+    round trip); brightness/contrast/saturation plus grayscale carry the
+    bulk of the photometric-invariance signal.
+    """
+
+    brightness = _uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+    contrast = _uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+    saturation = _uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
+    jittered = pixels * brightness
+    gray_mean = _luminance(jittered).mean()
+    jittered = gray_mean + (jittered - gray_mean) * contrast
+    gray = _luminance(jittered)
+    jittered = gray + (jittered - gray) * saturation
+    return jittered.clamp(0.0, 1.0)
+
+
+def _grayscale(pixels: Tensor) -> Tensor:
+    return _luminance(pixels).expand_as(pixels).clone()
+
+
+def _gaussian_blur(pixels: Tensor, sigma: float = 1.0) -> Tensor:
+    radius = 2
+    positions = torch.arange(-radius, radius + 1, dtype=pixels.dtype)
+    kernel_1d = torch.exp(-positions.square() / (2.0 * sigma * sigma))
+    kernel_1d = kernel_1d / kernel_1d.sum()
+    kernel = (kernel_1d[:, None] * kernel_1d[None, :]).expand(3, 1, -1, -1)
+    padded = torch.nn.functional.pad(pixels.unsqueeze(0), [radius] * 4, mode="reflect")
+    return torch.nn.functional.conv2d(padded, kernel, groups=3).squeeze(0)
 
 
 def _compose_box(
@@ -193,6 +238,12 @@ class NestedViewTreeSampler:
         if isinstance(spec, CropLevelSpec):
             top, left, crop_height, crop_width = _sample_crop_box(height, width, spec, generator)
             pixels = _resize(source[:, top:top + crop_height, left:left + crop_width], spec.size)
+            # Per-child photometric refinement, conditional on the realized
+            # parent pixels: a legitimate stochastic channel of this edge.
+            if float(torch.rand((), generator=generator)) < spec.color_jitter_probability:
+                pixels = _color_jitter(pixels, spec.color_jitter_strength, generator)
+            if float(torch.rand((), generator=generator)) < spec.grayscale_probability:
+                pixels = _grayscale(pixels)
             pixels = self._apply_noise(pixels, spec.noise_std, generator)
             box = torch.tensor([top, left, crop_height, crop_width], dtype=torch.float32)
             return RealizedView(
@@ -213,6 +264,10 @@ class NestedViewTreeSampler:
                 top = int(torch.randint(0, height - side + 1, (), generator=generator))
                 left = int(torch.randint(0, width - side + 1, (), generator=generator))
                 pixels[:, top:top + side, left:left + side] = fill
+            if float(torch.rand((), generator=generator)) < spec.grayscale_probability:
+                pixels = _grayscale(pixels)
+            if float(torch.rand((), generator=generator)) < spec.blur_probability:
+                pixels = _gaussian_blur(pixels)
             pixels = self._apply_noise(pixels, spec.noise_std, generator)
             return RealizedView(
                 pixels=pixels,

@@ -150,6 +150,52 @@ class FlipBookkeepingTests(unittest.TestCase):
         self.assertLess(worst, 0.08)
 
 
+class PhotometricChannelTests(unittest.TestCase):
+    """Add-one photometric channels are per-child conditional refinements."""
+
+    def _config(self) -> ViewTreeConfig:
+        return ViewTreeConfig(
+            root_spec=CropLevelSpec(min_scale=0.5, max_scale=1.0, size=32),
+            edge_specs=[
+                CropLevelSpec(
+                    min_scale=0.3, max_scale=0.8, size=32,
+                    color_jitter_probability=1.0, color_jitter_strength=0.5,
+                ),
+                MaskLevelSpec(grayscale_probability=1.0, blur_probability=1.0),
+            ],
+            children_per_edge=3,
+            endpoint_descendants=2,
+            flip_probability=0.0,
+        )
+
+    def test_grayscale_leaf_has_equal_channels(self) -> None:
+        dataset = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=5)
+        tree = dataset[0]
+        config = self._config()
+        mean = torch.tensor(config.mean).view(3, 1, 1)
+        std = torch.tensor(config.std).view(3, 1, 1)
+        leaf = tree["chain"][2] * std + mean
+        self.assertTrue(torch.allclose(leaf[0], leaf[1], atol=1e-5))
+        self.assertTrue(torch.allclose(leaf[1], leaf[2], atol=1e-5))
+
+    def test_color_jitter_differs_across_siblings(self) -> None:
+        dataset = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=6)
+        tree = dataset[1]
+        crops = tree["children"][0]
+        # Distinct crops AND distinct photometric draws per child.
+        self.assertGreater(float((crops[0] - crops[1]).abs().mean()), 1e-3)
+
+    def test_photometric_channels_keep_boxes_and_determinism(self) -> None:
+        first = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=7)[2]
+        second = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=7)[2]
+        for level in range(3):
+            self.assertTrue(torch.equal(first["chain"][level], second["chain"][level]))
+        for edge, boxes in enumerate(first["boxes_children"]):
+            parent_box = first["boxes_chain"][edge]
+            for view in range(boxes.shape[0]):
+                self.assertTrue(_box_inside(boxes[view], parent_box))
+
+
 class ParallelModeTests(unittest.TestCase):
     def test_parallel_mode_escapes_the_realized_parent(self) -> None:
         dataset = NestedViewTreeDataset(

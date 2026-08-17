@@ -33,6 +33,9 @@ def view_tree_config_from_dict(config: Dict[str, Any]) -> ViewTreeConfig:
                     max_scale=float(edge.get("max_scale", 0.8)),
                     size=int(edge.get("size", 32)),
                     noise_std=float(edge.get("noise_std", 0.0)),
+                    color_jitter_probability=float(edge.get("color_jitter_probability", 0.0)),
+                    color_jitter_strength=float(edge.get("color_jitter_strength", 0.5)),
+                    grayscale_probability=float(edge.get("grayscale_probability", 0.0)),
                 )
             )
         elif kind == "mask":
@@ -41,6 +44,8 @@ def view_tree_config_from_dict(config: Dict[str, Any]) -> ViewTreeConfig:
                     patch_fraction=float(edge.get("patch_fraction", 0.35)),
                     patches=int(edge.get("patches", 1)),
                     noise_std=float(edge.get("noise_std", 0.0)),
+                    grayscale_probability=float(edge.get("grayscale_probability", 0.0)),
+                    blur_probability=float(edge.get("blur_probability", 0.0)),
                 )
             )
         else:

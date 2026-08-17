@@ -340,7 +340,7 @@ def main() -> None:
         )
         record = {
             "unit_key": unit_key,
-            "gate_version": GATE_VERSION,
+            "gate_version": Path(arguments.output_root).name,
             "certificate_version": CERTIFICATE_VERSION,
             "variant": arguments.variant,
             "seed": arguments.seed,
