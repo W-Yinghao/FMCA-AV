@@ -79,6 +79,40 @@ class ObjectiveSemanticsTests(unittest.TestCase):
         self.assertLess(float(with_alpha.total), float(without.total))
 
 
+class BoundednessTests(unittest.TestCase):
+    """The raw-moment formulation ran away to -1e19 (gate1_20260816_v1);
+    the whitened formulation must be scale-invariant and bounded below."""
+
+    def test_scores_are_invariant_to_feature_scale(self) -> None:
+        batch = _sample(case_closed_chain(), 4000, seed=11)
+        blown_up = ChainFeatureBatch(
+            chain=[1000.0 * states for states in batch.chain],
+            children=[1000.0 * descendants for descendants in batch.children],
+            endpoint_descendants=1000.0 * batch.endpoint_descendants,
+        )
+        base = certificate_training_loss(batch)
+        scaled = certificate_training_loss(blown_up)
+        self.assertAlmostEqual(
+            float(base.endpoint_score), float(scaled.endpoint_score), places=4
+        )
+        self.assertAlmostEqual(
+            float(base.closure_ratio), float(scaled.closure_ratio), places=4
+        )
+
+    def test_total_loss_is_bounded_below_at_any_scale(self) -> None:
+        for scale in (1.0, 100.0, 10000.0):
+            batch = _sample(case_closed_chain(), 2000, seed=13)
+            wild = ChainFeatureBatch(
+                chain=[scale * states for states in batch.chain],
+                children=[scale * descendants for descendants in batch.children],
+                endpoint_descendants=scale * batch.endpoint_descendants,
+            )
+            terms = certificate_training_loss(wild, alpha=1.0, beta=1.0, gamma=1.0)
+            # -endpoint - alpha*edges >= -(1 + num_edges); other terms >= 0.
+            self.assertGreater(float(terms.total), -4.0, msg=f"scale {scale}")
+            self.assertLessEqual(float(terms.endpoint_score), 1.5, msg=f"scale {scale}")
+
+
 class GradientFlowTests(unittest.TestCase):
     def test_gradients_flow_through_every_term(self) -> None:
         batch = _sample(case_closed_chain(), 512, seed=6)

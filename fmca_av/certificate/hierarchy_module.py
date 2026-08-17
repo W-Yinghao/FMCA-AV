@@ -26,13 +26,14 @@ from torch import Tensor, nn
 from ..models import MLP
 from .estimation import ChainFeatureBatch
 from .objective import (
-    batch_level_statistics,
     certificate_training_loss,
+    cholesky_whitener,
     cross_pair_score,
     identity_penalty,
     normalized_score,
     train_edge_operators,
     train_endpoint_operator,
+    whiten_chain_batch,
 )
 from .stage_backbone import StageTappedCIFARResNet
 from .triplet import compose_edge_operators
@@ -85,6 +86,7 @@ class HierarchyCertificateModule(L.LightningModule):
         self.beta = float(loss.get("beta", 1.0))
         self.gamma = float(loss.get("gamma", 1.0))
         self.epsilon = float(loss.get("epsilon", 1e-6))
+        self.ridge = float(loss.get("ridge", 1e-3))
         self.closure_stop_grad = bool(loss.get("closure_stop_grad", False))
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
@@ -153,14 +155,16 @@ class HierarchyCertificateModule(L.LightningModule):
         half = leaf.shape[1] // 2
         mean = leaf.flatten(0, 1).mean(dim=0, keepdim=True)
         centered = leaf - mean.unsqueeze(0)
-        f_side = centered[:, :half].mean(dim=1)
-        g_side = centered[:, half:]
+        pooled = centered.flatten(0, 1)
+        moment = pooled.transpose(0, 1) @ pooled / pooled.shape[0]
+        # Leaf-level terms only: the flat control must not train the unused
+        # non-leaf projectors through shared penalties.
+        white = centered @ cholesky_whitener(moment, self.ridge)
+        f_side = white[:, :half].mean(dim=1)
+        g_side = white[:, half:]
         cross = f_side.transpose(0, 1) @ g_side.mean(dim=1) / f_side.shape[0]
         score = normalized_score(cross)
-        moment_f = f_side.transpose(0, 1) @ f_side / f_side.shape[0]
-        pooled_g = g_side.flatten(0, 1)
-        moment_g = pooled_g.transpose(0, 1) @ pooled_g / pooled_g.shape[0]
-        whitening = identity_penalty(moment_f) + identity_penalty(moment_g)
+        whitening = identity_penalty(moment)
         total = -score + self.gamma * whitening
         return total, {"leaf_score": float(score.detach()), "whitening": float(whitening.detach())}
 
@@ -174,25 +178,25 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "additive_2view":
             features = self._truncate_views(features, views=2)
         if self.variant in {"additive_2view", "additive_mview"}:
-            means, moments = batch_level_statistics(features)
-            edges = train_edge_operators(features, means)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
+            edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"edge_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
         if self.variant == "amdim_cross":
-            means, moments = batch_level_statistics(features)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
             pairs = self.cross_pairs or [
                 (i, j) for i in range(self.num_levels) for j in range(1, self.num_levels) if i < j
             ]
-            scores = [cross_pair_score(features, means, i, j) for i, j in pairs]
+            scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
             score = torch.stack(scores).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"cross_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
         if self.variant == "product_only":
-            means, moments = batch_level_statistics(features)
-            edges = train_edge_operators(features, means)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
+            edges = train_edge_operators(whitened)
             score = normalized_score(compose_edge_operators(edges))
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
@@ -204,6 +208,7 @@ class HierarchyCertificateModule(L.LightningModule):
             gamma=self.gamma,
             epsilon=self.epsilon,
             closure_stop_grad=self.closure_stop_grad,
+            ridge=self.ridge,
         )
         return terms.total, terms.as_metrics()
 
@@ -215,9 +220,9 @@ class HierarchyCertificateModule(L.LightningModule):
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
         if split == "val":
             with torch.no_grad():
-                means, _ = batch_level_statistics(features)
-                edges = train_edge_operators(features, means)
-                c_dir = train_endpoint_operator(features, means)
+                whitened, _ = whiten_chain_batch(features, ridge=self.ridge)
+                edges = train_edge_operators(whitened)
+                c_dir = train_endpoint_operator(whitened)
                 c_comp = compose_edge_operators(edges)
                 # Train-protocol diagnostic only; not the Stage-B/C certificate.
                 self.log("val/closure_defect_frobenius", torch.linalg.matrix_norm(c_dir - c_comp))

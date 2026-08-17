@@ -54,6 +54,57 @@ def identity_penalty(moment: Tensor) -> Tensor:
     return (moment - identity).square().mean()
 
 
+def cholesky_whitener(moment: Tensor, ridge: float = 1e-3) -> Tensor:
+    """Differentiable whitening transform W with W^T R W = I.
+
+    Cholesky-based (z @ L^{-T}) rather than symmetric eigh: triangular
+    solves have stable gradients where eigh backward explodes on
+    near-degenerate spectra.  Any invertible whitening differs from
+    R^{-1/2} by an orthogonal factor, which every reported quantity is
+    invariant to (gauge invariance), and the factor cancels nowhere in the
+    ordered composition because each level uses ONE shared transform.
+    """
+
+    from ..operators import regularized_covariance
+
+    lower = torch.linalg.cholesky(regularized_covariance(moment, ridge))
+    identity = torch.eye(moment.shape[0], dtype=moment.dtype, device=moment.device)
+    return torch.linalg.solve_triangular(lower, identity, upper=False).transpose(0, 1)
+
+
+def whiten_chain_batch(
+    batch: ChainFeatureBatch,
+    ridge: float = 1e-3,
+) -> Tuple[ChainFeatureBatch, List[Tensor]]:
+    """Center and batch-whiten every level with ONE shared transform.
+
+    This is the train-time counterpart of the frozen ontology's whitened
+    coordinates: every score is computed on whitened operators (singular
+    values <= ~1, so score terms are bounded and reward no scale
+    inflation -- the raw-moment-plus-penalty formulation is unbounded
+    below and ran away to -1e19 in gate1_20260816_v1).  Returns the
+    whitened batch and the RAW centered level moments for the gamma
+    conditioning term.
+    """
+
+    means, moments = batch_level_statistics(batch)
+    whiteners = [cholesky_whitener(moment, ridge) for moment in moments]
+    chain = [
+        (batch.chain[level] - means[level]) @ whiteners[level]
+        for level in range(batch.num_levels)
+    ]
+    children = [
+        (batch.children[edge] - means[edge + 1].unsqueeze(0)) @ whiteners[edge + 1]
+        for edge in range(batch.num_levels - 1)
+    ]
+    endpoint = (
+        (batch.endpoint_descendants - means[-1].unsqueeze(0)) @ whiteners[-1]
+        if batch.endpoint_descendants is not None
+        else None
+    )
+    return ChainFeatureBatch(chain=chain, children=children, endpoint_descendants=endpoint), moments
+
+
 def batch_level_statistics(batch: ChainFeatureBatch) -> Tuple[List[Tensor], List[Tensor]]:
     """One shared (mean, second moment) per level from all its batch samples.
 
@@ -76,23 +127,40 @@ def batch_level_statistics(batch: ChainFeatureBatch) -> Tuple[List[Tensor], List
     return means, moments
 
 
-def train_edge_operators(batch: ChainFeatureBatch, means: Sequence[Tensor]) -> List[Tensor]:
-    """Differentiable per-edge cross moments in shared centered coordinates."""
+def train_edge_operators(
+    batch: ChainFeatureBatch, means: Optional[Sequence[Tensor]] = None
+) -> List[Tensor]:
+    """Differentiable per-edge cross moments in shared coordinates.
+
+    Pass means=None for an already-centered (e.g. whitened) batch.
+    """
 
     edges: List[Tensor] = []
     for edge in range(batch.num_levels - 1):
-        parent = batch.chain[edge] - means[edge]
-        children = batch.children[edge] - means[edge + 1].unsqueeze(0)
+        parent = batch.chain[edge]
+        children = batch.children[edge]
+        if means is not None:
+            parent = parent - means[edge]
+            children = children - means[edge + 1].unsqueeze(0)
         edges.append(parent.transpose(0, 1) @ children.mean(dim=1) / parent.shape[0])
     return edges
 
 
-def train_endpoint_operator(batch: ChainFeatureBatch, means: Sequence[Tensor]) -> Tensor:
-    root = batch.chain[0] - means[0]
+def train_endpoint_operator(
+    batch: ChainFeatureBatch, means: Optional[Sequence[Tensor]] = None
+) -> Tensor:
+    root = batch.chain[0]
+    if means is not None:
+        root = root - means[0]
     if batch.endpoint_descendants is not None:
-        leaf = (batch.endpoint_descendants - means[-1].unsqueeze(0)).mean(dim=1)
+        leaf = batch.endpoint_descendants
+        if means is not None:
+            leaf = leaf - means[-1].unsqueeze(0)
+        leaf = leaf.mean(dim=1)
     else:
-        leaf = batch.chain[-1] - means[-1]
+        leaf = batch.chain[-1]
+        if means is not None:
+            leaf = leaf - means[-1]
     return root.transpose(0, 1) @ leaf / root.shape[0]
 
 
@@ -121,18 +189,23 @@ def certificate_training_loss(
     gamma: float = 1.0,
     epsilon: float = 1e-6,
     closure_stop_grad: bool = False,
+    ridge: float = 1e-3,
 ) -> CertificateLossTerms:
     """Assemble the frozen loss from one differentiable chain batch.
 
-    closure_stop_grad detaches C_dir inside the closure ratio only (the
-    composition is pulled toward the measured endpoint, never the reverse);
-    it is an ablation flag, not a default.
+    All operators are computed on batch-WHITENED features (the frozen
+    ontology defines them in whitened coordinates), so every score term is
+    bounded and rewards no scale inflation.  The gamma term conditions the
+    RAW level moments toward identity.  closure_stop_grad detaches C_dir
+    inside the closure ratio only (the composition is pulled toward the
+    measured endpoint, never the reverse); it is an ablation flag, not a
+    default.
     """
 
-    means, moments = batch_level_statistics(batch)
-    edges = train_edge_operators(batch, means)
+    whitened, moments = whiten_chain_batch(batch, ridge=ridge)
+    edges = train_edge_operators(whitened)
     c_comp = compose_edge_operators(edges)
-    c_dir = train_endpoint_operator(batch, means)
+    c_dir = train_endpoint_operator(whitened)
     if c_dir.shape != c_comp.shape:
         raise ValueError("endpoint and composed operators must share a shape")
 
@@ -163,7 +236,7 @@ def certificate_training_loss(
 
 def cross_pair_score(
     batch: ChainFeatureBatch,
-    means: Sequence[Tensor],
+    means: Optional[Sequence[Tensor]],
     level_from: int,
     level_to: int,
 ) -> Tensor:
@@ -177,7 +250,10 @@ def cross_pair_score(
         raise ValueError("level_from out of range")
     if not 1 <= level_to < batch.num_levels:
         raise ValueError("level_to must be a descendant-bearing level")
-    parent = batch.chain[level_from] - means[level_from]
-    children = batch.children[level_to - 1] - means[level_to].unsqueeze(0)
+    parent = batch.chain[level_from]
+    children = batch.children[level_to - 1]
+    if means is not None:
+        parent = parent - means[level_from]
+        children = children - means[level_to].unsqueeze(0)
     operator = parent.transpose(0, 1) @ children.mean(dim=1) / parent.shape[0]
     return normalized_score(operator)

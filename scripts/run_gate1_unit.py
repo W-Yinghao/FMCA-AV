@@ -22,8 +22,27 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+
+
+class DivergenceGuard(Callback):
+    """Abort loudly if the bounded objective ever leaves its sane range.
+
+    With whitened operators every score term is <= ~1, so |train/loss|
+    beyond ``bound`` means the objective implementation regressed to an
+    unbounded form (gate1_20260816_v1 ran away to -1e19 silently).
+    """
+
+    def __init__(self, bound: float = 50.0) -> None:
+        self.bound = bound
+
+    def on_train_epoch_end(self, trainer, module) -> None:
+        loss = trainer.callback_metrics.get("train/loss")
+        if loss is not None and (not torch.isfinite(loss) or abs(float(loss)) > self.bound):
+            raise RuntimeError(
+                f"divergence guard: train/loss={float(loss):.3e} exceeds bound {self.bound}"
+            )
 from torch.utils.data import DataLoader
 
 from fmca_av.certificate.controls import (
@@ -52,7 +71,7 @@ from fmca_av.data.cifar import CIFARFiles, CIFARProbeTransform, LabeledCIFARData
 from fmca_av.knn import weighted_knn_accuracy
 from fmca_av.probe_module import LinearProbe
 
-GATE_VERSION = "gate1_20260816_v1"
+GATE_VERSION = "gate1_20260817_v2"
 VARIANT_TAGS = {
     "final_2view": "v1_final_2view",
     "final_mview": "v2_final_mview",
@@ -279,13 +298,14 @@ def main() -> None:
             dirpath=str(unit_dir / "checkpoints"), save_last=True, save_top_k=0,
             every_n_epochs=1,
         )
+        guard = DivergenceGuard()
         trainer = L.Trainer(
             accelerator="gpu",
             devices=1,
             max_epochs=max_epochs,
             deterministic="warn",
             check_val_every_n_epoch=1 if arguments.probe_mode else 10,
-            callbacks=[checkpoint],
+            callbacks=[checkpoint, guard],
             logger=CSVLogger(str(unit_dir), name="train_logs"),
             enable_progress_bar=False,
             num_sanity_val_steps=0,
@@ -319,9 +339,10 @@ def main() -> None:
             "linear_probe": probe_metrics,
             "knn_accuracy": float(knn_accuracy),
             "representation": diagnostics,
-            "collapsed": bool(
-                diagnostics["effective_rank"] < 5.0 or probe_metrics["test_accuracy"] < 0.15
-            ),
+            # Entropy-based effective rank sits near 1 even for healthy
+            # CIFAR backbones in this repo (83% FastSSL model: 1.055), so
+            # it stays a reported diagnostic; collapse gates on the probe.
+            "collapsed": bool(probe_metrics["test_accuracy"] < 0.15),
             "wall_seconds": time.time() - started,
             "gpu": torch.cuda.get_device_name(0),
             "status": "complete",

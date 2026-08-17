@@ -30,7 +30,7 @@ DOWNSTREAM_ROWS = ("final_2view", "final_mview", "additive_2view", "additive_mvi
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-root", default="results/gate1/gate1_20260816_v1")
+    parser.add_argument("--output-root", default="results/gate1/gate1_20260817_v2")
     parser.add_argument("--allow-partial", action="store_true",
                         help="interim look: table only, NO verdicts")
     arguments = parser.parse_args()
