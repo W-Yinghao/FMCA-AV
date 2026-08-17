@@ -86,7 +86,7 @@ class HierarchyCertificateModule(L.LightningModule):
         self.beta = float(loss.get("beta", 1.0))
         self.gamma = float(loss.get("gamma", 1.0))
         self.epsilon = float(loss.get("epsilon", 1e-6))
-        self.ridge = float(loss.get("ridge", 1e-3))
+        self.ridge = float(loss.get("ridge", 0.1))
         self.closure_stop_grad = bool(loss.get("closure_stop_grad", False))
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
@@ -159,7 +159,7 @@ class HierarchyCertificateModule(L.LightningModule):
         moment = pooled.transpose(0, 1) @ pooled / pooled.shape[0]
         # Leaf-level terms only: the flat control must not train the unused
         # non-leaf projectors through shared penalties.
-        white = centered @ cholesky_whitener(moment, self.ridge)
+        white = centered @ cholesky_whitener(moment.detach(), self.ridge)
         f_side = white[:, :half].mean(dim=1)
         g_side = white[:, half:]
         cross = f_side.transpose(0, 1) @ g_side.mean(dim=1) / f_side.shape[0]

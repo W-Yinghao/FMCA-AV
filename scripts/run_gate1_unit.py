@@ -29,20 +29,31 @@ from lightning.pytorch.loggers import CSVLogger
 class DivergenceGuard(Callback):
     """Abort loudly if the bounded objective ever leaves its sane range.
 
-    With whitened operators every score term is <= ~1, so |train/loss|
-    beyond ``bound`` means the objective implementation regressed to an
-    unbounded form (gate1_20260816_v1 ran away to -1e19 silently).
+    With whitened operators every score term is <= ~1 per mode, so a
+    score far beyond that bound means the optimizer found a degenerate
+    channel again (v1: scale runaway to -1e19; v2 probe: whitening
+    estimator gaming to endpoint score 6.96).  Failing here fails the
+    probe job, which blocks the dependent fleet automatically.
     """
 
-    def __init__(self, bound: float = 50.0) -> None:
-        self.bound = bound
+    SCORE_BOUNDS = {
+        "train/endpoint_score": 2.5,
+        "train/leaf_score": 2.5,
+        "train/edge_score_sum": 5.0,
+        "train/cross_score_sum": 7.5,
+        "train/product_score": 2.5,
+        "train/loss": 50.0,
+    }
 
     def on_train_epoch_end(self, trainer, module) -> None:
-        loss = trainer.callback_metrics.get("train/loss")
-        if loss is not None and (not torch.isfinite(loss) or abs(float(loss)) > self.bound):
-            raise RuntimeError(
-                f"divergence guard: train/loss={float(loss):.3e} exceeds bound {self.bound}"
-            )
+        for name, bound in self.SCORE_BOUNDS.items():
+            value = trainer.callback_metrics.get(name)
+            if value is None:
+                continue
+            if not torch.isfinite(value) or abs(float(value)) > bound:
+                raise RuntimeError(
+                    f"divergence guard: {name}={float(value):.3e} exceeds bound {bound}"
+                )
 from torch.utils.data import DataLoader
 
 from fmca_av.certificate.controls import (
@@ -71,7 +82,7 @@ from fmca_av.data.cifar import CIFARFiles, CIFARProbeTransform, LabeledCIFARData
 from fmca_av.knn import weighted_knn_accuracy
 from fmca_av.probe_module import LinearProbe
 
-GATE_VERSION = "gate1_20260817_v2"
+GATE_VERSION = "gate1_20260817_v3"
 VARIANT_TAGS = {
     "final_2view": "v1_final_2view",
     "final_mview": "v2_final_mview",

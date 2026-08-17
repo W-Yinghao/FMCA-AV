@@ -74,7 +74,7 @@ def cholesky_whitener(moment: Tensor, ridge: float = 1e-3) -> Tensor:
 
 def whiten_chain_batch(
     batch: ChainFeatureBatch,
-    ridge: float = 1e-3,
+    ridge: float = 0.1,
 ) -> Tuple[ChainFeatureBatch, List[Tensor]]:
     """Center and batch-whiten every level with ONE shared transform.
 
@@ -85,10 +85,18 @@ def whiten_chain_batch(
     below and ran away to -1e19 in gate1_20260816_v1).  Returns the
     whitened batch and the RAW centered level moments for the gamma
     conditioning term.
+
+    The whitener is DETACHED and heavily ridged (0.1, the historical
+    FMCA magnitude): backpropagating through a small-batch whitener lets
+    the optimizer shape covariance noise directions the pooled estimate
+    underestimates, inflating whitened scores far beyond the population
+    bound (gate v2 probe: endpoint score 6.96 with the 1e-3 ridge).
+    Anti-collapse pressure survives through the gamma conditioning term
+    and the whitener's amplification of rare directions.
     """
 
     means, moments = batch_level_statistics(batch)
-    whiteners = [cholesky_whitener(moment, ridge) for moment in moments]
+    whiteners = [cholesky_whitener(moment.detach(), ridge) for moment in moments]
     chain = [
         (batch.chain[level] - means[level]) @ whiteners[level]
         for level in range(batch.num_levels)
@@ -189,7 +197,7 @@ def certificate_training_loss(
     gamma: float = 1.0,
     epsilon: float = 1e-6,
     closure_stop_grad: bool = False,
-    ridge: float = 1e-3,
+    ridge: float = 0.1,
 ) -> CertificateLossTerms:
     """Assemble the frozen loss from one differentiable chain batch.
 
