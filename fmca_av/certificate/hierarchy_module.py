@@ -24,6 +24,8 @@ import torch
 from torch import Tensor, nn
 
 from ..models import MLP
+from ..objectives import trace_score
+from ..operators import estimate_moments
 from .estimation import ChainFeatureBatch
 from .objective import (
     certificate_training_loss,
@@ -92,6 +94,17 @@ class HierarchyCertificateModule(L.LightningModule):
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
             [(int(a), int(b)) for a, b in pairs] if pairs is not None else None
         )
+        # Flat-row recipe: "split_half_whitened" (gate v3/v4) or
+        # "faithful_trace" (gate v5+), which replicates the repo's formal
+        # flat FMCA-AV estimator: f = f_head(mean of projected views),
+        # differentiable-whitened trace score at ridge 1e-3 (the recipe
+        # behind the 85.4/89.4% historical rows).
+        self.flat_recipe = str(loss.get("flat_recipe", "split_half_whitened"))
+        if self.flat_recipe not in {"split_half_whitened", "faithful_trace"}:
+            raise ValueError("loss.flat_recipe must be split_half_whitened or faithful_trace")
+        self.flat_f_head: Optional[MLP] = None
+        if self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace":
+            self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -139,10 +152,12 @@ class HierarchyCertificateModule(L.LightningModule):
 
     def _flat_leaf_loss(self, features: ChainFeatureBatch, views: int) -> Tuple[Tensor, Dict[str, float]]:
         """Flat FMCA row: independent full-path descendants of the root are
-        the star p(Y|X0) views of the classical flat method.  The parent
-        feature is the conditional mean of the FIRST half of the views and
-        the g side is the disjoint second half, so the cross moment carries
-        no shared view noise (no I/M identity floor)."""
+        the star p(Y|X0) views of the classical flat method.
+
+        faithful_trace (gate v5+): the repo's formal flat FMCA-AV estimator
+        (f = f_head(mean of projected views), whitened trace at ridge 1e-3).
+        split_half_whitened (v3/v4): parent = conditional mean of the first
+        half of the views, g = the disjoint second half."""
 
         if features.endpoint_descendants is None:
             raise ValueError(
@@ -152,6 +167,13 @@ class HierarchyCertificateModule(L.LightningModule):
         leaf = features.endpoint_descendants[:, :views]
         if leaf.shape[1] < 2:
             raise ValueError("flat variants need at least two independent root views")
+        if self.flat_recipe == "faithful_trace":
+            assert self.flat_f_head is not None
+            f_features = self.flat_f_head(leaf.mean(dim=1))
+            moments = estimate_moments(f_features, leaf, centered=True)
+            score = trace_score(moments, ridge=1e-3)
+            total = -score
+            return total, {"flat_trace_score": float(score.detach())}
         half = leaf.shape[1] // 2
         mean = leaf.flatten(0, 1).mean(dim=0, keepdim=True)
         centered = leaf - mean.unsqueeze(0)

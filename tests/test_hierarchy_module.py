@@ -114,6 +114,39 @@ class HierarchyModuleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             HierarchyCertificateModule(_config("telescoping"))
 
+    def test_faithful_trace_flat_recipe_builds_f_head_and_backpropagates(self) -> None:
+        config = _config("final_mview")
+        config["loss"]["flat_recipe"] = "faithful_trace"
+        module = HierarchyCertificateModule(config)
+        self.assertIsNotNone(module.flat_f_head)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        self.assertTrue(torch.isfinite(total))
+        self.assertIn("flat_trace_score", metrics)
+        total.backward()
+        gradient = next(module.flat_f_head.parameters()).grad
+        self.assertIsNotNone(gradient)
+        self.assertGreater(float(gradient.abs().max()), 0.0)
+        # Hierarchy variants must NOT allocate the flat head.
+        hierarchy = HierarchyCertificateModule(
+            {**config, "variant": "product_endpoint"}
+        )
+        self.assertIsNone(hierarchy.flat_f_head)
+
+    def test_faithful_trace_matches_the_formal_estimator(self) -> None:
+        from fmca_av.objectives import trace_score
+        from fmca_av.operators import estimate_moments
+
+        config = _config("final_2view")
+        config["loss"]["flat_recipe"] = "faithful_trace"
+        module = HierarchyCertificateModule(config)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        leaf = features.endpoint_descendants[:, :2]
+        f_features = module.flat_f_head(leaf.mean(dim=1))
+        expected = trace_score(estimate_moments(f_features, leaf, centered=True), ridge=1e-3)
+        self.assertAlmostEqual(float(-total), float(expected), places=5)
+
 
 if __name__ == "__main__":
     unittest.main()
