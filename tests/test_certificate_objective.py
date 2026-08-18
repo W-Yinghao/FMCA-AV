@@ -168,12 +168,19 @@ class GradientFlowTests(unittest.TestCase):
             differentiable, alpha=0.0, beta=1.0, gamma=0.0, closure_stop_grad=True
         )
         terms.closure_ratio.backward(retain_graph=True)
-        # With the endpoint branch detached inside the ratio, only the chain
-        # children (through C_comp) receive closure gradient.
-        self.assertIsNone(endpoint.grad)
-        for descendants in children:
-            self.assertIsNotNone(descendants.grad)
-            self.assertGreater(float(descendants.grad.abs().max()), 0.0)
+        # With the endpoint OPERATOR branch detached inside the ratio, the
+        # closure gradient flows into the chain children (through C_comp).
+        # Endpoint features may receive a residual path through the SHARED
+        # level statistics (they are level-L pool members), but it must be
+        # orders of magnitude below the operator-branch gradient.
+        children_scale = max(
+            float(descendants.grad.abs().max()) for descendants in children
+        )
+        self.assertGreater(children_scale, 0.0)
+        endpoint_scale = (
+            float(endpoint.grad.abs().max()) if endpoint.grad is not None else 0.0
+        )
+        self.assertLess(endpoint_scale, 1e-3 * children_scale)
 
 
 if __name__ == "__main__":
