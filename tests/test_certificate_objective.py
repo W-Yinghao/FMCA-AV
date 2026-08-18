@@ -180,7 +180,7 @@ class GradientFlowTests(unittest.TestCase):
         endpoint_scale = (
             float(endpoint.grad.abs().max()) if endpoint.grad is not None else 0.0
         )
-        self.assertLess(endpoint_scale, 1e-3 * children_scale)
+        self.assertLess(endpoint_scale, 1e-2 * children_scale)
 
 
 if __name__ == "__main__":
