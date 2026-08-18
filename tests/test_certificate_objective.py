@@ -113,6 +113,36 @@ class BoundednessTests(unittest.TestCase):
             self.assertLessEqual(float(terms.endpoint_score), 1.5, msg=f"scale {scale}")
 
 
+class DifferentiableWhitenerTests(unittest.TestCase):
+    def test_differentiable_mode_routes_gradient_through_the_whitener(self) -> None:
+        batch = _sample(case_closed_chain(), 1024, seed=21)
+        chain = [states.clone().requires_grad_(True) for states in batch.chain]
+        differentiable = ChainFeatureBatch(
+            chain=chain, children=batch.children, endpoint_descendants=batch.endpoint_descendants
+        )
+        detached = certificate_training_loss(
+            differentiable, gamma=0.0, detach_whitener=True
+        )
+        detached.endpoint_score.backward(retain_graph=True)
+        grad_detached = chain[0].grad.clone()
+        chain[0].grad = None
+        routed = certificate_training_loss(
+            differentiable, gamma=0.0, detach_whitener=False
+        )
+        routed.endpoint_score.backward()
+        grad_routed = chain[0].grad.clone()
+        # The whitener path must contribute additional gradient.
+        self.assertFalse(torch.allclose(grad_detached, grad_routed, atol=1e-9))
+        self.assertTrue(torch.isfinite(grad_routed).all())
+
+    def test_differentiable_mode_scores_stay_near_population_on_white_input(self) -> None:
+        terms = certificate_training_loss(
+            _sample(case_closed_chain(), 8000, seed=22), ridge=1e-3, detach_whitener=False
+        )
+        self.assertLess(float(terms.endpoint_score), 1.1)
+        self.assertGreater(float(terms.endpoint_score), 0.15)
+
+
 class GradientFlowTests(unittest.TestCase):
     def test_gradients_flow_through_every_term(self) -> None:
         batch = _sample(case_closed_chain(), 512, seed=6)

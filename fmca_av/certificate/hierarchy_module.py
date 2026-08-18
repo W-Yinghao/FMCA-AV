@@ -89,6 +89,10 @@ class HierarchyCertificateModule(L.LightningModule):
         self.gamma = float(loss.get("gamma", 1.0))
         self.epsilon = float(loss.get("epsilon", 1e-6))
         self.ridge = float(loss.get("ridge", 0.1))
+        whitening_mode = str(loss.get("whitening_mode", "detached"))
+        if whitening_mode not in {"detached", "differentiable"}:
+            raise ValueError("loss.whitening_mode must be detached or differentiable")
+        self.detach_whitener = whitening_mode == "detached"
         self.closure_stop_grad = bool(loss.get("closure_stop_grad", False))
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
@@ -200,14 +204,14 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "additive_2view":
             features = self._truncate_views(features, views=2)
         if self.variant in {"additive_2view", "additive_mview"}:
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"edge_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
         if self.variant == "amdim_cross":
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             pairs = self.cross_pairs or [
                 (i, j) for i in range(self.num_levels) for j in range(1, self.num_levels) if i < j
             ]
@@ -217,7 +221,7 @@ class HierarchyCertificateModule(L.LightningModule):
             total = -score + self.gamma * whitening
             return total, {"cross_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
         if self.variant == "product_only":
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge)
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
             score = normalized_score(compose_edge_operators(edges))
             whitening = self._whitening_penalty(moments, range(self.num_levels))
@@ -231,6 +235,7 @@ class HierarchyCertificateModule(L.LightningModule):
             epsilon=self.epsilon,
             closure_stop_grad=self.closure_stop_grad,
             ridge=self.ridge,
+            detach_whitener=self.detach_whitener,
         )
         return terms.total, terms.as_metrics()
 
@@ -242,7 +247,7 @@ class HierarchyCertificateModule(L.LightningModule):
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
         if split == "val":
             with torch.no_grad():
-                whitened, _ = whiten_chain_batch(features, ridge=self.ridge)
+                whitened, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=True)
                 edges = train_edge_operators(whitened)
                 c_dir = train_endpoint_operator(whitened)
                 c_comp = compose_edge_operators(edges)

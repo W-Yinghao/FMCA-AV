@@ -75,6 +75,7 @@ def cholesky_whitener(moment: Tensor, ridge: float = 1e-3) -> Tensor:
 def whiten_chain_batch(
     batch: ChainFeatureBatch,
     ridge: float = 0.1,
+    detach_whitener: bool = True,
 ) -> Tuple[ChainFeatureBatch, List[Tensor]]:
     """Center and batch-whiten every level with ONE shared transform.
 
@@ -86,17 +87,21 @@ def whiten_chain_batch(
     whitened batch and the RAW centered level moments for the gamma
     conditioning term.
 
-    The whitener is DETACHED and heavily ridged (0.1, the historical
-    FMCA magnitude): backpropagating through a small-batch whitener lets
-    the optimizer shape covariance noise directions the pooled estimate
-    underestimates, inflating whitened scores far beyond the population
-    bound (gate v2 probe: endpoint score 6.96 with the 1e-3 ridge).
-    Anti-collapse pressure survives through the gamma conditioning term
-    and the whitener's amplification of rare directions.
+    detach_whitener=True (gate v3-v5 hierarchy rows) blocks gradients
+    through the whitener: safe against estimator gaming on weak-signal
+    views (gate v2 probe: endpoint score 6.96 at ridge 1e-3), but gate
+    v5 showed it also caps the learning signal (hierarchy rows 41-48%
+    vs 81-84% for the differentiable faithful recipe on the same
+    views).  detach_whitener=False (gate v6+) is the historical
+    formal-recipe behavior: differentiable whitening, appropriate with
+    strong views and per-term guard bounds watching for gaming.
     """
 
     means, moments = batch_level_statistics(batch)
-    whiteners = [cholesky_whitener(moment.detach(), ridge) for moment in moments]
+    whiteners = [
+        cholesky_whitener(moment.detach() if detach_whitener else moment, ridge)
+        for moment in moments
+    ]
     chain = [
         (batch.chain[level] - means[level]) @ whiteners[level]
         for level in range(batch.num_levels)
@@ -198,6 +203,7 @@ def certificate_training_loss(
     epsilon: float = 1e-6,
     closure_stop_grad: bool = False,
     ridge: float = 0.1,
+    detach_whitener: bool = True,
 ) -> CertificateLossTerms:
     """Assemble the frozen loss from one differentiable chain batch.
 
@@ -210,7 +216,7 @@ def certificate_training_loss(
     default.
     """
 
-    whitened, moments = whiten_chain_batch(batch, ridge=ridge)
+    whitened, moments = whiten_chain_batch(batch, ridge=ridge, detach_whitener=detach_whitener)
     edges = train_edge_operators(whitened)
     c_comp = compose_edge_operators(edges)
     c_dir = train_endpoint_operator(whitened)
