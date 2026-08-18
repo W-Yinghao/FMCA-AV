@@ -127,6 +127,11 @@ class HierarchyCertificateModule(L.LightningModule):
         self.product_recipe = str(loss.get("product_recipe", "whitened"))
         if self.product_recipe not in {"whitened", "faithful_bootstrap"}:
             raise ValueError("loss.product_recipe must be whitened or faithful_bootstrap")
+        # alpha_schedule "cosine_to_zero" anneals the edge bootstrap away so
+        # the converged objective is the frozen algebra's alpha -> 0 form.
+        self.alpha_schedule = str(loss.get("alpha_schedule", "constant"))
+        if self.alpha_schedule not in {"constant", "cosine_to_zero"}:
+            raise ValueError("loss.alpha_schedule must be constant or cosine_to_zero")
         self.flat_f_head: Optional[MLP] = None
         if self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace":
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
@@ -264,6 +269,15 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "product_endpoint" and self.product_recipe == "faithful_bootstrap":
             if features.endpoint_descendants is None:
                 raise ValueError("product_endpoint requires endpoint descendants")
+            alpha = self.alpha
+            if self.alpha_schedule == "cosine_to_zero":
+                try:
+                    progress = min(self.current_epoch / max(self.trainer.max_epochs, 1), 1.0)
+                except RuntimeError:
+                    progress = 0.0
+                import math
+
+                alpha = self.alpha * 0.5 * (1.0 + math.cos(math.pi * progress))
             reward_dir = trace_score(
                 estimate_moments(features.chain[0], features.endpoint_descendants, centered=True),
                 ridge=1e-3,
@@ -282,11 +296,15 @@ class HierarchyCertificateModule(L.LightningModule):
             shared_edges = train_edge_operators(whitened)
             c_comp = compose_edge_operators(shared_edges)
             c_dir = train_endpoint_operator(whitened)
-            closure = (c_dir - c_comp).square().sum() / (c_dir.square().sum() + self.epsilon)
+            closure_target = c_dir.detach() if self.closure_stop_grad else c_dir
+            closure_denominator = (
+                c_dir.detach().square().sum() if self.closure_stop_grad else c_dir.square().sum()
+            )
+            closure = (closure_target - c_comp).square().sum() / (closure_denominator + self.epsilon)
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = (
                 -reward_dir
-                - self.alpha * edge_sum
+                - alpha * edge_sum
                 + self.beta * closure
                 + self.gamma * whitening
             )
@@ -295,6 +313,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 "edge_trace_sum": float(edge_sum.detach()),
                 "closure_ratio": float(closure.detach()),
                 "whitening": float(whitening.detach()),
+                "alpha_effective": float(alpha),
             }
         if self.variant == "product_only":
             whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)

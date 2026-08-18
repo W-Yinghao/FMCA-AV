@@ -175,6 +175,22 @@ class HierarchyModuleTests(unittest.TestCase):
             self.assertIsNotNone(gradient, msg=f"projector {level}")
             self.assertGreater(float(gradient.abs().max()), 0.0, msg=f"projector {level}")
 
+    def test_bootstrap_arm_flags_schedule_and_stop_grad(self) -> None:
+        config = _config("product_endpoint")
+        config["loss"].update(
+            product_recipe="faithful_bootstrap", alpha=0.2, beta=128.0,
+            whitening_mode="differentiable", ridge=1e-3,
+            alpha_schedule="cosine_to_zero", closure_stop_grad=True,
+        )
+        module = HierarchyCertificateModule(config)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        # Detached from a trainer, the cosine schedule reports full alpha.
+        self.assertAlmostEqual(metrics["alpha_effective"], 0.2)
+        self.assertTrue(torch.isfinite(total))
+        total.backward()
+        self.assertIsNotNone(next(module.backbone.stem.parameters()).grad)
+
     def test_faithful_trace_matches_the_formal_estimator(self) -> None:
         from fmca_av.objectives import trace_score
         from fmca_av.operators import estimate_moments
