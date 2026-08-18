@@ -106,6 +106,18 @@ class HierarchyCertificateModule(L.LightningModule):
         self.flat_recipe = str(loss.get("flat_recipe", "split_half_whitened"))
         if self.flat_recipe not in {"split_half_whitened", "faithful_trace"}:
             raise ValueError("loss.flat_recipe must be split_half_whitened or faithful_trace")
+        # Additive-family recipe: "whitened" scores in shared pooled
+        # coordinates (v3-v6b) or "faithful_trace" per-operator FMCA scores
+        # (v6c+).  The additive/AMDIM baselines never used shared-interface
+        # whitening historically (per-stage losses whiten per stage), and a
+        # pure edge-score objective under a shared differentiable whitener
+        # farms the thin-subset estimation gap (guard trip at 5.03).  The
+        # compositional rows keep shared coordinates: composition semantics
+        # require one interior basis, and their loss has no per-edge score
+        # incentive (alpha = 0).
+        self.additive_recipe = str(loss.get("additive_recipe", "whitened"))
+        if self.additive_recipe not in {"whitened", "faithful_trace"}:
+            raise ValueError("loss.additive_recipe must be whitened or faithful_trace")
         self.flat_f_head: Optional[MLP] = None
         if self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace":
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
@@ -204,6 +216,16 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "additive_2view":
             features = self._truncate_views(features, views=2)
         if self.variant in {"additive_2view", "additive_mview"}:
+            if self.additive_recipe == "faithful_trace":
+                scores = [
+                    trace_score(
+                        estimate_moments(features.chain[edge], features.children[edge], centered=True),
+                        ridge=1e-3,
+                    )
+                    for edge in range(self.num_levels - 1)
+                ]
+                score = torch.stack(scores).sum()
+                return -score, {"edge_trace_sum": float(score.detach())}
             whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
@@ -211,10 +233,20 @@ class HierarchyCertificateModule(L.LightningModule):
             total = -score + self.gamma * whitening
             return total, {"edge_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
         if self.variant == "amdim_cross":
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             pairs = self.cross_pairs or [
                 (i, j) for i in range(self.num_levels) for j in range(1, self.num_levels) if i < j
             ]
+            if self.additive_recipe == "faithful_trace":
+                scores = [
+                    trace_score(
+                        estimate_moments(features.chain[i], features.children[j - 1], centered=True),
+                        ridge=1e-3,
+                    )
+                    for i, j in pairs
+                ]
+                score = torch.stack(scores).sum()
+                return -score, {"cross_trace_sum": float(score.detach())}
+            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
             score = torch.stack(scores).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))

@@ -64,7 +64,8 @@
     "closure_stop_grad": false,
     "flat_recipe": "faithful_trace",
     "whitening_mode": "differentiable",
-    "ridge": 0.001
+    "ridge": 0.001,
+    "additive_recipe": "faithful_trace"
   },
   "objective_note": "additive variants take their maximizing per-edge sign inside the module; alpha/beta here only affect product_endpoint",
   "optimizer": {

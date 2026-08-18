@@ -133,6 +133,26 @@ class HierarchyModuleTests(unittest.TestCase):
         )
         self.assertIsNone(hierarchy.flat_f_head)
 
+    def test_faithful_trace_additive_matches_per_edge_estimator(self) -> None:
+        from fmca_av.objectives import trace_score
+        from fmca_av.operators import estimate_moments
+
+        config = _config("additive_mview")
+        config["loss"]["additive_recipe"] = "faithful_trace"
+        module = HierarchyCertificateModule(config)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        self.assertIn("edge_trace_sum", metrics)
+        expected = sum(
+            float(trace_score(estimate_moments(features.chain[e], features.children[e], centered=True), ridge=1e-3))
+            for e in range(2)
+        )
+        self.assertAlmostEqual(float(-total), expected, places=4)
+        total.backward()
+        stem_gradient = next(module.backbone.stem.parameters()).grad
+        self.assertIsNotNone(stem_gradient)
+        self.assertGreater(float(stem_gradient.abs().max()), 0.0)
+
     def test_faithful_trace_matches_the_formal_estimator(self) -> None:
         from fmca_av.objectives import trace_score
         from fmca_av.operators import estimate_moments

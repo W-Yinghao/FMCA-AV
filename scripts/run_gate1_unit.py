@@ -42,9 +42,11 @@ class DivergenceGuard(Callback):
         "train/edge_score_sum": 5.0,
         "train/cross_score_sum": 7.5,
         "train/product_score": 2.5,
-        # The faithful flat trace is bounded by K (=128 modes), not by 1.
+        # Faithful trace scores are bounded by K (=128 modes) per operator.
         "train/flat_trace_score": 200.0,
-        "train/loss": 300.0,
+        "train/edge_trace_sum": 400.0,
+        "train/cross_trace_sum": 600.0,
+        "train/loss": 700.0,
     }
 
     def on_train_epoch_end(self, trainer, module) -> None:
