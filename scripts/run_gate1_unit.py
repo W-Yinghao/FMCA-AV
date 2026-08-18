@@ -176,20 +176,25 @@ def certificate_evaluation(module, data_module, device, seed):
         certificate_report(fold_dir, edges=fold_edges).as_metrics()
         for fold_edges, fold_dir in folds
     ]
-    rotation = random_orthogonal(
-        edges[0].shape[1], torch.Generator().manual_seed(seed + 72)
-    )
-    base_comp = compose_edge_operators(edges)
-    gauge_change = float(
-        (compose_edge_operators(rotate_interface(edges, 1, rotation, "both")) - base_comp)
-        .abs()
-        .max()
-    )
-    one_sided_change = float(
-        (compose_edge_operators(rotate_interface(edges, 1, rotation, "left")) - base_comp)
-        .abs()
-        .max()
-    )
+    if len(edges) >= 2:
+        rotation = random_orthogonal(
+            edges[0].shape[1], torch.Generator().manual_seed(seed + 72)
+        )
+        base_comp = compose_edge_operators(edges)
+        gauge_change = float(
+            (compose_edge_operators(rotate_interface(edges, 1, rotation, "both")) - base_comp)
+            .abs()
+            .max()
+        )
+        one_sided_change = float(
+            (compose_edge_operators(rotate_interface(edges, 1, rotation, "left")) - base_comp)
+            .abs()
+            .max()
+        )
+    else:
+        # A single-edge chain has no interior interface to rotate.
+        gauge_change = None
+        one_sided_change = None
     pairing_floor = pairing_noise_floor(
         encoded.chain[0], encoded.children[0], repeats=10,
         generator=torch.Generator().manual_seed(seed + 73),

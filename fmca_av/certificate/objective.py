@@ -132,6 +132,12 @@ def batch_level_statistics(batch: ChainFeatureBatch) -> Tuple[List[Tensor], List
         parts = [batch.chain[level]]
         if level >= 1:
             parts.append(batch.children[level - 1].flatten(0, 1))
+        if level == batch.num_levels - 1 and batch.endpoint_descendants is not None:
+            # Endpoint views are level-L samples and must be INSIDE the
+            # level's whitening pool: out-of-pool rows are the gameable gap
+            # a differentiable whitener exploits (gate v6 probe: endpoint
+            # score 10.4 with endpoint views excluded from the pool).
+            parts.append(batch.endpoint_descendants.flatten(0, 1))
         pooled = torch.cat(parts, dim=0)
         mean = pooled.mean(dim=0, keepdim=True)
         centered = pooled - mean
