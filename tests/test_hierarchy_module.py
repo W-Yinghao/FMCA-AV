@@ -153,6 +153,28 @@ class HierarchyModuleTests(unittest.TestCase):
         self.assertIsNotNone(stem_gradient)
         self.assertGreater(float(stem_gradient.abs().max()), 0.0)
 
+    def test_faithful_bootstrap_product_recipe_terms_and_gradients(self) -> None:
+        config = _config("product_endpoint")
+        config["loss"]["product_recipe"] = "faithful_bootstrap"
+        config["loss"]["alpha"] = 0.2
+        config["loss"]["beta"] = 32.0
+        config["loss"]["whitening_mode"] = "differentiable"
+        config["loss"]["ridge"] = 1e-3
+        module = HierarchyCertificateModule(config)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        for name in ("dir_trace", "edge_trace_sum", "closure_ratio", "whitening"):
+            self.assertIn(name, metrics)
+            self.assertTrue(torch.isfinite(torch.tensor(metrics[name])), msg=name)
+        total.backward()
+        stem_gradient = next(module.backbone.stem.parameters()).grad
+        self.assertIsNotNone(stem_gradient)
+        self.assertGreater(float(stem_gradient.abs().max()), 0.0)
+        for level, projector in enumerate(module.projectors):
+            gradient = next(projector.parameters()).grad
+            self.assertIsNotNone(gradient, msg=f"projector {level}")
+            self.assertGreater(float(gradient.abs().max()), 0.0, msg=f"projector {level}")
+
     def test_faithful_trace_matches_the_formal_estimator(self) -> None:
         from fmca_av.objectives import trace_score
         from fmca_av.operators import estimate_moments

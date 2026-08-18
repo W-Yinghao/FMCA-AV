@@ -118,6 +118,15 @@ class HierarchyCertificateModule(L.LightningModule):
         self.additive_recipe = str(loss.get("additive_recipe", "whitened"))
         if self.additive_recipe not in {"whitened", "faithful_trace"}:
             raise ValueError("loss.additive_recipe must be whitened or faithful_trace")
+        # Product-row recipe: "whitened" (v6b) or "faithful_bootstrap"
+        # (v6d+): faithful trace endpoint reward + small-alpha faithful
+        # per-edge bootstrap (the frozen algebra's "alpha small" clause)
+        # + the closure ratio in shared coordinates with beta rescaled to
+        # compete at trace magnitude.  Cures the composition cold-start
+        # (v6b: closure ratio pinned at 1, edges decaying to zero).
+        self.product_recipe = str(loss.get("product_recipe", "whitened"))
+        if self.product_recipe not in {"whitened", "faithful_bootstrap"}:
+            raise ValueError("loss.product_recipe must be whitened or faithful_bootstrap")
         self.flat_f_head: Optional[MLP] = None
         if self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace":
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
@@ -252,6 +261,41 @@ class HierarchyCertificateModule(L.LightningModule):
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
             return total, {"cross_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
+        if self.variant == "product_endpoint" and self.product_recipe == "faithful_bootstrap":
+            if features.endpoint_descendants is None:
+                raise ValueError("product_endpoint requires endpoint descendants")
+            reward_dir = trace_score(
+                estimate_moments(features.chain[0], features.endpoint_descendants, centered=True),
+                ridge=1e-3,
+            )
+            edge_traces = [
+                trace_score(
+                    estimate_moments(features.chain[edge], features.children[edge], centered=True),
+                    ridge=1e-3,
+                )
+                for edge in range(self.num_levels - 1)
+            ]
+            edge_sum = torch.stack(edge_traces).sum()
+            whitened, moments = whiten_chain_batch(
+                features, ridge=self.ridge, detach_whitener=self.detach_whitener
+            )
+            shared_edges = train_edge_operators(whitened)
+            c_comp = compose_edge_operators(shared_edges)
+            c_dir = train_endpoint_operator(whitened)
+            closure = (c_dir - c_comp).square().sum() / (c_dir.square().sum() + self.epsilon)
+            whitening = self._whitening_penalty(moments, range(self.num_levels))
+            total = (
+                -reward_dir
+                - self.alpha * edge_sum
+                + self.beta * closure
+                + self.gamma * whitening
+            )
+            return total, {
+                "dir_trace": float(reward_dir.detach()),
+                "edge_trace_sum": float(edge_sum.detach()),
+                "closure_ratio": float(closure.detach()),
+                "whitening": float(whitening.detach()),
+            }
         if self.variant == "product_only":
             whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
