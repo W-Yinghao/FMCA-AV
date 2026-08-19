@@ -196,6 +196,78 @@ class PhotometricChannelTests(unittest.TestCase):
                 self.assertTrue(_box_inside(boxes[view], parent_box))
 
 
+class FullFidelityChannelTests(unittest.TestCase):
+    """Hue jitter and per-child flip as edge channels."""
+
+    def _config(self) -> ViewTreeConfig:
+        return ViewTreeConfig(
+            root_spec=CropLevelSpec(min_scale=0.95, max_scale=1.0, size=32),
+            edge_specs=[
+                CropLevelSpec(
+                    min_scale=0.2, max_scale=1.0, size=32,
+                    color_jitter_probability=1.0, color_jitter_strength=0.5,
+                    color_jitter_hue=True, flip_probability=1.0,
+                ),
+                CropLevelSpec(min_scale=0.4, max_scale=1.0, size=32),
+            ],
+            children_per_edge=3,
+            endpoint_descendants=2,
+            flip_probability=0.0,
+        )
+
+    def test_hue_and_flip_channels_are_deterministic_and_keep_boxes_real(self) -> None:
+        first = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=11)[0]
+        second = NestedViewTreeDataset(SyntheticImages(), self._config(), deterministic_seed=11)[0]
+        for level in range(3):
+            self.assertTrue(torch.equal(first["chain"][level], second["chain"][level]))
+        for edge, boxes in enumerate(first["boxes_children"]):
+            parent_box = first["boxes_chain"][edge]
+            for view in range(boxes.shape[0]):
+                self.assertTrue(_box_inside(boxes[view], parent_box))
+
+    def test_per_child_flip_parity_keeps_gradient_probe_honest(self) -> None:
+        """With flip forced on the first edge, grandchildren boxes must
+        still address real original coordinates (parity-aware mirror)."""
+
+        size = 64
+        gradient = np.tile(np.linspace(0, 255, size, dtype=np.float64), (size, 1)).astype(np.uint8)
+        image = torch.from_numpy(np.stack([gradient] * 3).astype(np.float32)) / 255.0
+        config = self._config()
+        config.edge_specs[0].color_jitter_probability = 0.0
+        sampler = NestedViewTreeSampler(config)
+        mean = torch.tensor(config.mean).view(3, 1, 1)
+        std = torch.tensor(config.std).view(3, 1, 1)
+        worst = 0.0
+        for seed in range(8):
+            tree = sampler.sample(image, torch.Generator().manual_seed(seed))
+            for view in range(tree["boxes_children"][1].shape[0]):
+                top, left, height, width = tree["boxes_children"][1][view].tolist()
+                region = image[
+                    :,
+                    int(round(top)):max(int(round(top + height)), int(round(top)) + 1),
+                    int(round(left)):max(int(round(left + width)), int(round(left)) + 1),
+                ]
+                child = tree["children"][1][view] * std + mean
+                worst = max(worst, abs(float(region.mean()) - float(child.mean())))
+        self.assertLess(worst, 0.08)
+
+    def test_hue_changes_colored_pixels_but_not_gray(self) -> None:
+        from fmca_av.data.view_tree import _color_jitter
+        generator = torch.Generator().manual_seed(3)
+        colored = torch.rand(3, 8, 8, generator=generator)
+        gray = torch.full((3, 8, 8), 0.5)
+        jittered_gray = _color_jitter(gray, 0.0, torch.Generator().manual_seed(1), with_hue=True)
+        self.assertTrue(torch.allclose(jittered_gray, gray, atol=1e-4))
+        base = _color_jitter(colored, 0.0, torch.Generator().manual_seed(2), with_hue=False)
+        hued = _color_jitter(colored, 0.0, torch.Generator().manual_seed(2), with_hue=True)
+        # strength 0 keeps b/c/s neutral; the hue branch samples shift 0 at
+        # strength 0, so force a strength to see hue move pixels.
+        moved = _color_jitter(colored, 1.0, torch.Generator().manual_seed(2), with_hue=True)
+        plain = _color_jitter(colored, 1.0, torch.Generator().manual_seed(2), with_hue=False)
+        self.assertFalse(torch.allclose(moved, plain, atol=1e-4))
+        self.assertTrue(torch.allclose(base, hued, atol=1e-4))
+
+
 class ParallelModeTests(unittest.TestCase):
     def test_parallel_mode_escapes_the_realized_parent(self) -> None:
         dataset = NestedViewTreeDataset(

@@ -37,7 +37,9 @@ class CropLevelSpec:
     noise_std: float = 0.0
     color_jitter_probability: float = 0.0
     color_jitter_strength: float = 0.5
+    color_jitter_hue: bool = False
     grayscale_probability: float = 0.0
+    flip_probability: float = 0.0
 
 
 @dataclass
@@ -128,12 +130,17 @@ def _luminance(pixels: Tensor) -> Tensor:
     return (pixels * _LUMA).sum(dim=0, keepdim=True)
 
 
-def _color_jitter(pixels: Tensor, strength: float, generator: Optional[torch.Generator]) -> Tensor:
-    """Tensor-native brightness/contrast/saturation jitter (SimCLR ranges).
+def _color_jitter(
+    pixels: Tensor,
+    strength: float,
+    generator: Optional[torch.Generator],
+    with_hue: bool = False,
+) -> Tensor:
+    """Tensor-native brightness/contrast/saturation(/hue) jitter.
 
-    Hue rotation is deliberately omitted (tensor-native hue needs an HSV
-    round trip); brightness/contrast/saturation plus grayscale carry the
-    bulk of the photometric-invariance signal.
+    Ranges match the historical CIFARViewTransform: b/c/s in
+    [1 - 0.8s, 1 + 0.8s], hue shift in [-0.2s, 0.2s] of the hue circle
+    (applied via torchvision's tensor adjust_hue).
     """
 
     brightness = _uniform(generator, 1 - 0.8 * strength, 1 + 0.8 * strength)
@@ -144,7 +151,13 @@ def _color_jitter(pixels: Tensor, strength: float, generator: Optional[torch.Gen
     jittered = gray_mean + (jittered - gray_mean) * contrast
     gray = _luminance(jittered)
     jittered = gray + (jittered - gray) * saturation
-    return jittered.clamp(0.0, 1.0)
+    jittered = jittered.clamp(0.0, 1.0)
+    if with_hue:
+        from torchvision.transforms.functional import adjust_hue
+
+        hue_shift = _uniform(generator, -0.2 * strength, 0.2 * strength)
+        jittered = adjust_hue(jittered, hue_shift).clamp(0.0, 1.0)
+    return jittered
 
 
 def _grayscale(pixels: Tensor) -> Tensor:
@@ -238,21 +251,28 @@ class NestedViewTreeSampler:
         if isinstance(spec, CropLevelSpec):
             top, left, crop_height, crop_width = _sample_crop_box(height, width, spec, generator)
             pixels = _resize(source[:, top:top + crop_height, left:left + crop_width], spec.size)
-            # Per-child photometric refinement, conditional on the realized
-            # parent pixels: a legitimate stochastic channel of this edge.
+            # Per-child photometric/geometric refinement, conditional on the
+            # realized parent pixels: legitimate stochastic channels.
+            child_flip = float(torch.rand((), generator=generator)) < spec.flip_probability
+            if child_flip:
+                pixels = pixels.flip(-1)
             if float(torch.rand((), generator=generator)) < spec.color_jitter_probability:
-                pixels = _color_jitter(pixels, spec.color_jitter_strength, generator)
+                pixels = _color_jitter(
+                    pixels, spec.color_jitter_strength, generator, with_hue=spec.color_jitter_hue
+                )
             if float(torch.rand((), generator=generator)) < spec.grayscale_probability:
                 pixels = _grayscale(pixels)
             pixels = self._apply_noise(pixels, spec.noise_std, generator)
             box = torch.tensor([top, left, crop_height, crop_width], dtype=torch.float32)
+            # The child's own frame parity flips relative to the original
+            # whenever it flips relative to its parent.
             return RealizedView(
                 pixels=pixels,
                 box_in_parent=box,
                 box_in_original=_compose_box(
                     parent.box_in_original, (height, width), box, parent.flipped
                 ),
-                flipped=parent.flipped,
+                flipped=parent.flipped != child_flip,
             )
         if isinstance(spec, MaskLevelSpec):
             # A mask child occupies the FULL parent frame.
