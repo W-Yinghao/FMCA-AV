@@ -209,6 +209,33 @@ class HierarchyModuleTests(unittest.TestCase):
         plain = HierarchyCertificateModule(_config("product_endpoint"))
         self.assertIsNone(plain.flat_f_head)
 
+    def test_curriculum_and_ema_target_arms(self) -> None:
+        config = _config("product_endpoint")
+        config["loss"].update(
+            product_recipe="faithful_bootstrap", alpha=0.2, beta=128.0,
+            whitening_mode="differentiable", ridge=1e-3,
+            leaf_reward_weight=1.0, curriculum_epochs=100,
+            ema_target_momentum=0.99,
+        )
+        module = HierarchyCertificateModule(config)
+        features = module.feature_batch(_batch())
+        # Detached from a trainer, the curriculum check falls through to the
+        # full objective; EMA buffer initializes on first use.
+        total, metrics = module._variant_loss(features)
+        self.assertTrue(torch.isfinite(total))
+        self.assertEqual(float(module.ema_initialized), 1.0)
+        first_ema = module.ema_c_dir.clone()
+        total2, _ = module._variant_loss(features)
+        self.assertTrue(torch.isfinite(total2))
+        # Second pass updates the EMA buffer toward the batch operator.
+        self.assertFalse(torch.equal(first_ema, module.ema_c_dir))
+        total2.backward()
+        self.assertIsNotNone(next(module.backbone.stem.parameters()).grad)
+        with self.assertRaises(ValueError):
+            bad = _config("product_endpoint")
+            bad["loss"].update(product_recipe="faithful_bootstrap", curriculum_epochs=50)
+            HierarchyCertificateModule(bad)
+
     def test_faithful_trace_matches_the_formal_estimator(self) -> None:
         from fmca_av.objectives import trace_score
         from fmca_av.operators import estimate_moments

@@ -138,6 +138,16 @@ class HierarchyCertificateModule(L.LightningModule):
         # depth-aligned endpoint term ("flat objective + closure
         # regularizer" form).
         self.leaf_reward_weight = float(loss.get("leaf_reward_weight", 0.0))
+        # Curriculum: train the leaf (flat) term alone for the first N
+        # epochs, then switch on the full compositional objective
+        # ("closure fine-tuning" of a flat-quality representation).
+        self.curriculum_epochs = int(loss.get("curriculum_epochs", 0))
+        if self.curriculum_epochs > 0 and self.leaf_reward_weight <= 0:
+            raise ValueError("curriculum_epochs requires leaf_reward_weight > 0")
+        # Operator-level EMA closure target: the closure ratio chases a
+        # slowly-moving average of C_dir instead of the live batch operator
+        # (the target-network fix for the raw stop-grad crash).
+        self.ema_target_momentum = float(loss.get("ema_target_momentum", 0.0))
         self.flat_f_head: Optional[MLP] = None
         needs_flat_head = (
             self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace"
@@ -148,6 +158,9 @@ class HierarchyCertificateModule(L.LightningModule):
         )
         if needs_flat_head:
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
+        if self.ema_target_momentum > 0:
+            self.register_buffer("ema_c_dir", torch.zeros(dims[0], dims[-1]))
+            self.register_buffer("ema_initialized", torch.zeros(1))
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -323,14 +336,35 @@ class HierarchyCertificateModule(L.LightningModule):
                 leaf_reward = trace_score(
                     estimate_moments(f_features, leaf_views, centered=True), ridge=1e-3
                 )
-            total = (
-                -reward_dir
-                - alpha * edge_sum
-                + self.beta * closure
-                + self.gamma * whitening
-            )
-            if leaf_reward is not None:
-                total = total - self.leaf_reward_weight * leaf_reward
+            if self.ema_target_momentum > 0:
+                with torch.no_grad():
+                    momentum = self.ema_target_momentum
+                    if float(self.ema_initialized) == 0.0:
+                        self.ema_c_dir.copy_(c_dir)
+                        self.ema_initialized.fill_(1.0)
+                    else:
+                        self.ema_c_dir.mul_(momentum).add_(c_dir, alpha=1.0 - momentum)
+                closure = (self.ema_c_dir - c_comp).square().sum() / (
+                    self.ema_c_dir.square().sum() + self.epsilon
+                )
+            in_warmup_phase = False
+            try:
+                in_warmup_phase = (
+                    self.curriculum_epochs > 0 and self.current_epoch < self.curriculum_epochs
+                )
+            except RuntimeError:
+                pass
+            if in_warmup_phase:
+                total = -self.leaf_reward_weight * leaf_reward + self.gamma * whitening
+            else:
+                total = (
+                    -reward_dir
+                    - alpha * edge_sum
+                    + self.beta * closure
+                    + self.gamma * whitening
+                )
+                if leaf_reward is not None:
+                    total = total - self.leaf_reward_weight * leaf_reward
             metrics = {
                 "dir_trace": float(reward_dir.detach()),
                 "edge_trace_sum": float(edge_sum.detach()),
