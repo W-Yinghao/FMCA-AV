@@ -132,8 +132,21 @@ class HierarchyCertificateModule(L.LightningModule):
         self.alpha_schedule = str(loss.get("alpha_schedule", "constant"))
         if self.alpha_schedule not in {"constant", "cosine_to_zero"}:
             raise ValueError("loss.alpha_schedule must be constant or cosine_to_zero")
+        # Optional leaf-level flat-style reward inside the bootstrap recipe:
+        # f_head(mean of endpoint views) vs views, all at the final stage --
+        # the engine behind the 84% flat anchor, added on top of the
+        # depth-aligned endpoint term ("flat objective + closure
+        # regularizer" form).
+        self.leaf_reward_weight = float(loss.get("leaf_reward_weight", 0.0))
         self.flat_f_head: Optional[MLP] = None
-        if self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace":
+        needs_flat_head = (
+            self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace"
+        ) or (
+            self.variant == "product_endpoint"
+            and self.product_recipe == "faithful_bootstrap"
+            and self.leaf_reward_weight > 0
+        )
+        if needs_flat_head:
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
 
     @property
@@ -302,19 +315,32 @@ class HierarchyCertificateModule(L.LightningModule):
             )
             closure = (closure_target - c_comp).square().sum() / (closure_denominator + self.epsilon)
             whitening = self._whitening_penalty(moments, range(self.num_levels))
+            leaf_reward = None
+            if self.leaf_reward_weight > 0:
+                assert self.flat_f_head is not None
+                leaf_views = features.endpoint_descendants
+                f_features = self.flat_f_head(leaf_views.mean(dim=1))
+                leaf_reward = trace_score(
+                    estimate_moments(f_features, leaf_views, centered=True), ridge=1e-3
+                )
             total = (
                 -reward_dir
                 - alpha * edge_sum
                 + self.beta * closure
                 + self.gamma * whitening
             )
-            return total, {
+            if leaf_reward is not None:
+                total = total - self.leaf_reward_weight * leaf_reward
+            metrics = {
                 "dir_trace": float(reward_dir.detach()),
                 "edge_trace_sum": float(edge_sum.detach()),
                 "closure_ratio": float(closure.detach()),
                 "whitening": float(whitening.detach()),
                 "alpha_effective": float(alpha),
             }
+            if leaf_reward is not None:
+                metrics["leaf_trace"] = float(leaf_reward.detach())
+            return total, metrics
         if self.variant == "product_only":
             whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)

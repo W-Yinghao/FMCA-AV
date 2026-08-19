@@ -191,6 +191,24 @@ class HierarchyModuleTests(unittest.TestCase):
         total.backward()
         self.assertIsNotNone(next(module.backbone.stem.parameters()).grad)
 
+    def test_leaf_reward_arm_builds_head_and_adds_term(self) -> None:
+        config = _config("product_endpoint")
+        config["loss"].update(
+            product_recipe="faithful_bootstrap", alpha=0.2, beta=128.0,
+            whitening_mode="differentiable", ridge=1e-3, leaf_reward_weight=1.0,
+        )
+        module = HierarchyCertificateModule(config)
+        self.assertIsNotNone(module.flat_f_head)
+        features = module.feature_batch(_batch())
+        total, metrics = module._variant_loss(features)
+        self.assertIn("leaf_trace", metrics)
+        self.assertTrue(torch.isfinite(total))
+        total.backward()
+        self.assertIsNotNone(next(module.flat_f_head.parameters()).grad)
+        # Without the weight, no head and no term.
+        plain = HierarchyCertificateModule(_config("product_endpoint"))
+        self.assertIsNone(plain.flat_f_head)
+
     def test_faithful_trace_matches_the_formal_estimator(self) -> None:
         from fmca_av.objectives import trace_score
         from fmca_av.operators import estimate_moments

@@ -45,6 +45,7 @@ class DivergenceGuard(Callback):
         # Faithful trace scores are bounded by K (=128 modes) per operator.
         "train/flat_trace_score": 200.0,
         "train/dir_trace": 200.0,
+        "train/leaf_trace": 200.0,
         "train/edge_trace_sum": 400.0,
         "train/cross_trace_sum": 600.0,
         "train/loss": 700.0,
