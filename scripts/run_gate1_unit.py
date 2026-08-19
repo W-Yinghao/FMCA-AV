@@ -162,12 +162,14 @@ def collect_chain_features(module, loader, device, max_parents):
     )
 
 
-def certificate_evaluation(module, data_module, device, seed):
+def certificate_evaluation(module, data_module, device, seed, measurement_ridge=1e-3):
     calibration = collect_chain_features(
         module, data_module.calibration_dataloader(), device, max_parents=0
     )
     coordinates = [
-        fit_level_coordinates(level_calibration_features(calibration, level))
+        fit_level_coordinates(
+            level_calibration_features(calibration, level), ridge=measurement_ridge
+        )
         for level in range(calibration.num_levels)
     ]
     raw = collect_chain_features(module, data_module.test_dataloader(), device, max_parents=0)
