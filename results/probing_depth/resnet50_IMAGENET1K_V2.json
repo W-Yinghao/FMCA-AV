@@ -1,0 +1,155 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "levels": 17,
+  "certificate_curve": [
+    {
+      "prefix": 1,
+      "certified_top": 0.9815255978339054,
+      "certified_sum8": 5.983357105107679,
+      "endpoint_top": 0.9815255978339054,
+      "delta_op": 0.0,
+      "normalized_defect": 0.0
+    },
+    {
+      "prefix": 2,
+      "certified_top": 0.43989993981847564,
+      "certified_sum8": 1.299546058316953,
+      "endpoint_top": 1.0015575377033255,
+      "delta_op": 0.4120995076217441,
+      "normalized_defect": 0.38776613908796587
+    },
+    {
+      "prefix": 3,
+      "certified_top": 0.08525347548234219,
+      "certified_sum8": 0.08525347548234219,
+      "endpoint_top": 1.013703397888094,
+      "delta_op": 0.6293866085493072,
+      "normalized_defect": 0.5907731645937422
+    },
+    {
+      "prefix": 4,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.0185043219322272,
+      "delta_op": 0.7802987916155892,
+      "normalized_defect": 0.7229357060029564
+    },
+    {
+      "prefix": 5,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.0206458734015387,
+      "delta_op": 0.8608994571900268,
+      "normalized_defect": 0.807902193045007
+    },
+    {
+      "prefix": 6,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.0059832174251013,
+      "delta_op": 0.9049317751753642,
+      "normalized_defect": 0.8644641971079657
+    },
+    {
+      "prefix": 7,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.0053246605753663,
+      "delta_op": 0.9462630795714831,
+      "normalized_defect": 0.9003836224752068
+    },
+    {
+      "prefix": 8,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9957867718314835,
+      "delta_op": 0.9456532423848361,
+      "normalized_defect": 0.9215616588283867
+    },
+    {
+      "prefix": 9,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9986562651682068,
+      "delta_op": 0.9606057991383732,
+      "normalized_defect": 0.9339403590287586
+    },
+    {
+      "prefix": 10,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9912971319341249,
+      "delta_op": 0.9593060017513272,
+      "normalized_defect": 0.9394573621128237
+    },
+    {
+      "prefix": 11,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9867433344929238,
+      "delta_op": 0.9599153081828102,
+      "normalized_defect": 0.9452119252390943
+    },
+    {
+      "prefix": 12,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9841483476280156,
+      "delta_op": 0.962877373853767,
+      "normalized_defect": 0.94960766578862
+    },
+    {
+      "prefix": 13,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9842701451559589,
+      "delta_op": 0.960747754935864,
+      "normalized_defect": 0.9537083714328691
+    },
+    {
+      "prefix": 14,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9746564585258836,
+      "delta_op": 0.9531681409804503,
+      "normalized_defect": 0.9566816739345827
+    },
+    {
+      "prefix": 15,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9602419662833283,
+      "delta_op": 0.9375748732229072,
+      "normalized_defect": 0.964060044128962
+    },
+    {
+      "prefix": 16,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.95316505021794,
+      "delta_op": 0.9270956211245772,
+      "normalized_defect": 0.9695880367336824
+    }
+  ],
+  "layer_probe_accuracy": [
+    0.44266666666666665,
+    0.474,
+    0.506,
+    0.5173333333333333,
+    0.5313333333333333,
+    0.5353333333333333,
+    0.56,
+    0.5933333333333334,
+    0.642,
+    0.6566666666666666,
+    0.6753333333333333,
+    0.702,
+    0.758,
+    0.784,
+    0.826,
+    0.8613333333333333,
+    0.876
+  ],
+  "best_probe_layer": 16
+}
