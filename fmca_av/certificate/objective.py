@@ -254,6 +254,21 @@ def certificate_training_loss(
     )
 
 
+def trace_score_edges(batch: ChainFeatureBatch, ridge: float = 1e-3) -> List[Tensor]:
+    """Faithful per-edge trace scores (chain state vs its conditional children)."""
+
+    from ..objectives import trace_score
+    from ..operators import estimate_moments
+
+    return [
+        trace_score(
+            estimate_moments(batch.chain[edge], batch.children[edge], centered=True),
+            ridge=ridge,
+        )
+        for edge in range(batch.num_levels - 1)
+    ]
+
+
 def cross_pair_score(
     batch: ChainFeatureBatch,
     means: Optional[Sequence[Tensor]],
