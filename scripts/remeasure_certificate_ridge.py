@@ -32,6 +32,8 @@ def main() -> None:
     parser.add_argument("--variant", required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--ridges", default="0.001,0.01,0.1")
+    parser.add_argument("--pool-val", action="store_true",
+                        help="pool the val split into Stage-B calibration (5000 held-out)")
     arguments = parser.parse_args()
 
     unit_dir = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
@@ -54,7 +56,8 @@ def main() -> None:
     results = {}
     for ridge in [float(value) for value in arguments.ridges.split(",")]:
         evaluation = certificate_evaluation(
-            module, data_module, device, arguments.seed, measurement_ridge=ridge
+            module, data_module, device, arguments.seed, measurement_ridge=ridge,
+            pool_val_into_calibration=arguments.pool_val,
         )
         results[str(ridge)] = {
             "normalized_closure_defect": evaluation["normalized_closure_defect"],
@@ -65,7 +68,8 @@ def main() -> None:
             "endpoint_top": max(evaluation["point"]["endpoint_singular_values"]),
         }
         print(arguments.variant, "ridge", ridge, json.dumps(results[str(ridge)]))
-    (unit_dir / "remeasure_ridge.json").write_text(json.dumps(results, indent=2))
+    suffix = "_pooled" if arguments.pool_val else ""
+    (unit_dir / f"remeasure_ridge{suffix}.json").write_text(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":

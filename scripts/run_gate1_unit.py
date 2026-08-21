@@ -162,10 +162,25 @@ def collect_chain_features(module, loader, device, max_parents):
     )
 
 
-def certificate_evaluation(module, data_module, device, seed, measurement_ridge=1e-3):
+def certificate_evaluation(module, data_module, device, seed, measurement_ridge=1e-3,
+                           pool_val_into_calibration=False):
     calibration = collect_chain_features(
         module, data_module.calibration_dataloader(), device, max_parents=0
     )
+    if pool_val_into_calibration:
+        # Enlarged Stage-B: the val split is equally held out from SSL
+        # training, so pooling doubles the coordinate sample without
+        # touching the frozen train/test semantics.
+        extra = collect_chain_features(
+            module, data_module.val_dataloader(), device, max_parents=0
+        )
+        calibration = ChainFeatureBatch(
+            chain=[torch.cat([a, b]) for a, b in zip(calibration.chain, extra.chain)],
+            children=[torch.cat([a, b]) for a, b in zip(calibration.children, extra.children)],
+            endpoint_descendants=torch.cat(
+                [calibration.endpoint_descendants, extra.endpoint_descendants]
+            ),
+        )
     coordinates = [
         fit_level_coordinates(
             level_calibration_features(calibration, level), ridge=measurement_ridge
