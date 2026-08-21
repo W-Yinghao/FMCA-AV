@@ -47,6 +47,8 @@ def main() -> None:
     config = json.loads(Path(arguments.config).read_text())
     config["seed"] = arguments.seed
     row = f"{config['base']['name']}_{'plugin' if config.get('plugin', {}).get('enabled') else 'base'}"
+    if config.get("row_tag"):
+        row = f"{row}_{config['row_tag']}"
     unit_key = f"{row}/seed{arguments.seed}"
     subdir = "probe" if arguments.probe_mode else "units"
     unit_dir = Path(arguments.output_root) / subdir / f"{row}__seed{arguments.seed}"

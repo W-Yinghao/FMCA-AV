@@ -101,5 +101,6 @@
   },
   "plugin": {
     "enabled": true
-  }
+  },
+  "row_tag": "b16"
 }
