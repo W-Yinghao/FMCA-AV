@@ -92,6 +92,8 @@ def main() -> None:
     parser.add_argument("--samples", type=int, default=6000)
     parser.add_argument("--views", type=int, default=4)
     parser.add_argument("--operator-dim", type=int, default=64)
+    parser.add_argument("--stage-level", action="store_true",
+                        help="compose at stage boundaries only (4 factors) instead of every block")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -125,6 +127,19 @@ def main() -> None:
         projected_strong.append(coordinate.encode(ps[half:]))
         coordinates.append(coordinate)
 
+    if arguments.stage_level:
+        # keep stem + the last block of each stage
+        from torchvision import models as _tv
+        model_ref = build_model(arguments.model, "none")
+        sizes = [len(stage) for stage in (model_ref.layer1, model_ref.layer2, model_ref.layer3, model_ref.layer4)]
+        keep = [0]
+        offset = 1
+        for size in sizes:
+            offset += size
+            keep.append(offset - 1)
+        projected_weak = [projected_weak[i] for i in keep]
+        projected_strong = [projected_strong[i] for i in keep]
+        levels = len(keep)
     edges = []
     for level in range(levels - 1):
         parent = projected_weak[level]
@@ -137,10 +152,13 @@ def main() -> None:
         leaf = projected_strong[prefix]
         c_dir = projected_weak[0].transpose(0, 1) @ leaf.mean(dim=1) / leaf.shape[0]
         report = certificate_report(c_dir, c_comp=c_comp, top_k=8)
+        composed_top = float(report.path_singular_values.max())
         # Layerwise probe on the evaluation half's weak features.
         probe_x = projected_weak[prefix - 1] if prefix - 1 < levels else projected_weak[-1]
         curve.append({
             "prefix": prefix,
+            "composed_top": composed_top,
+            "retention": composed_top / (curve[-1]["composed_top"] + 1e-12) if curve else composed_top,
             "certified_top": float(report.certified_spectrum.max()),
             "certified_sum8": float(report.certified_spectrum[:8].sum()),
             "endpoint_top": float(report.endpoint_singular_values.max()),

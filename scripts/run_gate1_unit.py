@@ -257,6 +257,10 @@ def representation_diagnostics(backbone, loader, device):
     }
 
 
+def dataset_classes(config) -> int:
+    return 100 if str(config["data"]["dataset"]) == "cifar100" else 10
+
+
 def linear_probe_evaluation(module, config, seed, unit_dir, probe_mode):
     from fmca_av.data.cifar import CIFARProbeDataModule
 
@@ -266,7 +270,7 @@ def linear_probe_evaluation(module, config, seed, unit_dir, probe_mode):
     probe_data = CIFARProbeDataModule(config["data"], probe_config, seed)
     probe_data.setup()
     probe = LinearProbe(
-        module.backbone, module.backbone.output_dim, 10, probe_config
+        module.backbone, module.backbone.output_dim, dataset_classes(config), probe_config
     )
     probe.probe_config["max_epochs"] = int(probe_config.get("epochs", 100))
     trainer = L.Trainer(
@@ -346,7 +350,8 @@ def main() -> None:
         train_loader, test_loader = _plain_loaders(config["data"])
         diagnostics = representation_diagnostics(module.backbone, test_loader, device)
         knn_accuracy = weighted_knn_accuracy(
-            module.backbone, train_loader, test_loader, classes=10, device=device
+            module.backbone, train_loader, test_loader,
+            classes=dataset_classes(config), device=device
         )
         probe_metrics = linear_probe_evaluation(
             module, config, arguments.seed, unit_dir, arguments.probe_mode

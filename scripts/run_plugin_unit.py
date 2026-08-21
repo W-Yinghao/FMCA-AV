@@ -24,6 +24,7 @@ from fmca_av.certificate.plugin_module import PluginSSLModule
 from fmca_av.certificate.triplet import CERTIFICATE_VERSION
 from fmca_av.knn import weighted_knn_accuracy
 from run_gate1_unit import (
+    dataset_classes,
     DivergenceGuard,
     _plain_loaders,
     certificate_evaluation,
@@ -90,7 +91,8 @@ def main() -> None:
         train_loader, test_loader = _plain_loaders(config["data"])
         diagnostics = representation_diagnostics(module.backbone, test_loader, device)
         knn_accuracy = weighted_knn_accuracy(
-            module.backbone, train_loader, test_loader, classes=10, device=device
+            module.backbone, train_loader, test_loader,
+            classes=dataset_classes(config), device=device
         )
         probe_metrics = linear_probe_evaluation(
             module, config, arguments.seed, unit_dir, arguments.probe_mode
