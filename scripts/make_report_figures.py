@@ -203,7 +203,80 @@ def fig_plugin():
     fig.savefig(OUT / "fig_plugin.png", dpi=150)
 
 
-for fn in (fig_arc, fig_v8_main, fig_instrument, fig_spectroscopy, fig_depth, fig_plugin):
+def fig_c100():
+    """CIFAR-100: the setting where the instrument separates."""
+
+    units = ROOT / "results/gate1/gate1_20260821_c100pilot/units"
+    order = [("final_mview", "flat M-view"), ("product_endpoint", "V7 full method"),
+             ("additive_mview", "additive M-view"), ("final_2view", "flat 2-view"),
+             ("additive_2view", "additive 2-view"), ("amdim_cross", "AMDIM-cross"),
+             ("product_only", "product-only")]
+    labels, accs, aerr, defs, derr = [], [], [], [], []
+    for variant, label in order:
+        a, d = [], []
+        for seed in (1, 2, 3):
+            f = units / f"{variant}__seed{seed}" / "unit.json"
+            if f.is_file():
+                u = json.loads(f.read_text())
+                if u.get("status") == "complete":
+                    a.append(u["linear_probe"]["test_accuracy"] * 100)
+                    d.append(u["certificate"]["normalized_closure_defect"])
+        if a:
+            labels.append(label)
+            accs.append(np.mean(a)); aerr.append(np.std(a))
+            defs.append(np.mean(d)); derr.append(np.std(d))
+    if not labels:
+        return
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4))
+    xs = np.arange(len(labels))
+    ax1.bar(xs, accs, yerr=aerr, capsize=4, color="#2980b9", alpha=0.85)
+    ax1.set_xticks(xs); ax1.set_xticklabels(labels, rotation=25, ha="right", fontsize=8)
+    ax1.set_ylabel("linear probe accuracy (%)"); ax1.set_title("CIFAR-100 accuracy")
+    ax2.bar(xs, defs, yerr=derr, capsize=4, color="#c0392b", alpha=0.85)
+    ax2.set_xticks(xs); ax2.set_xticklabels(labels, rotation=25, ha="right", fontsize=8)
+    ax2.set_ylabel("normalized closure defect")
+    ax2.set_title("CIFAR-100 defect: explicit < additive < flat, no seed overlap")
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_c100.png", dpi=150)
+
+
+def fig_beta_sweep():
+    """Accuracy-defect exchange as the closure weight beta varies."""
+
+    units = ROOT / "results/plugin/plugin_20260820_v1/units"
+
+    def collect(row):
+        a, d = [], []
+        for p in units.glob(f"{row}__seed*/unit.json"):
+            u = json.loads(p.read_text())
+            if u.get("status") == "complete":
+                a.append(u["linear_probe"]["test_accuracy"] * 100)
+                d.append(u["certificate"]["normalized_closure_defect"])
+        return (np.mean(a), np.mean(d), len(a)) if a else None
+
+    fig, ax = plt.subplots(figsize=(7, 4.6))
+    for base, color in (("barlow_twins", "#2980b9"), ("vicreg", "#e67e22")):
+        points = [("base", collect(f"{base}_base")),
+                  ("β=16", collect(f"{base}_plugin_b16")),
+                  ("β=32", collect(f"{base}_plugin")),
+                  ("β=48", collect(f"{base}_plugin_b48"))]
+        points = [(tag, v) for tag, v in points if v]
+        xs = [v[1] for _, v in points]
+        ys = [v[0] for _, v in points]
+        ax.plot(xs, ys, "o-", color=color, ms=8, lw=1.5, label=base)
+        for (tag, v), x, y in zip(points, xs, ys):
+            ax.annotate(f"{tag} (n={v[2]})", (x, y), textcoords="offset points",
+                        xytext=(6, 5), fontsize=8, color=color)
+    ax.set_xlabel("normalized closure defect  (lower = better closure)")
+    ax.set_ylabel("linear probe accuracy (%)")
+    ax.set_title("Plug-in exchange curve: β=16 buys ~50% defect reduction\nat no accuracy cost on Barlow Twins")
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_beta_sweep.png", dpi=150)
+
+
+for fn in (fig_arc, fig_v8_main, fig_instrument, fig_spectroscopy, fig_depth,
+           fig_plugin, fig_c100, fig_beta_sweep):
     try:
         fn()
         print(fn.__name__, "written")
