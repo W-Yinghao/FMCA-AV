@@ -163,7 +163,7 @@ def collect_chain_features(module, loader, device, max_parents):
 
 
 def certificate_evaluation(module, data_module, device, seed, measurement_ridge=1e-3,
-                           pool_val_into_calibration=False):
+                           pool_val_into_calibration=False, calibration_limit=0):
     calibration = collect_chain_features(
         module, data_module.calibration_dataloader(), device, max_parents=0
     )
@@ -180,6 +180,16 @@ def certificate_evaluation(module, data_module, device, seed, measurement_ridge=
             endpoint_descendants=torch.cat(
                 [calibration.endpoint_descendants, extra.endpoint_descendants]
             ),
+        )
+    if calibration_limit:
+        # Convergence sweep (E-A2): the encoder runs once over the whole
+        # held-out pool and the Stage-B sample is truncated afterwards, so
+        # every N sees the same images and the same encoder pass.
+        keep = int(calibration_limit)
+        calibration = ChainFeatureBatch(
+            chain=[value[:keep] for value in calibration.chain],
+            children=[value[:keep] for value in calibration.children],
+            endpoint_descendants=calibration.endpoint_descendants[:keep],
         )
     coordinates = [
         fit_level_coordinates(
