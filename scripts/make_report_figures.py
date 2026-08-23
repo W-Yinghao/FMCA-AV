@@ -275,7 +275,49 @@ def fig_beta_sweep():
     fig.savefig(OUT / "fig_beta_sweep.png", dpi=150)
 
 
-for fn in (fig_arc, fig_v8_main, fig_instrument, fig_spectroscopy, fig_depth,
+def fig_layerwise():
+    """The measurement the theory actually predicts: quality by depth."""
+
+    sets = [("CIFAR-10", "results/gate1/gate1_20260820_v8/units"),
+            ("CIFAR-100", "results/gate1/gate1_20260821_c100pilot/units")]
+    arms = [("product_endpoint", "V7 explicit closure", "#c0392b"),
+            ("additive_mview", "additive (path-blind)", "#2980b9"),
+            ("final_mview", "flat M-view", "#7f8c8d")]
+    fig, axes = plt.subplots(2, 2, figsize=(11, 7.4))
+    for column, (title, root) in enumerate(sets):
+        for variant, label, color in arms:
+            probes, ranks = [], []
+            for seed in (1, 2, 3):
+                f = ROOT / root / f"{variant}__seed{seed}" / "layerwise_profile.json"
+                if not f.is_file():
+                    continue
+                d = json.loads(f.read_text())
+                probes.append([s["probe"]["test_accuracy"] * 100 for s in d["stages"]])
+                ranks.append([s["spectrum"]["effective_rank"] for s in d["stages"]])
+            if not probes:
+                continue
+            xs = range(1, len(probes[0]) + 1)
+            pm, ps = np.mean(probes, axis=0), np.std(probes, axis=0)
+            axes[0, column].errorbar(xs, pm, yerr=ps, fmt="o-", color=color,
+                                     label=label, capsize=3, lw=1.8)
+            axes[1, column].plot(xs, np.mean(ranks, axis=0), "o-", color=color, lw=1.8)
+        axes[0, column].axvline(3, ls=":", color="#b0b6b8", lw=1.2)
+        axes[0, column].set_title(f"{title}: probe by stage", fontsize=11)
+        axes[0, column].set_ylabel("linear probe accuracy (%)")
+        axes[0, column].legend(fontsize=8)
+        axes[1, column].axvline(3, ls=":", color="#b0b6b8", lw=1.2)
+        axes[1, column].set_title(f"{title}: effective rank by stage", fontsize=11)
+        axes[1, column].set_ylabel("entropy effective rank")
+        for row in (0, 1):
+            axes[row, column].set_xticks(list(range(1, 5)))
+            axes[row, column].set_xticklabels(["layer1", "layer2", "layer3", "layer4"])
+    fig.suptitle("The dotted line marks layer3, the interior interface: V7 saturates there, "
+                 "flat keeps climbing to the endpoint", fontsize=10, y=1.0)
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_layerwise.png", dpi=150, bbox_inches="tight")
+
+
+for fn in (fig_layerwise, fig_arc, fig_v8_main, fig_instrument, fig_spectroscopy, fig_depth,
            fig_plugin, fig_c100, fig_beta_sweep):
     try:
         fn()
