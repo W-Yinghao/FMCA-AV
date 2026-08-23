@@ -59,6 +59,28 @@ class HierarchyCertificateModule(L.LightningModule):
         self.backbone = StageTappedCIFARResNet(
             width=int(model.get("backbone_width", 64)), stem=str(model.get("stem", "cifar"))
         )
+        # Locality test (E-A3): load a backbone another arm trained and freeze
+        # it bit-for-bit, so only the projectors and operator heads can move.
+        # If the defect still falls, it is a readout property, not a
+        # representation property.
+        self.frozen_backbone = bool(model.get("freeze_backbone", False))
+        backbone_source = str(model.get("backbone_checkpoint", ""))
+        if backbone_source:
+            payload = torch.load(backbone_source, map_location="cpu", weights_only=False)
+            state = {
+                key[len("backbone."):]: value
+                for key, value in payload["state_dict"].items()
+                if key.startswith("backbone.")
+            }
+            if not state:
+                raise ValueError(f"no backbone weights in {backbone_source}")
+            self.backbone.load_state_dict(state)
+        elif self.frozen_backbone:
+            raise ValueError("freeze_backbone needs backbone_checkpoint: freezing a "
+                             "random encoder measures nothing")
+        if self.frozen_backbone:
+            for parameter in self.backbone.parameters():
+                parameter.requires_grad_(False)
         self.level_stages: List[int] = [int(stage) for stage in model["level_stages"]]
         if any(late <= early for early, late in zip(self.level_stages, self.level_stages[1:])):
             raise ValueError(
@@ -163,6 +185,14 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.ema_target_momentum > 0:
             self.register_buffer("ema_c_dir", torch.zeros(dims[0], dims[-1]))
             self.register_buffer("ema_initialized", torch.zeros(1))
+
+    def train(self, mode: bool = True):
+        """Keep a frozen backbone in eval mode so BatchNorm cannot drift."""
+
+        super().train(mode)
+        if getattr(self, "frozen_backbone", False):
+            self.backbone.eval()
+        return self
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -420,17 +450,18 @@ class HierarchyCertificateModule(L.LightningModule):
         self._shared_step(batch, "val")
 
     def configure_optimizers(self) -> object:
+        trainable = [p for p in self.parameters() if p.requires_grad]
         config = self.config["optimizer"]
         name = str(config.get("name", "adamw"))
         if name == "adamw":
             optimizer: torch.optim.Optimizer = torch.optim.AdamW(
-                self.parameters(),
+                trainable,
                 lr=float(config["learning_rate"]),
                 weight_decay=float(config.get("weight_decay", 0.0)),
             )
         elif name == "sgd":
             optimizer = torch.optim.SGD(
-                self.parameters(),
+                trainable,
                 lr=float(config["learning_rate"]),
                 momentum=float(config.get("momentum", 0.9)),
                 weight_decay=float(config.get("weight_decay", 0.0)),

@@ -253,3 +253,35 @@ class HierarchyModuleTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LocalityTestSupport(unittest.TestCase):
+    """E-A3: a loaded, frozen backbone must not move or train."""
+
+    def _config(self, **model_extra):
+        config = _config("product_endpoint")
+        config["model"].update(model_extra)
+        return config
+
+    def test_freeze_without_checkpoint_is_refused(self):
+        with self.assertRaises(ValueError):
+            HierarchyCertificateModule(self._config(freeze_backbone=True))
+
+    def test_frozen_backbone_has_no_trainable_parameters(self):
+        import tempfile
+        donor = HierarchyCertificateModule(_config("product_endpoint"))
+        with tempfile.NamedTemporaryFile(suffix=".ckpt", delete=False) as handle:
+            torch.save({"state_dict": donor.state_dict()}, handle.name)
+            module = HierarchyCertificateModule(
+                self._config(freeze_backbone=True, backbone_checkpoint=handle.name)
+            )
+        self.assertFalse(any(p.requires_grad for p in module.backbone.parameters()))
+        self.assertTrue(any(p.requires_grad for p in module.parameters()))
+        for name, value in module.backbone.state_dict().items():
+            torch.testing.assert_close(value, donor.backbone.state_dict()[name])
+        module.train()
+        self.assertFalse(module.backbone.training)
+        groups = module.configure_optimizers()
+        optimizer = groups["optimizer"] if isinstance(groups, dict) else groups
+        owned = {id(p) for group in optimizer.param_groups for p in group["params"]}
+        self.assertTrue(owned.isdisjoint({id(p) for p in module.backbone.parameters()}))
