@@ -240,10 +240,18 @@ def certificate_evaluation(module, data_module, device, seed, measurement_ridge=
 
 
 def _plain_loaders(data_config, batch_size=512, workers=4):
-    root, dataset = str(data_config["root"]), str(data_config["dataset"])
-    transform = CIFARProbeTransform(False, [0.4914, 0.4822, 0.4465], [0.2470, 0.2435, 0.2616])
-    train = LabeledCIFARDataset(CIFARFiles(root, dataset, train=True), transform)
-    test = LabeledCIFARDataset(CIFARFiles(root, dataset, train=False), transform)
+    from fmca_av.certificate.gate_data import GateProbeTransform, gate_base_datasets
+
+    augmentation = data_config.get("augmentation", {})
+    transform = GateProbeTransform(
+        False,
+        augmentation.get("mean", [0.4914, 0.4822, 0.4465]),
+        augmentation.get("std", [0.2470, 0.2435, 0.2616]),
+        int(data_config.get("image_size", augmentation.get("size", 32))),
+    )
+    base_train, base_test = gate_base_datasets(data_config)
+    train = LabeledCIFARDataset(base_train, transform)
+    test = LabeledCIFARDataset(base_test, transform)
     return (
         DataLoader(train, batch_size=batch_size, num_workers=workers, shuffle=False),
         DataLoader(test, batch_size=batch_size, num_workers=workers, shuffle=False),
@@ -273,16 +281,18 @@ def representation_diagnostics(backbone, loader, device):
 
 
 def dataset_classes(config) -> int:
-    return 100 if str(config["data"]["dataset"]) == "cifar100" else 10
+    return {"cifar100": 100, "tinyimagenet200": 200}.get(
+        str(config["data"]["dataset"]), 10
+    )
 
 
 def linear_probe_evaluation(module, config, seed, unit_dir, probe_mode):
-    from fmca_av.data.cifar import CIFARProbeDataModule
+    from fmca_av.certificate.gate_data import GateProbeDataModule
 
     probe_config = dict(config["probe"])
     if probe_mode:
         probe_config["epochs"] = 3
-    probe_data = CIFARProbeDataModule(config["data"], probe_config, seed)
+    probe_data = GateProbeDataModule(config["data"], probe_config, seed)
     probe_data.setup()
     probe = LinearProbe(
         module.backbone, module.backbone.output_dim, dataset_classes(config), probe_config

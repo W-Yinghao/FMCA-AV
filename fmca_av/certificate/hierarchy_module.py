@@ -56,7 +56,9 @@ class HierarchyCertificateModule(L.LightningModule):
         super().__init__()
         self.save_hyperparameters({"config": config})
         model = config["model"]
-        self.backbone = StageTappedCIFARResNet(width=int(model.get("backbone_width", 64)))
+        self.backbone = StageTappedCIFARResNet(
+            width=int(model.get("backbone_width", 64)), stem=str(model.get("stem", "cifar"))
+        )
         self.level_stages: List[int] = [int(stage) for stage in model["level_stages"]]
         if any(late <= early for early, late in zip(self.level_stages, self.level_stages[1:])):
             raise ValueError(
