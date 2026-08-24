@@ -1,0 +1,103 @@
+{
+  "note": "population coverage of the certified spectrum; the frozen G4 check compares against the same-sample endpoint spectrum and is an implementation check, not this",
+  "tolerance": 1e-12,
+  "by_cell": {
+    "N1000_M1": {
+      "units": 160,
+      "violated": 22,
+      "max_excess": 0.06689791963348363,
+      "max_relative": 0.07444625056636094
+    },
+    "N1000_M4": {
+      "units": 160,
+      "violated": 27,
+      "max_excess": 0.12098092407602878,
+      "max_relative": 0.25204359182506
+    },
+    "N1000_M16": {
+      "units": 160,
+      "violated": 33,
+      "max_excess": 0.11108096562462388,
+      "max_relative": 0.1955660847229146
+    },
+    "N10000_M1": {
+      "units": 160,
+      "violated": 25,
+      "max_excess": 0.03851947660327204,
+      "max_relative": 0.05349927306010005
+    },
+    "N10000_M4": {
+      "units": 160,
+      "violated": 29,
+      "max_excess": 0.023009866979739058,
+      "max_relative": 0.03734226964075303
+    },
+    "N10000_M16": {
+      "units": 160,
+      "violated": 26,
+      "max_excess": 0.0377703566845633,
+      "max_relative": 0.052458828728560135
+    },
+    "N100000_M1": {
+      "units": 160,
+      "violated": 21,
+      "max_excess": 0.00693616712067191,
+      "max_relative": 0.00693616712067191
+    },
+    "N100000_M4": {
+      "units": 160,
+      "violated": 26,
+      "max_excess": 0.012324297908630988,
+      "max_relative": 0.017117080428654147
+    },
+    "N100000_M16": {
+      "units": 160,
+      "violated": 27,
+      "max_excess": 0.012643691324720985,
+      "max_relative": 0.01756068239544581
+    }
+  },
+  "by_case": {
+    "closed_chain": {
+      "units": 180,
+      "violated": 55,
+      "max_relative": 0.1542791189230887
+    },
+    "hallucinated_path": {
+      "units": 180,
+      "violated": 95,
+      "max_relative": 0.06689791963348363
+    },
+    "isospectral_mismatch": {
+      "units": 180,
+      "violated": 0,
+      "max_relative": 0.0
+    },
+    "leaky_interface": {
+      "units": 180,
+      "violated": 0,
+      "max_relative": 0.0
+    },
+    "nilpotent_interface": {
+      "units": 180,
+      "violated": 59,
+      "max_relative": 0.017822636751943174
+    },
+    "zero_operator": {
+      "units": 180,
+      "violated": 0,
+      "max_relative": 0.0
+    },
+    "full_orders": {
+      "units": 180,
+      "violated": 20,
+      "max_relative": 0.25204359182506
+    },
+    "truncated": {
+      "units": 180,
+      "violated": 7,
+      "max_relative": 0.12327406285239212
+    }
+  },
+  "skipped_units": 3
+}

@@ -1,0 +1,13 @@
+{
+  "mode": "random",
+  "variant": "product_endpoint",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "normalized_closure_defect": 0.32549191613358014,
+  "numerator_delta_frobenius": 0.7977715964675256,
+  "denominator_dir_frobenius": 2.4509720731122515,
+  "endpoint_top": 0.8462749255085402,
+  "path_top": 0.9244630485878814,
+  "status": "complete"
+}
