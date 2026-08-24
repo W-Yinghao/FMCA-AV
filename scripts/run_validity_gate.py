@@ -29,6 +29,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import lightning as L
 
 from fmca_av.certificate.gate_data import GateDataModule
+from fmca_av.certificate.gram import (
+    build_correction,
+    corrected_composition,
+    corrected_endpoint,
+    cumulative_interface_attribution,
+    gram_matrix,
+)
 from fmca_av.certificate.hierarchy_module import HierarchyCertificateModule
 from run_gate1_unit import VARIANT_TAGS, certificate_evaluation
 
@@ -59,12 +66,95 @@ class CollapsedBackbone(torch.nn.Module):
 
 def summarize(evaluation):
     point = evaluation["point"]
-    return {
+    record = {
         "normalized_closure_defect": evaluation["normalized_closure_defect"],
         "numerator_delta_frobenius": point["delta_frobenius"],
         "denominator_dir_frobenius": evaluation["dir_frobenius"],
         "endpoint_top": max(point["endpoint_singular_values"]),
         "path_top": max(point["path_singular_values"]),
+    }
+    if "corrected" in evaluation:
+        record["corrected"] = evaluation["corrected"]
+    return record
+
+
+def gram_corrected_report(module, data_module, device, seed, measurement_ridge,
+                          calibration_limit=0, pool_val=False):
+    """Corrected and surrogate defects side by side, plus the artifact split.
+
+    The Gram is a Stage-B object: it is estimated on the same held-out
+    pool that fits the coordinates, never on the Stage-C evaluation
+    sample.
+    """
+
+    from run_gate1_unit import (
+        collect_chain_features,
+        encode_chain_batch,
+        estimate_edge_operators,
+        estimate_endpoint_operator,
+        level_calibration_features,
+    )
+    from fmca_av.certificate.coordinates import fit_level_coordinates
+    from fmca_av.certificate.estimation import ChainFeatureBatch
+
+    calibration = collect_chain_features(
+        module, data_module.calibration_dataloader(), device, max_parents=0
+    )
+    if pool_val:
+        extra = collect_chain_features(
+            module, data_module.val_dataloader(), device, max_parents=0
+        )
+        calibration = ChainFeatureBatch(
+            chain=[torch.cat([a, b]) for a, b in zip(calibration.chain, extra.chain)],
+            children=[torch.cat([a, b]) for a, b in zip(calibration.children, extra.children)],
+            endpoint_descendants=torch.cat(
+                [calibration.endpoint_descendants, extra.endpoint_descendants]
+            ),
+        )
+    if calibration_limit:
+        keep = int(calibration_limit)
+        calibration = ChainFeatureBatch(
+            chain=[value[:keep] for value in calibration.chain],
+            children=[value[:keep] for value in calibration.children],
+            endpoint_descendants=calibration.endpoint_descendants[:keep],
+        )
+    coordinates = [
+        fit_level_coordinates(level_calibration_features(calibration, level),
+                              ridge=measurement_ridge)
+        for level in range(calibration.num_levels)
+    ]
+    # Stage-B Gram: the coordinates applied to the same held-out pool.
+    grams = [gram_matrix(coordinates[level].encode(
+                 level_calibration_features(calibration, level)))
+             for level in range(calibration.num_levels)]
+    correction = build_correction(grams)
+
+    raw = collect_chain_features(module, data_module.test_dataloader(), device, max_parents=0)
+    encoded = encode_chain_batch(raw, coordinates)
+    edges = estimate_edge_operators(encoded)
+    c_dir = estimate_endpoint_operator(encoded)
+
+    surrogate_comp = edges[0].double()
+    for edge in edges[1:]:
+        surrogate_comp = surrogate_comp @ edge.double()
+    surrogate_delta = c_dir.double() - surrogate_comp
+    corrected_comp = corrected_composition(edges, correction)
+    corrected_dir = corrected_endpoint(c_dir, correction)
+    corrected_delta = corrected_dir - corrected_comp
+
+    def norms(delta, direct):
+        numerator = float(torch.linalg.matrix_norm(delta, ord="fro"))
+        denominator = float(torch.linalg.matrix_norm(direct, ord="fro"))
+        return {"numerator": numerator, "denominator": denominator,
+                "ratio": numerator / max(denominator, 1e-12),
+                "delta_operator": float(torch.linalg.matrix_norm(delta, ord=2))}
+
+    return {
+        "surrogate": norms(surrogate_delta, c_dir.double()),
+        "projection": norms(corrected_delta, corrected_dir),
+        "gram": correction.as_metrics(),
+        "interface_attribution": cumulative_interface_attribution(edges, c_dir, correction),
+        "calibration_samples": int(calibration.chain[0].shape[0]),
     }
 
 
@@ -78,6 +168,8 @@ def main() -> None:
                         choices=["random", "collapsed", "convergence", "convergence_extended"])
     parser.add_argument("--collapse-scale", type=float, default=0.01)
     parser.add_argument("--ridge", type=float, default=1e-3)
+    parser.add_argument("--gram-corrected", action="store_true",
+                        help="report the projection defect alongside the surrogate")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -141,7 +233,14 @@ def main() -> None:
                 pool_val_into_calibration=(arguments.mode == "convergence"),
                 calibration_limit=size,
             )
-            record["curve"][str(size)] = summarize(evaluation)
+            entry = summarize(evaluation)
+            if arguments.gram_corrected:
+                entry["gram"] = gram_corrected_report(
+                    module, data_module, device, arguments.seed, arguments.ridge,
+                    calibration_limit=size,
+                    pool_val=(arguments.mode == "convergence"),
+                )
+            record["curve"][str(size)] = entry
             print(f"N={size:5d}  " + json.dumps(record["curve"][str(size)]))
         keys = sorted(record["curve"], key=int)
         record["successive_change"] = {
@@ -149,6 +248,14 @@ def main() -> None:
                              - record["curve"][a]["normalized_closure_defect"])
             for a, b in zip(keys, keys[1:])
         }
+        if arguments.gram_corrected:
+            record["successive_change_projection"] = {
+                f"{a}->{b}": abs(record["curve"][b]["gram"]["projection"]["ratio"]
+                                 - record["curve"][a]["gram"]["projection"]["ratio"])
+                for a, b in zip(keys, keys[1:])
+            }
+            print("projection successive change:",
+                  json.dumps(record["successive_change_projection"]))
         print("successive change:", json.dumps(record["successive_change"]))
     else:
         evaluation = certificate_evaluation(

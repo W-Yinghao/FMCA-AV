@@ -1,0 +1,79 @@
+{
+  "alpha": 0.05,
+  "note": "Tier 1 subtracts the endpoint radius only; Tier 2 also subtracts 2 r_P and is the population path certificate. Radii are the runner's recorded max estimation errors, not Bernstein radii from raw features, which are no longer on disk -- disclosed.",
+  "by_cell": {
+    "N1000_M1": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.5843808724059223,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N1000_M4": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.4263797780170885,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N1000_M16": {
+      "units": 160,
+      "tier1_rate": 0.0125,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.36040912028080113,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N10000_M1": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.1622184718791087,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N10000_M4": {
+      "units": 160,
+      "tier1_rate": 0.0125,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.16205511197263614,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N10000_M16": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.1495951939165091,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N100000_M1": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.05154582686492799,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N100000_M4": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.04849406603818509,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    },
+    "N100000_M16": {
+      "units": 160,
+      "tier1_rate": 0.0,
+      "tier2_rate": 0.0,
+      "mean_radius": 0.042057899984252425,
+      "max_relative": 0.0,
+      "verdict": "PASS"
+    }
+  },
+  "skipped_units": 3
+}
