@@ -183,7 +183,7 @@ def main() -> None:
     data_module.setup()
     module = HierarchyCertificateModule(config)
 
-    if arguments.mode in {"collapsed", "convergence"}:
+    if arguments.mode != "random":
         unit = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
         checkpoint = unit / "checkpoints" / "last.ckpt"
         if not checkpoint.is_file():
@@ -193,8 +193,14 @@ def main() -> None:
     # random mode deliberately keeps the fresh initialization
 
     module = module.to(device).eval()
+    fingerprint = float(sum(float(p.detach().double().abs().sum())
+                            for p in module.backbone.parameters()))
     record = {"mode": arguments.mode, "variant": arguments.variant, "seed": arguments.seed,
-              "device": str(device), "ridge": arguments.ridge}
+              "device": str(device), "ridge": arguments.ridge,
+              "backbone_fingerprint": fingerprint,
+              "weights_loaded": arguments.mode != "random"}
+    print(f"backbone fingerprint {fingerprint:.6f} "
+          f"(loaded={record['weights_loaded']})")
 
     if arguments.mode == "collapsed":
         module.backbone = CollapsedBackbone(module.backbone, arguments.collapse_scale).to(device)
