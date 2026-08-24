@@ -75,7 +75,7 @@ def main() -> None:
     parser.add_argument("--variant", default="product_endpoint")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--mode", required=True,
-                        choices=["random", "collapsed", "convergence"])
+                        choices=["random", "collapsed", "convergence", "convergence_extended"])
     parser.add_argument("--collapse-scale", type=float, default=0.01)
     parser.add_argument("--ridge", type=float, default=1e-3)
     parser.add_argument("--out", required=True)
@@ -108,15 +108,37 @@ def main() -> None:
         module.backbone = CollapsedBackbone(module.backbone, arguments.collapse_scale).to(device)
         record["collapse_scale"] = arguments.collapse_scale
 
-    if arguments.mode == "convergence":
-        pool = int(config["data"]["n_calibration"]) + int(config["data"]["n_val"])
-        sizes = [n for n in (625, 1250, 2500, 5000, 10000) if n <= pool]
+    if arguments.mode == "convergence_extended":
+        # The test split is held out from SSL training exactly as the
+        # calibration and validation splits are, so Stage-B may draw on
+        # half of it provided Stage-C evaluates on the other half.  One
+        # further doubling, no training.
+        from torch.utils.data import ConcatDataset, Subset
+
+        test = data_module.datasets["test"]
+        half = len(test) // 2
+        data_module.datasets["calibration"] = ConcatDataset([
+            data_module.datasets["calibration"],
+            data_module.datasets["val"],
+            Subset(test, list(range(half))),
+        ])
+        data_module.datasets["test"] = Subset(test, list(range(half, len(test))))
+        record["stage_b_pool"] = len(data_module.datasets["calibration"])
+        record["stage_c_size"] = len(data_module.datasets["test"])
+
+    if arguments.mode.startswith("convergence"):
+        if arguments.mode == "convergence_extended":
+            pool = record["stage_b_pool"]
+        else:
+            pool = int(config["data"]["n_calibration"]) + int(config["data"]["n_val"])
+        sizes = [n for n in (625, 1250, 2500, 5000, 10000, 20000) if n <= pool]
         record["clean_pool"] = pool
         record["curve"] = {}
         for size in sizes:
             evaluation = certificate_evaluation(
                 module, data_module, device, arguments.seed,
-                measurement_ridge=arguments.ridge, pool_val_into_calibration=True,
+                measurement_ridge=arguments.ridge,
+                pool_val_into_calibration=(arguments.mode == "convergence"),
                 calibration_limit=size,
             )
             record["curve"][str(size)] = summarize(evaluation)
