@@ -33,6 +33,7 @@ import torch
 from torch import Tensor
 
 from .coordinates import LevelCoordinates, fit_level_coordinates
+from .finite_sample import matrix_bernstein_radius, path_radius
 from .gram import (
     build_correction,
     corrected_composition,
@@ -156,6 +157,7 @@ def measure_chain(
     evaluation_states: Sequence[Tensor],
     spec: ChainSpec,
     top_k: int = 8,
+    with_radii: bool = False,
 ) -> dict:
     """The full multi-component readout for one chain.
 
@@ -212,8 +214,23 @@ def measure_chain(
             "certified_top": float(report.certified_spectrum.max()),
         }
 
+    finite = None
+    if with_radii:
+        # Bernstein radii for every estimated matrix, and the compounded
+        # path radius the Tier-2 certificate subtracts.  Estimated on the
+        # same evaluation split the operators came from.
+        edge_radii = [matrix_bernstein_radius(encoded[i], encoded[i + 1]).as_metrics()
+                      for i in range(len(encoded) - 1)]
+        endpoint = matrix_bernstein_radius(encoded[0], encoded[-1]).as_metrics()
+        finite = {
+            "edge_radii": edge_radii,
+            "endpoint_radius": endpoint,
+            "path_radius": path_radius([e["radius"] for e in edge_radii]),
+        }
+
     return {
         "spec": spec.as_metrics(),
+        "finite_sample": finite,
         "projection": readout(projected),
         "surrogate": readout(surrogate),
         "gram": correction.as_metrics(),
