@@ -165,6 +165,9 @@ def main() -> None:
                         help="matched per-level coordinate budget; 0 uses native widths")
     parser.add_argument("--variance-floor", type=float, default=1e-2,
                         help="drop directions below floor*lambda_max; bounds the Gram")
+    parser.add_argument("--seed", type=int, default=1,
+                        help="draw index: seed s takes samples [(s-1)*N, s*N), so "
+                             "seeds are DISJOINT draws and seed 1 is the first block")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -175,7 +178,11 @@ def main() -> None:
     data = CIFARFiles(arguments.root, arguments.dataset, train=True)
     transform = CIFARProbeTransform(False, [0.485, 0.456, 0.406],
                                     [0.229, 0.224, 0.225], size=224)
-    images = torch.stack([transform(img) for img in data.images[: arguments.samples]])
+    lo = (arguments.seed - 1) * arguments.samples
+    hi = lo + arguments.samples
+    if hi > len(data.images):
+        raise SystemExit(f"seed {arguments.seed} needs images [{lo}:{hi}] of {len(data.images)}")
+    images = torch.stack([transform(img) for img in data.images[lo:hi]])
     activations = block_activations(blocks, images, device)
     half = arguments.samples // 2
     endpoint = len(activations) - 1
@@ -236,6 +243,7 @@ def main() -> None:
     out.write_text(json.dumps({
         "model": arguments.model, "weights": arguments.weights,
         "dataset": arguments.dataset, "samples": arguments.samples,
+        "seed": arguments.seed, "draw": [lo, hi],
         "coordinate_budget": arguments.coordinate_budget or None,
         "variance_floor": arguments.variance_floor or None,
         "records": records,
