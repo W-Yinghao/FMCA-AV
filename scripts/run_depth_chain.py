@@ -151,18 +151,28 @@ def main() -> None:
     model = getattr(tv_models, arguments.model)(
         weights=None if arguments.weights == "none" else arguments.weights).eval().to(device)
 
-    data = CIFARFiles(arguments.root, arguments.dataset, train=True)
-    transform = CIFARProbeTransform(False, [0.485, 0.456, 0.406],
-                                    [0.229, 0.224, 0.225], size=224)
     lo = (arguments.seed - 1) * arguments.samples
     hi = lo + arguments.samples
-    if hi > len(data.images):
-        raise SystemExit(f"seed {arguments.seed} needs images [{lo}:{hi}] of {len(data.images)}")
-    images = torch.stack([transform(img) for img in data.images[lo:hi]])
-    labels = torch.from_numpy(data.labels[lo:hi].copy())
+    if arguments.dataset == "imagenet":
+        # In-distribution: the calibration domain IS the pretraining domain,
+        # which is what separates depth structure from domain shift.
+        from fmca_av.data.imagenet_files import ImageNetValFiles
+        files = ImageNetValFiles(arguments.root)
+        if hi > len(files):
+            raise SystemExit(f"seed {arguments.seed} needs images [{lo}:{hi}] of {len(files)}")
+        images, labels = files.load_block(lo, hi)
+        classes = files.classes
+    else:
+        data = CIFARFiles(arguments.root, arguments.dataset, train=True)
+        transform = CIFARProbeTransform(False, [0.485, 0.456, 0.406],
+                                        [0.229, 0.224, 0.225], size=224)
+        if hi > len(data.images):
+            raise SystemExit(f"seed {arguments.seed} needs images [{lo}:{hi}] of {len(data.images)}")
+        images = torch.stack([transform(img) for img in data.images[lo:hi]])
+        labels = torch.from_numpy(data.labels[lo:hi].copy())
+        classes = 100 if arguments.dataset == "cifar100" else 10
     states = stage_activations(model, images, device, model_name=arguments.model)
     half = arguments.samples // 2
-    classes = 100 if arguments.dataset == "cifar100" else 10
 
     if arguments.model.startswith("vit"):
         names = ["embed"] + [f"block{i}" for i in VIT_TAPS]

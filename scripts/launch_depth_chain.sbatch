@@ -14,5 +14,5 @@ cd /home/infres/yinwang/FMCA-AV
 PYTHON=/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python
 "$PYTHON" scripts/run_depth_chain.py \
   --model "$1" --weights "$2" --dataset "$3" \
-  --root "/projects/EEG-foundation-model/yinghao/FMCA-AV/$3" \
+  --root "${ROOT:-/projects/EEG-foundation-model/yinghao/FMCA-AV/$3}" \
   --samples 8000 --coordinate-budget "${7:-64}" --gram-bound "${6:-0.05}" --seed "${5:-1}" --out "$4"
