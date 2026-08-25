@@ -161,6 +161,10 @@ def main() -> None:
     parser.add_argument("--samples", type=int, default=8000)
     parser.add_argument("--intervals", default="1:3,1:5,3:8,5:12,8:14",
                         help="comma-separated low:high block index pairs")
+    parser.add_argument("--coordinate-budget", type=int, default=64,
+                        help="matched per-level coordinate budget; 0 uses native widths")
+    parser.add_argument("--variance-floor", type=float, default=1e-2,
+                        help="drop directions below floor*lambda_max; bounds the Gram")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -187,6 +191,8 @@ def main() -> None:
             interpretation="depth_sufficiency",
             state_names=[f"block{low}", f"block{high}", f"block{endpoint}"],
             deterministic_edges=True,
+            coordinate_budget=arguments.coordinate_budget or None,
+            variance_floor=arguments.variance_floor or None,
             notes="same-model self-stitch: every state is an activation of one network",
         )
         states = [activations[low], activations[high], activations[endpoint]]
@@ -230,6 +236,8 @@ def main() -> None:
     out.write_text(json.dumps({
         "model": arguments.model, "weights": arguments.weights,
         "dataset": arguments.dataset, "samples": arguments.samples,
+        "coordinate_budget": arguments.coordinate_budget or None,
+        "variance_floor": arguments.variance_floor or None,
         "records": records,
     }, indent=2))
     print(f"wrote {out}")

@@ -91,7 +91,7 @@ class GramCorrection:
             "retained_ranks": list(self.retained_ranks),
             "metric_deviation": [float(value) for value in self.metric_deviation],
             "tau_relative": float(self.tau_relative),
-            "dimension": int(self.grams[0].shape[0]),
+            "dimensions": [int(g.shape[0]) for g in self.grams],
         }
 
 
@@ -102,8 +102,13 @@ def build_correction(
 
     if len(grams) < 2:
         raise ValueError("a chain needs at least two levels")
-    identity = torch.eye(grams[0].shape[0], dtype=torch.float64)
-    deviation = [float(torch.linalg.matrix_norm(g.double() - identity, ord=2)) for g in grams]
+    for level, gram in enumerate(grams):
+        if gram.ndim != 2 or gram.shape[0] != gram.shape[1]:
+            raise ValueError(f"level {level} Gram must be square, got {tuple(gram.shape)}")
+    # Levels of a real chain carry different widths (64 -> 256 -> ... ->
+    # 2048), so every identity here is the one for ITS own level.
+    deviation = [float(torch.linalg.matrix_norm(
+        g.double() - torch.eye(g.shape[0], dtype=torch.float64), ord=2)) for g in grams]
     ranks: List[int] = []
     interior: List[Tensor] = []
     for level, gram in enumerate(grams):
@@ -158,14 +163,19 @@ def cumulative_interface_attribution(
     direction, so they carry no causal per-layer attribution.
     """
 
-    identity = torch.eye(correction.grams[0].shape[0], dtype=torch.float64)
+    def eye(level: int) -> Tensor:
+        return torch.eye(correction.grams[level].shape[0], dtype=torch.float64)
+
+    # interior_inverses[i] sits at level i+1, between edges i and i+1, so a
+    # switched-off interface is that level's identity -- not level 0's.
     steps = []
     for enabled in range(len(correction.interior_inverses) + 1):
         partial = GramCorrection(
             grams=correction.grams,
             interior_inverses=(correction.interior_inverses[:enabled]
-                               + [identity] * (len(correction.interior_inverses) - enabled)),
-            end_inverse_sqrts=(correction.end_inverse_sqrts if enabled else (identity, identity)),
+                               + [eye(i + 1) for i in range(enabled, len(correction.interior_inverses))]),
+            end_inverse_sqrts=(correction.end_inverse_sqrts if enabled
+                               else (eye(0), eye(len(correction.grams) - 1))),
             retained_ranks=correction.retained_ranks,
             metric_deviation=correction.metric_deviation,
             tau_relative=correction.tau_relative,

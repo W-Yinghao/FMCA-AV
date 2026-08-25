@@ -78,6 +78,10 @@ def main() -> None:
     parser.add_argument("--dataset", default="cifar10")
     parser.add_argument("--root", required=True)
     parser.add_argument("--samples", type=int, default=8000)
+    parser.add_argument("--coordinate-budget", type=int, default=64,
+                        help="matched per-level coordinate budget; 0 uses native widths")
+    parser.add_argument("--variance-floor", type=float, default=1e-2,
+                        help="drop directions below floor*lambda_max; bounds the Gram")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -105,6 +109,8 @@ def main() -> None:
             interpretation="depth_sufficiency",
             state_names=[names[i] for i in subset],
             deterministic_edges=True,
+            coordinate_budget=arguments.coordinate_budget or None,
+            variance_floor=arguments.variance_floor or None,
             notes="the network's own activation chain; no view is resampled",
         )
         calibration = [states[i][:half] for i in subset]
@@ -120,6 +126,9 @@ def main() -> None:
             "null_endpoint_top": null["projection"]["endpoint_top"],
             "null_delta_operator": null["projection"]["delta_operator"],
             "gram": measurement["gram"],
+            "dimensions": measurement["dimensions"],
+            "native_dimensions": measurement["native_dimensions"],
+            "budget_retained_variance": measurement["budget_retained_variance"],
         })
         print(f"{names[start]:8s}->endpoint  delta_op={p['delta_operator']:.4f} "
               f"path_top={p['path_top']:.3f} endpoint_top={p['endpoint_top']:.3f} "
@@ -140,6 +149,8 @@ def main() -> None:
     out.write_text(json.dumps({
         "model": arguments.model, "weights": arguments.weights,
         "dataset": arguments.dataset, "samples": arguments.samples,
+        "coordinate_budget": arguments.coordinate_budget or None,
+        "variance_floor": arguments.variance_floor or None,
         "chains": chains, "layer_probes": probes,
         "best_probe_stage": max(probes, key=lambda r: r["probe_accuracy"])["stage"],
     }, indent=2))

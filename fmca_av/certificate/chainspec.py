@@ -58,6 +58,8 @@ class ChainSpec:
     interpretation: str
     state_names: List[str]
     deterministic_edges: bool
+    coordinate_budget: Optional[int] = None
+    variance_floor: Optional[float] = None
     coordinate_ridge: float = 1e-3
     retained_rank_rule: str = "tau=1e-3*lambda_max"
     notes: str = ""
@@ -71,6 +73,8 @@ class ChainSpec:
             )
         if len(self.state_names) < 3:
             raise ValueError("a path needs at least two edges, so at least three states")
+        if self.coordinate_budget is not None and self.coordinate_budget < 2:
+            raise ValueError("a coordinate budget below 2 leaves no operator to measure")
 
     def as_metrics(self) -> dict:
         return {
@@ -78,6 +82,8 @@ class ChainSpec:
             "interpretation": self.interpretation,
             "states": list(self.state_names),
             "deterministic_edges": self.deterministic_edges,
+            "coordinate_budget": self.coordinate_budget,
+            "variance_floor": self.variance_floor,
             "coordinate_ridge": self.coordinate_ridge,
             "retained_rank_rule": self.retained_rank_rule,
             "notes": self.notes,
@@ -90,6 +96,59 @@ def _centered_cross(left: Tensor, right: Tensor) -> Tensor:
     if left.shape[0] != right.shape[0]:
         raise ValueError("cross-moment operands must share the sample axis")
     return left.double().transpose(0, 1) @ right.double() / left.shape[0]
+
+
+def _budget_basis(state: Tensor, budget: Optional[int], floor: Optional[float]):
+    """The retained principal directions of one state, or None if unneeded.
+
+    Fitted on CALIBRATION only and then frozen, like every other
+    coordinate object here.  Two rules, doing two different jobs:
+
+    ``budget`` matches the number of coordinates across levels.  A
+    network's levels have different widths, so an unbudgeted profile
+    confounds depth with width, and a 2048-wide state whitened from a
+    few thousand samples is not estimable at all.
+
+    ``variance_floor`` is the conditioning guard, and it is the one that
+    matters for the Gram correction.  Ridge whitening leaves
+    ``G = W R W`` with eigenvalues ``lambda / (lambda + rho * s)``, so a
+    direction whose variance is far below the mean arrives at the
+    correction as a near-zero Gram eigenvalue that ``G^{-1/2}`` then
+    amplifies without bound -- pooled stem activations are exactly that
+    case.  The tau rule inside the correction only catches exact
+    singularity, one step too late.  Dropping directions below
+    ``floor * lambda_max`` here bounds every Gram eigenvalue below by
+    roughly ``floor / (floor + rho)`` instead.
+    """
+
+    if budget is None and floor is None:
+        return None
+    work = state.double()
+    centered = work - work.mean(0, keepdim=True)
+    covariance = centered.transpose(0, 1) @ centered / centered.shape[0]
+    values, vectors = torch.linalg.eigh(0.5 * (covariance + covariance.transpose(0, 1)))
+    order = torch.argsort(values, descending=True)
+    values, vectors = values[order], vectors[:, order]
+    keep = values.shape[0]
+    if floor is not None:
+        keep = int((values >= float(floor) * float(values.max())).sum())
+    if budget is not None:
+        keep = min(keep, int(budget))
+    if keep < 2:
+        raise ValueError(
+            f"coordinate rule retained {keep} directions of {state.shape[-1]}; "
+            f"nothing is left to measure"
+        )
+    if keep == state.shape[-1]:
+        return None
+    total = float(values.clamp_min(0.0).sum())
+    kept = float(values[:keep].clamp_min(0.0).sum())
+    return vectors[:, :keep], (kept / total if total > 0 else 0.0)
+
+
+def _apply_budget(states: Sequence[Tensor], bases) -> List[Tensor]:
+    return [state.double() if basis is None else state.double() @ basis[0]
+            for state, basis in zip(states, bases)]
 
 
 def measure_chain(
@@ -110,6 +169,13 @@ def measure_chain(
         raise ValueError("one calibration tensor per declared state")
     if len(evaluation_states) != len(spec.state_names):
         raise ValueError("one evaluation tensor per declared state")
+
+    native_dimensions = [int(state.shape[-1]) for state in calibration_states]
+    bases = [_budget_basis(state, spec.coordinate_budget, spec.variance_floor)
+             for state in calibration_states]
+    calibration_states = _apply_budget(calibration_states, bases)
+    evaluation_states = _apply_budget(evaluation_states, bases)
+    retained_variance = [1.0 if basis is None else basis[1] for basis in bases]
 
     coordinates: List[LevelCoordinates] = [
         fit_level_coordinates(state, ridge=spec.coordinate_ridge, centered=True)
@@ -155,6 +221,8 @@ def measure_chain(
         "calibration_samples": int(calibration_states[0].shape[0]),
         "evaluation_samples": int(evaluation_states[0].shape[0]),
         "dimensions": [int(state.shape[-1]) for state in calibration_states],
+        "native_dimensions": native_dimensions,
+        "budget_retained_variance": retained_variance,
     }
 
 
