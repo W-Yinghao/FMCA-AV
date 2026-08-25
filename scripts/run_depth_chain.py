@@ -122,8 +122,18 @@ def main() -> None:
         )
         calibration = [states[i][:half] for i in subset]
         evaluation = [states[i][half:] for i in subset]
-        measurement = measure_chain(calibration, evaluation, spec)
-        null = shuffled_null(calibration, evaluation, spec)
+        try:
+            measurement = measure_chain(calibration, evaluation, spec)
+            null = shuffled_null(calibration, evaluation, spec)
+        except ValueError as refusal:
+            # A refusal IS a result for a control arm: a random-init pooled
+            # chain can be near rank-1, and the coordinate rule must say so
+            # in the record rather than dying with an empty output file.
+            chains.append({"start": names[start],
+                           "states": [names[i] for i in subset],
+                           "refused": str(refusal)})
+            print(f"{names[start]:8s}->endpoint  REFUSED: {refusal}")
+            continue
         p = measurement["projection"]
         chains.append({
             "start": names[start],
