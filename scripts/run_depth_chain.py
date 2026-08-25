@@ -139,8 +139,8 @@ def main() -> None:
     parser.add_argument("--samples", type=int, default=8000)
     parser.add_argument("--coordinate-budget", type=int, default=64,
                         help="matched per-level coordinate budget; 0 uses native widths")
-    parser.add_argument("--variance-floor", type=float, default=1e-2,
-                        help="drop directions below floor*lambda_max; bounds the Gram")
+    parser.add_argument("--gram-bound", type=float, default=0.05,
+                        help="per-level bound on ||I - G||; the coordinate rule enforces it")
     parser.add_argument("--seed", type=int, default=1,
                         help="draw index: seed s takes samples [(s-1)*N, s*N), so "
                              "seeds are DISJOINT draws and seed 1 is the first block")
@@ -179,7 +179,7 @@ def main() -> None:
             state_names=[names[i] for i in subset],
             deterministic_edges=True,
             coordinate_budget=arguments.coordinate_budget or None,
-            variance_floor=arguments.variance_floor or None,
+            gram_bound=arguments.gram_bound or None,
             notes="the network's own activation chain; no view is resampled",
         )
         calibration = [states[i][:half] for i in subset]
@@ -230,7 +230,7 @@ def main() -> None:
         "dataset": arguments.dataset, "samples": arguments.samples,
         "seed": arguments.seed, "draw": [lo, hi],
         "coordinate_budget": arguments.coordinate_budget or None,
-        "variance_floor": arguments.variance_floor or None,
+        "gram_bound": arguments.gram_bound or None,
         "chains": chains, "layer_probes": probes,
         "best_probe_stage": max(probes, key=lambda r: r["probe_accuracy"])["stage"],
     }, indent=2))

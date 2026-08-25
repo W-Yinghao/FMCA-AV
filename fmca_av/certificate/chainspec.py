@@ -60,7 +60,7 @@ class ChainSpec:
     state_names: List[str]
     deterministic_edges: bool
     coordinate_budget: Optional[int] = None
-    variance_floor: Optional[float] = None
+    gram_bound: Optional[float] = None
     coordinate_ridge: float = 1e-3
     retained_rank_rule: str = "tau=1e-3*lambda_max"
     notes: str = ""
@@ -84,7 +84,7 @@ class ChainSpec:
             "states": list(self.state_names),
             "deterministic_edges": self.deterministic_edges,
             "coordinate_budget": self.coordinate_budget,
-            "variance_floor": self.variance_floor,
+            "gram_bound": self.gram_bound,
             "coordinate_ridge": self.coordinate_ridge,
             "retained_rank_rule": self.retained_rank_rule,
             "notes": self.notes,
@@ -99,40 +99,46 @@ def _centered_cross(left: Tensor, right: Tensor) -> Tensor:
     return left.double().transpose(0, 1) @ right.double() / left.shape[0]
 
 
-def _budget_basis(state: Tensor, budget: Optional[int], floor: Optional[float]):
+def _budget_basis(state: Tensor, budget: Optional[int], gram_bound: Optional[float],
+                  ridge: float):
     """The retained principal directions of one state, or None if unneeded.
 
-    Fitted on CALIBRATION only and then frozen, like every other
-    coordinate object here.  Two rules, doing two different jobs:
+    Fitted on CALIBRATION only and then frozen.  Two rules, two jobs:
 
-    ``budget`` matches the number of coordinates across levels.  A
-    network's levels have different widths, so an unbudgeted profile
-    confounds depth with width, and a 2048-wide state whitened from a
-    few thousand samples is not estimable at all.
+    ``budget`` matches the number of coordinates across levels, because a
+    chain whose levels are 64 and 2048 wide otherwise confounds depth
+    with width.
 
-    ``variance_floor`` is the conditioning guard, and it is the one that
-    matters for the Gram correction.  Ridge whitening leaves
-    ``G = W R W`` with eigenvalues ``lambda / (lambda + rho * s)``, so a
-    direction whose variance is far below the mean arrives at the
-    correction as a near-zero Gram eigenvalue that ``G^{-1/2}`` then
-    amplifies without bound -- pooled stem activations are exactly that
-    case.  The tau rule inside the correction only catches exact
-    singularity, one step too late.  Dropping directions below
-    ``floor * lambda_max`` here bounds every Gram eigenvalue below by
-    roughly ``floor / (floor + rho)`` instead.
+    ``gram_bound`` is the conditioning guard, stated as the thing it
+    guarantees.  Ridge whitening leaves Gram eigenvalues
+    ``lambda / (lambda + penalty)``, so keeping only directions with
+    ``lambda * f >= (1 - f) * penalty`` bounds the level's ``||I - G||``
+    by ``f``.  The penalty scale is anchored to the NATIVE feature space
+    (rho times the native mean marginal variance) and carried through
+    the projection, because letting the projection re-derive the scale
+    from its own retained spectrum couples the threshold to the very
+    directions it is judging -- a one-huge-direction spectrum like
+    ConvNeXt's then inflates its own ridge and disqualifies a tail that
+    is in fact perfectly conditioned under the ridge the full feature
+    space induces.
     """
 
-    if budget is None and floor is None:
+    if budget is None and gram_bound is None:
         return None
     work = state.double()
     centered = work - work.mean(0, keepdim=True)
     covariance = centered.transpose(0, 1) @ centered / centered.shape[0]
     values, vectors = torch.linalg.eigh(0.5 * (covariance + covariance.transpose(0, 1)))
     order = torch.argsort(values, descending=True)
-    values, vectors = values[order], vectors[:, order]
+    values, vectors = values[order].clamp_min(0.0), vectors[:, order]
+    native_scale = float(values.mean())  # tr / d on the native features
     keep = values.shape[0]
-    if floor is not None:
-        keep = int((values >= float(floor) * float(values.max())).sum())
+    if gram_bound is not None:
+        fraction = float(gram_bound)
+        if not 0.0 < fraction < 1.0:
+            raise ValueError("gram_bound must lie strictly between 0 and 1")
+        threshold = (1.0 - fraction) / fraction * ridge * native_scale
+        keep = int((values >= threshold).sum())
     if budget is not None:
         keep = min(keep, int(budget))
     if keep < 2:
@@ -140,16 +146,23 @@ def _budget_basis(state: Tensor, budget: Optional[int], floor: Optional[float]):
             f"coordinate rule retained {keep} directions of {state.shape[-1]}; "
             f"nothing is left to measure"
         )
+    kept_trace = float(values[:keep].sum())
+    total = float(values.sum())
     if keep == state.shape[-1]:
         return None
-    total = float(values.clamp_min(0.0).sum())
-    kept = float(values[:keep].clamp_min(0.0).sum())
-    return vectors[:, :keep], (kept / total if total > 0 else 0.0)
+    # fit_level_coordinates applies penalty = ridge_arg * (kept trace / keep);
+    # this multiplier restores the native-anchored penalty rho * native_scale.
+    ridge_effective = ridge * native_scale * keep / kept_trace
+    return vectors[:, :keep], (kept_trace / total if total > 0 else 0.0), ridge_effective
 
 
 def _apply_budget(states: Sequence[Tensor], bases) -> List[Tensor]:
     return [state.double() if basis is None else state.double() @ basis[0]
             for state, basis in zip(states, bases)]
+
+
+def _level_ridges(bases, ridge: float) -> List[float]:
+    return [ridge if basis is None else basis[2] for basis in bases]
 
 
 def measure_chain(
@@ -173,15 +186,17 @@ def measure_chain(
         raise ValueError("one evaluation tensor per declared state")
 
     native_dimensions = [int(state.shape[-1]) for state in calibration_states]
-    bases = [_budget_basis(state, spec.coordinate_budget, spec.variance_floor)
+    bases = [_budget_basis(state, spec.coordinate_budget, spec.gram_bound,
+                           spec.coordinate_ridge)
              for state in calibration_states]
     calibration_states = _apply_budget(calibration_states, bases)
     evaluation_states = _apply_budget(evaluation_states, bases)
     retained_variance = [1.0 if basis is None else basis[1] for basis in bases]
 
+    ridges = _level_ridges(bases, spec.coordinate_ridge)
     coordinates: List[LevelCoordinates] = [
-        fit_level_coordinates(state, ridge=spec.coordinate_ridge, centered=True)
-        for state in calibration_states
+        fit_level_coordinates(state, ridge=level_ridge, centered=True)
+        for state, level_ridge in zip(calibration_states, ridges)
     ]
     # One calibration per state, reused on both of its edges: the shared
     # coordinate rule is structural here rather than a convention.

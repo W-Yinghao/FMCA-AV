@@ -37,7 +37,7 @@ def main() -> None:
     parser.add_argument("--lengths", default="1,2,4,8,14",
                         help="numbers of INTERMEDIATE taps between the fixed ends")
     parser.add_argument("--coordinate-budget", type=int, default=64)
-    parser.add_argument("--variance-floor", type=float, default=1e-2)
+    parser.add_argument("--gram-bound", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
@@ -75,7 +75,7 @@ def main() -> None:
             state_names=[f"block{i}" for i in subset],
             deterministic_edges=True,
             coordinate_budget=arguments.coordinate_budget or None,
-            variance_floor=arguments.variance_floor or None,
+            gram_bound=arguments.gram_bound or None,
             notes="fixed ends, varying interface count; one shared draw for every length",
         )
         states = [activations[i] for i in subset]
@@ -103,7 +103,7 @@ def main() -> None:
         "dataset": arguments.dataset, "samples": arguments.samples,
         "seed": arguments.seed, "draw": [lo, hi],
         "coordinate_budget": arguments.coordinate_budget or None,
-        "variance_floor": arguments.variance_floor or None,
+        "gram_bound": arguments.gram_bound or None,
         "records": records,
     }, indent=2))
     print(f"wrote {out}")

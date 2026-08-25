@@ -102,55 +102,81 @@ class HeterogeneousWidthTest(unittest.TestCase):
 
 
 class ConditioningGuardTest(unittest.TestCase):
-    """The variance floor must bound the Gram, or the correction explodes.
+    """gram_bound must deliver exactly what it promises: ||I - G|| <= f.
 
-    Pooled activations have heavy-tailed spectra.  Without the floor the
-    weakest retained direction reaches the correction as a near-zero Gram
-    eigenvalue and G^{-1/2} amplifies it, which is how a composed operator
-    ends up an order of magnitude above the endpoint it is supposed to
-    reproduce.
+    Ridge whitening leaves Gram eigenvalues lambda / (lambda + rho * s);
+    without the guard, directions far below the mean reach the correction
+    near-degenerate and G^{-1/2} amplifies them.  The rule keeps the
+    largest spectral prefix whose weakest member is still well-conditioned
+    under the ridge that prefix induces, so the bound holds per level by
+    construction -- for ANY spectrum shape, including the ConvNeXt-style
+    one-huge-direction spectrum that killed the lambda_max-relative floor.
     """
 
-    def _skewed_chain(self, n=4000, dim=24, decay=1e-5, seed=3):
+    def _skewed_chain(self, n=4000, dim=24, decay=1e-5, seed=3, spike=None):
         g = torch.Generator().manual_seed(seed)
         spectrum = torch.logspace(0, torch.log10(torch.tensor(decay)).item(), dim,
                                   dtype=torch.float64)
+        if spike is not None:
+            spectrum = spectrum.clone()
+            spectrum[0] = spike
         states = [torch.randn(n, dim, generator=g, dtype=torch.float64) * spectrum.sqrt()]
         for _ in range(2):
             m = torch.randn(dim, dim, generator=g, dtype=torch.float64) / dim ** 0.5
             states.append(torch.tanh(states[-1] @ m) * spectrum.sqrt())
         return states
 
-    def test_floor_bounds_the_gram_and_the_composed_operator(self):
+    def test_bound_is_delivered_per_level(self):
         states = self._skewed_chain()
         half = states[0].shape[0] // 2
         calibration = [s[:half] for s in states]
         evaluation = [s[half:] for s in states]
 
         loose = measure_chain(calibration, evaluation, _spec())
-        floored = measure_chain(calibration, evaluation, _spec(variance_floor=1e-2))
-
-        # The guarantee: lambda >= floor * lambda_max sends every Gram
-        # eigenvalue above floor / (floor + ridge), so ||I - G|| stays well
-        # under one.
-        self.assertLess(max(floored["gram"]["metric_deviation"]), 0.15)
-        # The mutation this pins: without the floor the Gram degenerates.
+        for fraction in (0.02, 0.05, 0.2):
+            bounded = measure_chain(calibration, evaluation, _spec(gram_bound=fraction))
+            self.assertLessEqual(max(bounded["gram"]["metric_deviation"]),
+                                 fraction + 1e-9)
+        # The mutation this pins: without the guard the Gram degenerates.
         self.assertGreater(max(loose["gram"]["metric_deviation"]), 0.5)
-        # And the composed operator stays commensurate with the endpoint it
-        # is supposed to reproduce, instead of drifting above it.
-        def ratio(out):
-            return out["projection"]["path_top"] / out["projection"]["endpoint_top"]
-        self.assertLess(ratio(floored), ratio(loose))
-        # Fewer coordinates survive, and the report says how many.
-        self.assertLess(sum(floored["gram"]["retained_ranks"]),
-                        sum(loose["gram"]["retained_ranks"]))
 
-    def test_a_floor_that_retains_nothing_is_refused_not_silently_emptied(self):
-        states = self._skewed_chain()
+    def test_one_huge_direction_stays_measurable(self):
+        """The ConvNeXt regression: a spectrum with one direction 100x the
+        rest, in a wide state, must keep a usable tail -- the native mean
+        dilutes the spike, so the tail is well-conditioned under the ridge
+        the full space induces.  The lambda_max-relative floor kept exactly
+        one direction here; the native-anchored bound must not."""
+
+        states = self._skewed_chain(n=4000, dim=96, decay=1e-3, spike=100.0)
+        half = states[0].shape[0] // 2
+        out = measure_chain([s[:half] for s in states], [s[half:] for s in states],
+                            _spec(gram_bound=0.05))
+        self.assertTrue(all(rank >= 10 for rank in out["gram"]["retained_ranks"]),
+                        out["gram"]["retained_ranks"])
+        self.assertLessEqual(max(out["gram"]["metric_deviation"]), 0.05 + 1e-9)
+
+    def test_a_spike_that_truly_swamps_the_ridge_is_refused(self):
+        """And the flip side stays loud: when one direction is four orders
+        of magnitude above a thin tail, the tail genuinely is degenerate
+        under the declared ridge, and the rule must say so rather than
+        keep the tail at a deviation it cannot honour."""
+
+        states = self._skewed_chain(decay=1e-3, spike=1e4)
         half = states[0].shape[0] // 2
         with self.assertRaises(ValueError):
             measure_chain([s[:half] for s in states], [s[half:] for s in states],
-                          _spec(variance_floor=0.9999))
+                          _spec(gram_bound=0.05))
+
+    def test_a_degenerate_state_is_refused_not_silently_emptied(self):
+        n, dim = 2000, 8
+        g = torch.Generator().manual_seed(9)
+        one = torch.randn(n, 1, generator=g, dtype=torch.float64)
+        states = [one @ torch.randn(1, dim, generator=g, dtype=torch.float64)
+                  for _ in range(3)]
+        half = n // 2
+        with self.assertRaises(ValueError):
+            measure_chain([s[:half] for s in states], [s[half:] for s in states],
+                          _spec(gram_bound=0.05))
 
 
 class MeasurementTest(unittest.TestCase):

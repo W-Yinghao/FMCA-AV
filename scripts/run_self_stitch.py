@@ -163,8 +163,8 @@ def main() -> None:
                         help="comma-separated low:high block index pairs")
     parser.add_argument("--coordinate-budget", type=int, default=64,
                         help="matched per-level coordinate budget; 0 uses native widths")
-    parser.add_argument("--variance-floor", type=float, default=1e-2,
-                        help="drop directions below floor*lambda_max; bounds the Gram")
+    parser.add_argument("--gram-bound", type=float, default=0.05,
+                        help="per-level bound on ||I - G||; the coordinate rule enforces it")
     parser.add_argument("--seed", type=int, default=1,
                         help="draw index: seed s takes samples [(s-1)*N, s*N), so "
                              "seeds are DISJOINT draws and seed 1 is the first block")
@@ -199,7 +199,7 @@ def main() -> None:
             state_names=[f"block{low}", f"block{high}", f"block{endpoint}"],
             deterministic_edges=True,
             coordinate_budget=arguments.coordinate_budget or None,
-            variance_floor=arguments.variance_floor or None,
+            gram_bound=arguments.gram_bound or None,
             notes="same-model self-stitch: every state is an activation of one network",
         )
         states = [activations[low], activations[high], activations[endpoint]]
@@ -245,7 +245,7 @@ def main() -> None:
         "dataset": arguments.dataset, "samples": arguments.samples,
         "seed": arguments.seed, "draw": [lo, hi],
         "coordinate_budget": arguments.coordinate_budget or None,
-        "variance_floor": arguments.variance_floor or None,
+        "gram_bound": arguments.gram_bound or None,
         "records": records,
     }, indent=2))
     print(f"wrote {out}")

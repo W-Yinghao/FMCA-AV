@@ -15,4 +15,4 @@ PYTHON=/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python
 "$PYTHON" scripts/run_self_stitch.py \
   --model "$1" --weights "$2" --dataset "$3" \
   --root "/projects/EEG-foundation-model/yinghao/FMCA-AV/$3" \
-  --samples 8000 --intervals "$4" --coordinate-budget 64 --variance-floor 0.01 --seed "${6:-1}" --out "$5"
+  --samples 8000 --intervals "$4" --coordinate-budget 64 --gram-bound 0.05 --seed "${6:-1}" --out "$5"
