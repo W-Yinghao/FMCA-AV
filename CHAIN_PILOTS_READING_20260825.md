@@ -142,3 +142,59 @@ stays inside the predicted envelope everywhere.  The operational
 reading the paper can print: do not factor a chain finer than the
 calibration budget supports, and the certificate's own radii say where
 that line is.
+
+---
+
+# ImageNet round — same day, evening
+
+Results commit above this one: in-distribution depth chains
+(calibration domain = pretraining domain) and the first corruption
+paths on ImageNet-C.
+
+## The 2x2 that gives the defect its training sensitivity back
+
+The morning's control showed trained and random networks with
+overlapping defect levels on CIFAR-10, which demoted the depth profile
+to chain geometry.  The in-distribution round completes the picture:
+
+    resnet50 stem->endpoint      imagenet val         cifar10
+    pretrained                   [0.467, 0.573]       [1.137, 1.601]
+    random init                  [0.789, 6.725]       [0.981, 1.570]
+
+On the pretraining domain, trained vs random separates with DISJOINT
+three-seed ranges at every chain start (layer2: [0.276,0.284] vs
+[0.355,1.227]); under domain shift the trained network's defect rises
+to random level and the separation vanishes.  The precise claim the
+paper can make: **the closure defect measures whether the chain's
+interfaces transport dependence for the calibration distribution, and
+training installs that transport only for its own domain.**  Neither
+"the defect detects training" (false under shift) nor "the defect is
+pure geometry" (false in-distribution) survives alone; the
+domain-conditional statement passes the disjoint standard on both
+sides.
+
+Also rule- and domain-invariant: ViT-B/16 stays flat in-distribution
+(mono 1/3, first [0.399,0.503] vs last [0.478,0.492]) with by far the
+weakest endpoint probe (23-25% vs resnet50's 52-55%) -- token-mean
+states of a constant-width residual stream just do not attenuate the
+way pooled CNN stages do.  Three independent settings now agree, so
+this is the architecture, not noise.
+
+## Corruption paths (first real corruption_path data)
+
+clean -> sev1 -> sev3 -> sev5 of one corruption, exact per-image
+pairing, resnet50 penultimate states, 3 disjoint 8000-image blocks:
+
+    gaussian_noise   d_op [0.362, 0.378]   null [0.208, 0.222]
+    defocus_blur     d_op [0.439, 0.485]   null [0.201, 0.205]
+    fog              d_op [0.445, 0.482]   null [0.195, 0.197]
+
+All types sit ~2x above their shuffled nulls, and the TYPE separation
+is itself at the disjoint standard: the additive-noise severity ladder
+is more nearly Markov in feature space than the blur or fog ladders.
+Context probes agree with what the types do physically: fog keeps the
+most endpoint dependence (top 0.955-0.961, probe falling only to 25%)
+while gaussian noise destroys the most (probe to 5%) yet composes
+best.  Composability and information preservation are different axes,
+and the pilot measures them apart -- which is exactly what the
+interpretation discipline wanted the corruption_path label to mean.
