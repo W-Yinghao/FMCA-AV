@@ -198,3 +198,55 @@ while gaussian noise destroys the most (probe to 5%) yet composes
 best.  Composability and information preservation are different axes,
 and the pilot measures them apart -- which is exactly what the
 interpretation discipline wanted the corruption_path label to mean.
+
+---
+
+# Tranche 2 and the tin200 gate — 2026-08-26
+
+Results commit: previous commit.  Two verdicts, one refutation.
+
+## Corruption family prediction: REFUTED, as frozen
+
+The frozen P1/P2 (every noise-family range below every blur-family
+range) fail on two counts: speckle_noise [0.415, 0.471] sits inside
+the blur band, and motion_blur's low end (0.369) dips into the noise
+band.  Corruption FAMILY does not determine severity-ladder
+composability.  Post-hoc observation, labeled as such: the two
+i.i.d.-additive pixel-noise types (gaussian [0.362,0.378], shot
+[0.363,0.385]) remain the tightest and lowest of all nine types
+measured, while multiplicative (speckle) and sparse (impulse) noises
+drift up.  A NARROWED hypothesis — i.i.d. additive pixel noise
+composes best — is frozen prospectively in the prereg directory and
+will be tested on a different encoder (resnet18); it earns no standing
+from this tranche.
+
+## tin200: the dataset ordering CONTINUES, and raw numbers would have
+## said the opposite
+
+Normalized closure defect (delta_fro / ||C_dir||_F, small-budget
+protocol, 3 seeds):
+
+    V7        [0.316, 0.357]      probe [33.96, 34.75]%
+    additive  [0.353, 0.376]      probe [35.22, 35.43]%
+    flat      [0.442, 0.445]      probe [39.76, 40.64]%
+
+V7 vs flat disjoint; V7 vs additive touching.  The arm ordering
+V7 < additive < flat seen on CIFAR-10 (bigcal) and CIFAR-100 holds on
+the third dataset, 200 classes at 64px, under the disclosed protocol
+deviations (downsample stem; only within-dataset contrasts count).
+Raw delta_frobenius REVERSES this ordering (flat 2.1 vs V7 3.1-3.6)
+because flat's endpoint carries a smaller ||C_dir|| -- the
+normalization is not a convention here, it is the difference between
+the right answer and its opposite.
+
+The probe dissociation recurs: flat wins linear probe by ~5 points
+while carrying the largest closure defect -- consistent with the c100
+star control and the layerwise study (closure confines the endpoint to
+the path-supported subspace; probe accuracy is not what the
+certificate measures).
+
+Caveat carried forward: these are small-budget ratios (n_cal 2500),
+the regime T0 showed to be noise-floor-dominated for small-defect
+arms.  The tin200 convergence sweeps (frozen prediction in the prereg
+directory) will say whether the ordering widens at larger N as the
+mechanism predicts.
