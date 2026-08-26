@@ -1,0 +1,16 @@
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_c100_bigcal results/gate1/gate1_20260824_c100_bigcal product_only 3
+sbatch scripts/launch_depth_grid.sbatch vit_b_16 IMAGENET1K_V1 cifar10 results/chains/20260826_ablation/grid_vit_b_16_cifar10_seed2.json 2
+sbatch scripts/launch_depth_grid.sbatch vit_b_16 IMAGENET1K_V1 cifar10 results/chains/20260826_ablation/grid_vit_b_16_cifar10_seed3.json 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_v8_depth4 results/gate1/gate1_20260826_depth4_probe product_endpoint 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 final_2view 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 final_2view 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 final_2view 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 additive_2view 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 additive_2view 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 additive_2view 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 amdim_cross 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 amdim_cross 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 amdim_cross 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 product_only 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 product_only 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_tin results/gate1/gate1_20260825_tin200_v1 product_only 3
