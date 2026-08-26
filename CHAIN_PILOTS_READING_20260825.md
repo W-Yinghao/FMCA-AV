@@ -250,3 +250,40 @@ the regime T0 showed to be noise-floor-dominated for small-defect
 arms.  The tin200 convergence sweeps (frozen prediction in the prereg
 directory) will say whether the ordering widens at larger N as the
 mechanism predicts.
+
+---
+
+# The corruption estimand, second encoder — 2026-08-26, later
+
+## B1 CONFIRMED as frozen
+
+On resnet18, gaussian_noise [0.465,0.519] and shot_noise [0.456,0.542]
+land strictly below defocus_blur [0.647,0.753] and motion_blur
+[0.631,0.683] -- disjoint at 0.542 vs 0.631.  The narrowed hypothesis
+survived a frozen prediction on an independent encoder, which the
+refuted family-level version never earned.
+
+## The full nine-type table is cleaner on r18 than on r50 (descriptive)
+
+    pixel-i.i.d. noise   impulse [0.403,0.495]  shot [0.456,0.542]  gaussian [0.465,0.519]
+    digital              contrast [0.536,0.645]
+    structured           zoom [0.597,0.693]  speckle [0.621,0.661]  motion [0.631,0.683]
+                         fog [0.641,0.703]  defocus [0.647,0.753]
+
+On resnet18 every pixel-independent noise sits below every spatially
+structured corruption (0.542 vs 0.597, disjoint), with contrast
+straddling; on resnet50 motion_blur dipped into the noise band and
+speckle rose out of it.  How much of the severity-ladder Markov
+structure is the corruption's and how much is the encoder's is now a
+measured question -- only the i.i.d.-additive-vs-blur contrast (B1) is
+encoder-stable so far, and only it carries confirmatory standing.
+
+## Severity refinement (C, exploratory as frozen)
+
+Refining the ladder from 3 to 5 interfaces triples the measured defect
+(gaussian 0.37 -> 0.9, defocus 0.46 -> 1.12) while the shuffled null
+barely moves (0.21 -> 0.23).  Unlike the depth L-scan, this is NOT
+estimator compounding -- the null stays flat -- so adjacent-severity
+edges carry real non-Markov structure that the coarse ladder skipped
+over.  The corruption estimand depends on ladder resolution, and any
+cross-type comparison must fix it (all tables above use 1,3,5).
