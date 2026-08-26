@@ -287,3 +287,58 @@ estimator compounding -- the null stays flat -- so adjacent-severity
 edges carry real non-Markov structure that the coarse ladder skipped
 over.  The corruption estimand depends on ladder resolution, and any
 cross-type comparison must fix it (all tables above use 1,3,5).
+
+---
+
+# Depth ablation completion — 2026-08-26, evening
+
+Results commit above.  Three depth questions the audit found open, now
+measured.
+
+## Network depth is NOT the variable (pure-depth series)
+
+resnet50/101/152 share width and block design and differ only in
+depth.  Their stage profiles are indistinguishable — first-start and
+last-start ranges overlap across all three depths on all three domains
+(imagenet last: [0.276,0.284] / [0.265,0.274] / [0.270,0.295]).  The
+differences seen between resnet18 and resnet50 are therefore
+width/block-design effects, not depth; captions that said "deeper
+models" should say "larger stage widths".
+
+## The fine-grained profile is a sawtooth, not a slope (depth grid)
+
+At block resolution the profile is not monotone.  Holding edge count
+fixed within a segment, the defect RISES as the start moves off a
+stage boundary into mid-stage blocks (imagenet end=16: stem 0.47-0.57
+vs mid-layer1 0.69-0.86, disjoint on imagenet and cifar10, direction
+consistent on cifar100), and DROPS discontinuously at the next stage
+boundary (disjoint on all three domains).  The network's own stage
+outputs are measurably better path support than mid-stage taps.  The
+stage-level "monotone decline" was real but under-sampled: it sampled
+only the boundary teeth of a sawtooth.
+
+## Endpoint depth matters non-monotonically
+
+At fixed start, the defect peaks at end=layer3 and falls at
+end=layer4 (start=1 on imagenet: 1.04 at end 13 vs 0.62 at end 16)
+despite layer4 chains carrying MORE edges — the layer3->layer4 suffix
+genuinely closes, consistent with the layerwise finding that closure
+confines the endpoint to the path-supported subspace.  Distance from
+the end and absolute position are now separated, and neither alone
+explains the profile.
+
+## ViT flatness localizes
+
+At block resolution ViT's flatness is not uniform: early blocks (1-5)
+carry real within-segment structure while the late segment (6-8) is
+flat with no rise at all — late residual updates are near-identity in
+the token-mean state.  The family-level "ViT does not attenuate"
+refines to "ViT's depth structure lives in its early blocks".
+
+## Still in flight (the expensive tail of the audit)
+
+23 bigcal V1/V3/V5/V6 completion units are training; the tin200
+completion (12 units), the depth-4 hierarchy QC probe, and three
+stragglers sit in a slot-watching babysitter (scripts/
+babysit_ablation_queue.sh).  The depth-4 FLEET is intentionally not
+queued: the probe-gate decides it.
