@@ -62,3 +62,59 @@ one the paper must use.
   gram_bound sweep (0.02/0.05/0.2) moves the stem defect by under 8%
   with the ordering untouched — the new coordinate rule's knobs are
   benign where the retired floor was not.
+
+---
+
+# Addendum 2026-08-27: the seven-arm spectrum and the tin200 sweeps
+
+## The completed final gate (all V1-V7 at the enlarged budget, 3 seeds)
+
+Normalized closure defect clusters BY LOSS FORM, on both datasets:
+
+    composed-loss cluster        flat cluster            degenerate
+    V7  [0.185,0.202] c10        V1 [0.438,0.441]        V6 [0.376,0.800]
+    V4  [0.185,0.225]            V2 [0.466,0.477]        V6 c100 [0.747,7.058]
+    V5  [0.188,0.222]
+    V3  [0.189,0.232]
+
+Cluster separation is disjoint by a wide margin (0.232 vs 0.438) on
+both datasets.  Three consequences the partial gate could not show:
+
+1.  The loss form is the determinant of the certificate, not view
+    multiplicity: 2view and mview arms land together within each
+    cluster, and amdim_cross lands with the composed cluster.  The
+    star-control factorial generalizes across the whole family.
+2.  View multiplicity is the determinant of the PROBE (mview > 2view
+    by 3-4 points in both loss forms) -- the two knobs act on
+    different observables.
+3.  V6 (product with no endpoint anchor) is the degenerate corner:
+    ratio variance two orders above every other arm and collapsed
+    probes.  The endpoint term is what keeps the composed loss
+    grounded; "composed" alone is not the claim.
+
+Within the composed cluster the defect ranges overlap, but V7 pairs
+cluster-low defect with by far the cluster-best probe (c10: 81.4-82.8%
+vs 72-76%; c100: 53.6-53.8% vs 43-46%), matching the FLAT 2view arm's
+probe at less than half its defect.  That conjunction -- flat-level
+probe at composed-level closure -- is the T4 "conjunctive win" stated
+on the completed spectrum rather than a three-arm subset.
+
+## tin200 convergence, adjudicated against the frozen A1-A3
+
+A1 FAIL as frozen: flat moves 0.148 total (threshold 0.02) -- the
+threshold was calibrated on CIFAR curves that started converged, and
+tin200's 625->1250 step does the damage; the top doubling moves only
+0.0073.  Recorded as a lesson in freezing thresholds against one
+dataset's range; not re-scored.
+A2 PASS: both hierarchical arms fall monotonically with shrinking
+drifts (0.275 -> 0.086/0.102).
+A3 PASS: the arm gap widens with budget (0.134 at N=2500 -> 0.213 at
+N=5000).  The tin200 ordering is budget-robust in the direction the
+T0 mechanism predicts.
+
+## Depth-4 gate: the probe-gate earned its keep again
+
+The first QC probe died in 8 seconds (level_stages declared three taps
+for a four-level tree) and the fleet was withheld.  Fixed
+([0,1,2,3], root tap moving one stage earlier disclosed as part of
+the estimand), probe resubmitted.  The fleet waits on its verdict.
