@@ -1,0 +1,6 @@
+{
+  "unit_key": "product_endpoint/seed1",
+  "status": "failed",
+  "reason": "ValueError('batch levels do not match the configured hierarchy')",
+  "wall_seconds": 8.303149938583374
+}
