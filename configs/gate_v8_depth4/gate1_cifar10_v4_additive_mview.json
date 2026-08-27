@@ -2,7 +2,7 @@
   "experiment": {
     "name": "gate1depth4-cifar10-v4_additive_mview",
     "family": "cifar_gate",
-    "status": "Hierarchy-depth ablation: the ONLY change from the bigcal gate is a third nested edge (crop 0.5-1.0, flip only), so the view tree has four levels and the composed path three edges.  Everything else, including the calibration budget, is the bigcal protocol verbatim.  Absolute numbers comparable only within this gate."
+    "status": "Hierarchy-depth ablation: the ONLY change from the bigcal gate is a third nested edge (crop 0.5-1.0, flip only), so the view tree has four levels and the composed path three edges.  Everything else, including the calibration budget, is the bigcal protocol verbatim.  Absolute numbers comparable only within this gate.  Disclosed: level_stages becomes [0,1,2,3] so each of the four levels owns one backbone stage; the root tap sits one stage earlier than in the 3-level gates, which is part of what 'deeper hierarchy' means here."
   },
   "seed": 20260816,
   "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
@@ -54,6 +54,7 @@
   "model": {
     "backbone_width": 64,
     "level_stages": [
+      0,
       1,
       2,
       3
