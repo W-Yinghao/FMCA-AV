@@ -1,0 +1,183 @@
+{
+  "model": "resnet18",
+  "weights": "IMAGENET1K_V1",
+  "corruption": "gaussian_noise",
+  "severities": [
+    1,
+    3,
+    5
+  ],
+  "samples": 8000,
+  "seed": 3,
+  "draw": [
+    16000,
+    24000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "measurement": {
+    "spec": {
+      "name": "resnet18/gaussian_noise:clean->sev1->sev3->sev5",
+      "interpretation": "corruption_path",
+      "states": [
+        "clean",
+        "sev1",
+        "sev3",
+        "sev5"
+      ],
+      "deterministic_edges": false,
+      "coordinate_budget": 64,
+      "gram_bound": 0.05,
+      "coordinate_ridge": 0.001,
+      "retained_rank_rule": "tau=1e-3*lambda_max",
+      "notes": "ImageNet-C severity ladder, exact per-image pairing; parameterized severities, not recursive application; clean uses the standard eval transform, ImageNet-C ships pre-sized at 224"
+    },
+    "finite_sample": {
+      "edge_radii": [
+        {
+          "radius": 0.9569972242601179,
+          "samples": 4000,
+          "norm_bound": 274.96295096851844,
+          "variance": 90.93926223874539,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.0586775381197264,
+          "samples": 4000,
+          "norm_bound": 341.026709088989,
+          "variance": 95.64845686259952,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.1391368738443606,
+          "samples": 4000,
+          "norm_bound": 363.7367681787139,
+          "variance": 112.15369164020389,
+          "clipped_samples": 0
+        }
+      ],
+      "endpoint_radius": {
+        "radius": 1.0961507903521595,
+        "samples": 4000,
+        "norm_bound": 351.3684993110279,
+        "variance": 103.27207174660929,
+        "clipped_samples": 0
+      },
+      "path_radius": 7.618210742084795
+    },
+    "projection": {
+      "endpoint_top": 0.8281296605992501,
+      "endpoint_mass": 18.89268186650159,
+      "endpoint_effective_rank": 47.7470588684082,
+      "path_top": 1.1144748398294915,
+      "path_mass": 20.167016219804264,
+      "delta_frobenius": 1.5241622071724765,
+      "delta_operator": 0.4746994190339621,
+      "alignment": 0.8906172199592076,
+      "certified_top": 0.6397754207955293
+    },
+    "surrogate": {
+      "endpoint_top": 0.8280177175657384,
+      "endpoint_mass": 18.887861300693096,
+      "endpoint_effective_rank": 47.744781494140625,
+      "path_top": 1.11407430514703,
+      "path_mass": 20.153487422495267,
+      "delta_frobenius": 1.523105010124538,
+      "delta_operator": 0.4743438472798731,
+      "alignment": 0.8906457377500917,
+      "certified_top": 0.639730457867157
+    },
+    "gram": {
+      "retained_ranks": [
+        64,
+        64,
+        64,
+        64
+      ],
+      "metric_deviation": [
+        0.0004584200359629698,
+        0.0004879232978175496,
+        0.0005490958059496397,
+        0.0007310966268473382
+      ],
+      "tau_relative": 0.001,
+      "dimensions": [
+        64,
+        64,
+        64,
+        64
+      ]
+    },
+    "interface_attribution": [
+      {
+        "interfaces_corrected": 0,
+        "delta_frobenius": 1.523105010124538,
+        "delta_operator": 0.4743438472798731,
+        "dir_frobenius": 2.9577041550736904
+      },
+      {
+        "interfaces_corrected": 1,
+        "delta_frobenius": 1.5238518432736414,
+        "delta_operator": 0.4745804336885221,
+        "dir_frobenius": 2.9583417329768364
+      },
+      {
+        "interfaces_corrected": 2,
+        "delta_frobenius": 1.5241622071724765,
+        "delta_operator": 0.4746994190339621,
+        "dir_frobenius": 2.9583417329768364
+      }
+    ],
+    "calibration_samples": 4000,
+    "evaluation_samples": 4000,
+    "dimensions": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "native_dimensions": [
+      512,
+      512,
+      512,
+      512
+    ],
+    "budget_retained_variance": [
+      0.592098971977492,
+      0.6448559046858938,
+      0.7061972861551895,
+      0.7993763351526424
+    ]
+  },
+  "shuffled_null": {
+    "projection": {
+      "endpoint_top": 0.23890474148624613,
+      "endpoint_mass": 6.621254419462132,
+      "endpoint_effective_rank": 50.89765930175781,
+      "path_top": 0.20070289866581376,
+      "path_mass": 3.6797256973637538,
+      "delta_frobenius": 0.8396171117586562,
+      "delta_operator": 0.22063607734693477,
+      "alignment": 0.5298195636675401,
+      "certified_top": 0.0
+    }
+  },
+  "state_probes": [
+    {
+      "state": "clean",
+      "probe_accuracy": 0.31850001215934753
+    },
+    {
+      "state": "sev1",
+      "probe_accuracy": 0.1980000138282776
+    },
+    {
+      "state": "sev3",
+      "probe_accuracy": 0.0990000069141388
+    },
+    {
+      "state": "sev5",
+      "probe_accuracy": 0.018000001087784767
+    }
+  ]
+}

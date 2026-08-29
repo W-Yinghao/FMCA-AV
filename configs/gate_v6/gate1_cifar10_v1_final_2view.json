@@ -1,0 +1,96 @@
+{
+  "experiment": {
+    "name": "gate1v6-cifar10-v1_final_2view",
+    "family": "cifar_gate",
+    "status": "gate v6: differentiable whitening ridge 1e-3 for hierarchy rows (appendum 6)"
+  },
+  "seed": 20260816,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "cifar10",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10",
+    "n_calibration": 2500,
+    "n_val": 2500,
+    "batch_size": 256,
+    "num_workers": 4,
+    "view_tree": {
+      "mode": "nested",
+      "root": {
+        "min_scale": 0.95,
+        "max_scale": 1.0,
+        "size": 32
+      },
+      "edges": [
+        {
+          "kind": "crop",
+          "min_scale": 0.2,
+          "max_scale": 1.0,
+          "size": 32,
+          "color_jitter_probability": 0.8,
+          "color_jitter_strength": 0.5
+        },
+        {
+          "kind": "crop",
+          "min_scale": 0.4,
+          "max_scale": 1.0,
+          "size": 32,
+          "grayscale_probability": 0.2
+        }
+      ],
+      "children_per_edge": 4,
+      "endpoint_descendants": 4,
+      "flip_probability": 0.5,
+      "_note": "flat rows consume endpoint full-path descendants as their independent views"
+    }
+  },
+  "model": {
+    "backbone_width": 64,
+    "level_stages": [
+      1,
+      2,
+      3
+    ],
+    "feature_dim": 128,
+    "head_hidden_dims": [
+      512
+    ],
+    "activation": "gelu"
+  },
+  "variant": "final_2view",
+  "loss": {
+    "alpha": 0.0,
+    "beta": 1.0,
+    "gamma": 1.0,
+    "epsilon": 1e-06,
+    "closure_stop_grad": false,
+    "flat_recipe": "faithful_trace",
+    "whitening_mode": "differentiable",
+    "ridge": 0.001,
+    "additive_recipe": "faithful_trace"
+  },
+  "objective_note": "additive variants take their maximizing per-edge sign inside the module; alpha/beta here only affect product_endpoint",
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "weight_decay": 0.0001,
+    "scheduler": "cosine"
+  },
+  "trainer": {
+    "accelerator": "gpu",
+    "devices": 1,
+    "strategy": "auto",
+    "max_epochs": 200,
+    "precision": "32-true",
+    "deterministic": true,
+    "enable_progress_bar": false
+  },
+  "probe": {
+    "n_val": 5000,
+    "batch_size": 256,
+    "num_workers": 4,
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "epochs": 100
+  }
+}

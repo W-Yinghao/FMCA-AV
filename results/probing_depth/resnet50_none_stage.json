@@ -1,0 +1,55 @@
+{
+  "model": "resnet50",
+  "weights": "none",
+  "levels": 5,
+  "certificate_curve": [
+    {
+      "prefix": 1,
+      "composed_top": 0.8952738136718867,
+      "retention": 0.8952738136718867,
+      "certified_top": 0.8952738136718867,
+      "certified_sum8": 4.734809406155387,
+      "endpoint_top": 0.8952738136718867,
+      "delta_op": 0.0,
+      "normalized_defect": 0.0
+    },
+    {
+      "prefix": 2,
+      "composed_top": 0.7471297284021488,
+      "retention": 0.8345265068538389,
+      "certified_top": 0.4864136137778196,
+      "certified_sum8": 1.1384533525494673,
+      "endpoint_top": 0.8626095806316001,
+      "delta_op": 0.26071611462432914,
+      "normalized_defect": 0.408895874264735
+    },
+    {
+      "prefix": 3,
+      "composed_top": 0.5523696425895128,
+      "retention": 0.7393222643811812,
+      "certified_top": 0.1889709290898759,
+      "certified_sum8": 0.1889709290898759,
+      "endpoint_top": 0.7815462637578853,
+      "delta_op": 0.3633987134996369,
+      "normalized_defect": 0.5770771143587882
+    },
+    {
+      "prefix": 4,
+      "composed_top": 0.3653315382166183,
+      "retention": 0.6613896022657583,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.729442826373295,
+      "delta_op": 0.45404076226919293,
+      "normalized_defect": 0.7178502570894638
+    }
+  ],
+  "layer_probe_accuracy": [
+    0.408,
+    0.4033333333333333,
+    0.418,
+    0.4013333333333333,
+    0.35933333333333334
+  ],
+  "best_probe_layer": 2
+}

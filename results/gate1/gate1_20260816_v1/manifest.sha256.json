@@ -1,0 +1,23 @@
+{
+  "final_2view__seed1": "288b115ae28408a02a5f0a66c1b2deaf98a4009c32ee7b225e23ea22212d6b86",
+  "final_2view__seed2": "8adb9131209e15801c1a859f157e1632acb36c299ec4a6c653eeb8c64c7645b0",
+  "final_2view__seed3": "7bbdb92a655cce52692ac20acb5df0a99a199a27fffc8acaca18624739311586",
+  "final_mview__seed1": "0aeda37f26c1971890054e42284f3f96a0ae6afa63ba7a6ec7211d580d8b9894",
+  "final_mview__seed2": "208e640e14a1648f06545fb7ff60cf3313190e37a8708feb6387e5c4f2d4dad6",
+  "final_mview__seed3": "59c9cd578dc7f8004883088937bfbbf2e4d80440e5575431e9f7c3caa71dcded",
+  "additive_2view__seed1": "1481912cc79ebf19bf50b00408a4a5454f1c845718ee62ec962f530e6cf223cf",
+  "additive_2view__seed2": "45e822d73748b124ca7455bf59fa687a8fa439d9d4dcceefaf6ebd41486bd30a",
+  "additive_2view__seed3": "7351978c8165c462c8c6bbd45a0de1350ef51295e1e127a091625b4c22ab7971",
+  "additive_mview__seed1": "fef5e4cb8f43d33c60e174f7b73e0cadffe67a30442fafa6fd98aa3f5c2aba6a",
+  "additive_mview__seed2": "c2ec5bcf71a475782c3567e3c248bb6f84bf16209c4cd849bb2e399e74d7fddf",
+  "additive_mview__seed3": "f87a3df13e67fc12ba3a96697350f20f2640b6f351b3343e0f12194b909557d9",
+  "amdim_cross__seed1": "d8e8c450da0f3914df538624e2765d5379ffd990ce716ad74bfc2e2e9f4a4626",
+  "amdim_cross__seed2": "51dba5a7a000753630072e8fb2cbe68f5504fcfe2871ae3fdc698a16e9b48519",
+  "amdim_cross__seed3": "d70db77479f969b1e0df375f8e7d15529e2bb22fc5bc7f3f17281b662049d15a",
+  "product_only__seed1": "80cbfa60ac7e3f015f9e1623200b9b697885903e3ae1fae880abe9898847d663",
+  "product_only__seed2": "f131010ca5dd3a1f2f2a4fd360c241a7462de1254fa298ccbaab6b53e8d2ecb1",
+  "product_only__seed3": "376a527dbbeeac177a6c0d261e77485c5fd9e19a5bd9447c443e433d2d8f64e0",
+  "product_endpoint__seed1": "c702b5d4d1de62619adfad7273b2382969a905360c9609fe8a0c6cb39497c019",
+  "product_endpoint__seed2": "950e449cba766c2b5d28726dc37b281344708a5f7c4644e5ee45deef4914eb9f",
+  "product_endpoint__seed3": "f6f37b4c7031cefb20d95442d25bcf7612b2d77212e80ecaf76ca6fe37385e54"
+}

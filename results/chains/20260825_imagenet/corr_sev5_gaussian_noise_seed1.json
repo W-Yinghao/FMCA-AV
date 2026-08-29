@@ -1,0 +1,233 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "corruption": "gaussian_noise",
+  "severities": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "samples": 8000,
+  "seed": 1,
+  "draw": [
+    0,
+    8000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "measurement": {
+    "spec": {
+      "name": "resnet50/gaussian_noise:clean->sev1->sev2->sev3->sev4->sev5",
+      "interpretation": "corruption_path",
+      "states": [
+        "clean",
+        "sev1",
+        "sev2",
+        "sev3",
+        "sev4",
+        "sev5"
+      ],
+      "deterministic_edges": false,
+      "coordinate_budget": 64,
+      "gram_bound": 0.05,
+      "coordinate_ridge": 0.001,
+      "retained_rank_rule": "tau=1e-3*lambda_max",
+      "notes": "ImageNet-C severity ladder, exact per-image pairing; parameterized severities, not recursive application; clean uses the standard eval transform, ImageNet-C ships pre-sized at 224"
+    },
+    "finite_sample": {
+      "edge_radii": [
+        {
+          "radius": 1.2739415040198798,
+          "samples": 4000,
+          "norm_bound": 430.73798780044467,
+          "variance": 128.67003496115825,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.089507039206066,
+          "samples": 4000,
+          "norm_bound": 334.02454236578,
+          "variance": 108.54249144509551,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 0.9322774868191368,
+          "samples": 4000,
+          "norm_bound": 243.08295692047903,
+          "variance": 96.1820642673915,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 0.8939228330668103,
+          "samples": 4000,
+          "norm_bound": 230.65117304266556,
+          "variance": 89.3881498256532,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 0.9447777314289834,
+          "samples": 4000,
+          "norm_bound": 256.277012074351,
+          "variance": 94.69827313021638,
+          "clipped_samples": 0
+        }
+      ],
+      "endpoint_radius": {
+        "radius": 1.1435434564417213,
+        "samples": 4000,
+        "norm_bound": 397.6301442774593,
+        "variance": 99.06035736833083,
+        "clipped_samples": 0
+      },
+      "path_radius": 32.81620548646678
+    },
+    "projection": {
+      "endpoint_top": 0.7715896831591219,
+      "endpoint_mass": 17.836369735123057,
+      "endpoint_effective_rank": 47.23480987548828,
+      "path_top": 1.4139288184662304,
+      "path_mass": 20.12397401966669,
+      "delta_frobenius": 2.2023803483115016,
+      "delta_operator": 0.878560193444553,
+      "alignment": 0.8230004497900726,
+      "certified_top": 0.5353686250216774
+    },
+    "surrogate": {
+      "endpoint_top": 0.7715642011580208,
+      "endpoint_mass": 17.834561317516023,
+      "endpoint_effective_rank": 47.23398971557617,
+      "path_top": 1.4135000261256918,
+      "path_mass": 20.115580246466834,
+      "delta_frobenius": 2.2013974081794396,
+      "delta_operator": 0.8781670436740339,
+      "alignment": 0.8230168330630183,
+      "certified_top": 0.535332982451658
+    },
+    "gram": {
+      "retained_ranks": [
+        64,
+        64,
+        64,
+        64,
+        64,
+        64
+      ],
+      "metric_deviation": [
+        0.00020200419167459854,
+        0.00021414921879248092,
+        0.00021138497819939148,
+        0.00021007508851234038,
+        0.00021543794071343658,
+        0.00024232354338227236
+      ],
+      "tau_relative": 0.001,
+      "dimensions": [
+        64,
+        64,
+        64,
+        64,
+        64,
+        64
+      ]
+    },
+    "interface_attribution": [
+      {
+        "interfaces_corrected": 0,
+        "delta_frobenius": 2.2013974081794396,
+        "delta_operator": 0.8781670436740339,
+        "dir_frobenius": 2.8007148709223766
+      },
+      {
+        "interfaces_corrected": 1,
+        "delta_frobenius": 2.201826036344596,
+        "delta_operator": 0.8783327189702914,
+        "dir_frobenius": 2.800958615679371
+      },
+      {
+        "interfaces_corrected": 2,
+        "delta_frobenius": 2.202025023253286,
+        "delta_operator": 0.8784155914410251,
+        "dir_frobenius": 2.800958615679371
+      },
+      {
+        "interfaces_corrected": 3,
+        "delta_frobenius": 2.202206732995009,
+        "delta_operator": 0.8784902942443437,
+        "dir_frobenius": 2.800958615679371
+      },
+      {
+        "interfaces_corrected": 4,
+        "delta_frobenius": 2.2023803483115016,
+        "delta_operator": 0.878560193444553,
+        "dir_frobenius": 2.800958615679371
+      }
+    ],
+    "calibration_samples": 4000,
+    "evaluation_samples": 4000,
+    "dimensions": [
+      64,
+      64,
+      64,
+      64,
+      64,
+      64
+    ],
+    "native_dimensions": [
+      2048,
+      2048,
+      2048,
+      2048,
+      2048,
+      2048
+    ],
+    "budget_retained_variance": [
+      0.3368171507204866,
+      0.4091402440058599,
+      0.44359121755957237,
+      0.5007299371420458,
+      0.5787939411106643,
+      0.6870770222678969
+    ]
+  },
+  "shuffled_null": {
+    "projection": {
+      "endpoint_top": 0.23594733227443634,
+      "endpoint_mass": 6.3216671440728245,
+      "endpoint_effective_rank": 50.78498077392578,
+      "path_top": 0.2166286397781531,
+      "path_mass": 2.7568950440777598,
+      "delta_frobenius": 0.8829078515717088,
+      "delta_operator": 0.2341696674040851,
+      "alignment": 0.3906231567038989,
+      "certified_top": 0.0
+    }
+  },
+  "state_probes": [
+    {
+      "state": "clean",
+      "probe_accuracy": 0.5550000071525574
+    },
+    {
+      "state": "sev1",
+      "probe_accuracy": 0.43400001525878906
+    },
+    {
+      "state": "sev2",
+      "probe_accuracy": 0.3615000247955322
+    },
+    {
+      "state": "sev3",
+      "probe_accuracy": 0.25200000405311584
+    },
+    {
+      "state": "sev4",
+      "probe_accuracy": 0.13450001180171967
+    },
+    {
+      "state": "sev5",
+      "probe_accuracy": 0.04750000312924385
+    }
+  ]
+}

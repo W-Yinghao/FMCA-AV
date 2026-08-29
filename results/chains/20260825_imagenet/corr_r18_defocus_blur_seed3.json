@@ -1,0 +1,183 @@
+{
+  "model": "resnet18",
+  "weights": "IMAGENET1K_V1",
+  "corruption": "defocus_blur",
+  "severities": [
+    1,
+    3,
+    5
+  ],
+  "samples": 8000,
+  "seed": 3,
+  "draw": [
+    16000,
+    24000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "measurement": {
+    "spec": {
+      "name": "resnet18/defocus_blur:clean->sev1->sev3->sev5",
+      "interpretation": "corruption_path",
+      "states": [
+        "clean",
+        "sev1",
+        "sev3",
+        "sev5"
+      ],
+      "deterministic_edges": false,
+      "coordinate_budget": 64,
+      "gram_bound": 0.05,
+      "coordinate_ridge": 0.001,
+      "retained_rank_rule": "tau=1e-3*lambda_max",
+      "notes": "ImageNet-C severity ladder, exact per-image pairing; parameterized severities, not recursive application; clean uses the standard eval transform, ImageNet-C ships pre-sized at 224"
+    },
+    "finite_sample": {
+      "edge_radii": [
+        {
+          "radius": 0.9397065837828046,
+          "samples": 4000,
+          "norm_bound": 252.32623404048377,
+          "variance": 94.72820027602499,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.0993991316174008,
+          "samples": 4000,
+          "norm_bound": 340.81985618337933,
+          "variance": 108.8767472413537,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.3918387170474964,
+          "samples": 4000,
+          "norm_bound": 536.5794371456005,
+          "variance": 121.3388876768759,
+          "clipped_samples": 0
+        }
+      ],
+      "endpoint_radius": {
+        "radius": 1.1292131795991212,
+        "samples": 4000,
+        "norm_bound": 379.14566467585905,
+        "variance": 102.21411557921009,
+        "clipped_samples": 0
+      },
+      "path_radius": 8.74008943627263
+    },
+    "projection": {
+      "endpoint_top": 0.9343705069845256,
+      "endpoint_mass": 26.48909602345342,
+      "endpoint_effective_rank": 52.77885818481445,
+      "path_top": 1.4853342734146215,
+      "path_mass": 31.32511756841942,
+      "delta_frobenius": 1.974541137152937,
+      "delta_operator": 0.6877321995960879,
+      "alignment": 0.9224005392170685,
+      "certified_top": 0.7976020738185337
+    },
+    "surrogate": {
+      "endpoint_top": 0.9342678444038768,
+      "endpoint_mass": 26.482308393345384,
+      "endpoint_effective_rank": 52.77687072753906,
+      "path_top": 1.4846764511241763,
+      "path_mass": 31.301998930687,
+      "delta_frobenius": 1.9724358947585285,
+      "delta_operator": 0.6870778506504173,
+      "alignment": 0.9224295217334482,
+      "certified_top": 0.7975986004737591
+    },
+    "gram": {
+      "retained_ranks": [
+        64,
+        64,
+        64,
+        64
+      ],
+      "metric_deviation": [
+        0.0004584200359629698,
+        0.0004888890962745365,
+        0.0005432592763495724,
+        0.0006394871028517768
+      ],
+      "tau_relative": 0.001,
+      "dimensions": [
+        64,
+        64,
+        64,
+        64
+      ]
+    },
+    "interface_attribution": [
+      {
+        "interfaces_corrected": 0,
+        "delta_frobenius": 1.9724358947585285,
+        "delta_operator": 0.6870778506504173,
+        "dir_frobenius": 3.845096892438509
+      },
+      {
+        "interfaces_corrected": 1,
+        "delta_frobenius": 1.9737659297219579,
+        "delta_operator": 0.6874905169530895,
+        "dir_frobenius": 3.8459582194328434
+      },
+      {
+        "interfaces_corrected": 2,
+        "delta_frobenius": 1.974541137152937,
+        "delta_operator": 0.6877321995960879,
+        "dir_frobenius": 3.8459582194328434
+      }
+    ],
+    "calibration_samples": 4000,
+    "evaluation_samples": 4000,
+    "dimensions": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "native_dimensions": [
+      512,
+      512,
+      512,
+      512
+    ],
+    "budget_retained_variance": [
+      0.592098971977492,
+      0.6278222892433694,
+      0.6717989593997572,
+      0.7305173810738206
+    ]
+  },
+  "shuffled_null": {
+    "projection": {
+      "endpoint_top": 0.24911503038553273,
+      "endpoint_mass": 6.530920953265751,
+      "endpoint_effective_rank": 50.848209381103516,
+      "path_top": 0.22603407290135258,
+      "path_mass": 4.177322752998508,
+      "delta_frobenius": 0.8100745999616027,
+      "delta_operator": 0.204775971206949,
+      "alignment": 0.572809152706344,
+      "certified_top": 0.02125810169440359
+    }
+  },
+  "state_probes": [
+    {
+      "state": "clean",
+      "probe_accuracy": 0.31850001215934753
+    },
+    {
+      "state": "sev1",
+      "probe_accuracy": 0.19600000977516174
+    },
+    {
+      "state": "sev3",
+      "probe_accuracy": 0.10100000351667404
+    },
+    {
+      "state": "sev5",
+      "probe_accuracy": 0.04500000178813934
+    }
+  ]
+}

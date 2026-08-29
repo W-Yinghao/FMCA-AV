@@ -1,0 +1,44 @@
+{
+  "mode": "convergence",
+  "variant": "additive_mview",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "clean_pool": 5000,
+  "curve": {
+    "625": {
+      "normalized_closure_defect": 1.288416476115033,
+      "numerator_delta_frobenius": 16.90012829775377,
+      "denominator_dir_frobenius": 13.116976234820825,
+      "endpoint_top": 2.970622853137706,
+      "path_top": 10.269604388039705
+    },
+    "1250": {
+      "normalized_closure_defect": 0.5404585804180724,
+      "numerator_delta_frobenius": 5.65186017902913,
+      "denominator_dir_frobenius": 10.457526966556044,
+      "endpoint_top": 1.7368946139104755,
+      "path_top": 3.7796110850152584
+    },
+    "2500": {
+      "normalized_closure_defect": 0.33275830147272567,
+      "numerator_delta_frobenius": 3.2396826728088586,
+      "denominator_dir_frobenius": 9.735843278650899,
+      "endpoint_top": 1.4052813473389019,
+      "path_top": 2.416492267084558
+    },
+    "5000": {
+      "normalized_closure_defect": 0.2303677638952278,
+      "numerator_delta_frobenius": 2.1687024425476444,
+      "denominator_dir_frobenius": 9.414088177431582,
+      "endpoint_top": 1.2587997832498725,
+      "path_top": 1.8147889850147443
+    }
+  },
+  "successive_change": {
+    "625->1250": 0.7479578956969606,
+    "1250->2500": 0.2077002789453467,
+    "2500->5000": 0.10239053757749786
+  },
+  "status": "complete"
+}

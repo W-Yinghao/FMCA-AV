@@ -1,0 +1,55 @@
+{
+  "model": "resnet152",
+  "weights": "IMAGENET1K_V2",
+  "levels": 5,
+  "certificate_curve": [
+    {
+      "prefix": 1,
+      "composed_top": 1.0058802945506038,
+      "retention": 1.0058802945506038,
+      "certified_top": 1.0058802945506038,
+      "certified_sum8": 6.015863097418304,
+      "endpoint_top": 1.0058802945506038,
+      "delta_op": 0.0,
+      "normalized_defect": 0.0
+    },
+    {
+      "prefix": 2,
+      "composed_top": 0.7868831902449144,
+      "retention": 0.7822831349884303,
+      "certified_top": 0.32508155724015786,
+      "certified_sum8": 0.8602030170239405,
+      "endpoint_top": 1.0138641270620121,
+      "delta_op": 0.4618016330047565,
+      "normalized_defect": 0.40832735984405755
+    },
+    {
+      "prefix": 3,
+      "composed_top": 0.6750522571754831,
+      "retention": 0.857881151285641,
+      "certified_top": 0.04560854014264604,
+      "certified_sum8": 0.04581938719697942,
+      "endpoint_top": 1.0053402615274345,
+      "delta_op": 0.6294437170328371,
+      "normalized_defect": 0.6070156655756962
+    },
+    {
+      "prefix": 4,
+      "composed_top": 0.5968616199992115,
+      "retention": 0.8841709862517655,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9717826578864509,
+      "delta_op": 0.5981257246740513,
+      "normalized_defect": 0.6555987638634276
+    }
+  ],
+  "layer_probe_accuracy": [
+    0.4513333333333333,
+    0.5106666666666667,
+    0.5873333333333334,
+    0.8966666666666666,
+    0.93
+  ],
+  "best_probe_layer": 4
+}

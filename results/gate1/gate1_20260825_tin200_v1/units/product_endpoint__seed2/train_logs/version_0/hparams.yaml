@@ -1,0 +1,99 @@
+config:
+  data:
+    augmentation:
+      mean:
+      - 0.485
+      - 0.456
+      - 0.406
+      size: 64
+      std:
+      - 0.229
+      - 0.224
+      - 0.225
+    batch_size: 256
+    dataset: tinyimagenet200
+    image_size: 64
+    n_calibration: 2500
+    n_val: 2500
+    num_workers: 4
+    root: /projects/EEG-foundation-model/yinghao/FMCA-AV/tiny-imagenet-200
+    view_tree:
+      children_per_edge: 4
+      edges:
+      - color_jitter_hue: true
+        color_jitter_probability: 0.8
+        color_jitter_strength: 0.5
+        flip_probability: 0.5
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.2
+        size: 64
+      - grayscale_probability: 0.2
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.4
+        size: 64
+      endpoint_descendants: 8
+      flip_probability: 0.0
+      mode: nested
+      root:
+        max_scale: 1.0
+        min_scale: 0.95
+        size: 64
+  experiment:
+    family: cifar_gate
+    name: gatetin-tin200-v7_product_endpoint
+    status: 'Tiny ImageNet-200 pilot, one seed: 200 classes at 64 pixels tests whether
+      the dataset ordering seen from CIFAR-10 to CIFAR-100 continues. Disclosed deviations:
+      downsampling stem and 100 epochs, so absolute numbers are NOT comparable to
+      the CIFAR gates -- only the within-dataset contrasts are'
+  loss:
+    additive_recipe: faithful_trace
+    alpha: 0.2
+    beta: 128.0
+    closure_stop_grad: false
+    ema_target_momentum: 0.99
+    epsilon: 1.0e-06
+    flat_recipe: faithful_trace
+    gamma: 1.0
+    leaf_reward_weight: 1.0
+    product_recipe: faithful_bootstrap
+    ridge: 0.001
+    whitening_mode: differentiable
+  model:
+    activation: gelu
+    backbone_width: 64
+    feature_dim: 128
+    head_hidden_dims:
+    - 512
+    level_stages:
+    - 1
+    - 2
+    - 3
+    stem: downsample
+  objective_note: additive variants take their maximizing per-edge sign inside the
+    module; alpha/beta here only affect product_endpoint
+  optimizer:
+    learning_rate: 0.1
+    momentum: 0.9
+    name: sgd
+    scheduler: cosine
+    weight_decay: 0.0001
+  output_root: /projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs
+  probe:
+    batch_size: 256
+    epochs: 100
+    learning_rate: 0.1
+    momentum: 0.9
+    n_val: 5000
+    num_workers: 4
+  seed: 2
+  trainer:
+    accelerator: gpu
+    deterministic: true
+    devices: 1
+    enable_progress_bar: false
+    max_epochs: 100
+    precision: 32-true
+    strategy: auto
+  variant: product_endpoint
