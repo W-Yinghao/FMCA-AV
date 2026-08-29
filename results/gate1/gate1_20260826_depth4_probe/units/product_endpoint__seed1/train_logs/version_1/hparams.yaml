@@ -1,0 +1,96 @@
+config:
+  data:
+    batch_size: 256
+    dataset: cifar10
+    n_calibration: 10000
+    n_val: 10000
+    num_workers: 4
+    root: /projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10
+    view_tree:
+      children_per_edge: 4
+      edges:
+      - color_jitter_hue: true
+        color_jitter_probability: 0.8
+        color_jitter_strength: 0.5
+        flip_probability: 0.5
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.2
+        size: 32
+      - grayscale_probability: 0.2
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.4
+        size: 32
+      - flip_probability: 0.5
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.5
+        size: 32
+      endpoint_descendants: 8
+      flip_probability: 0.0
+      mode: nested
+      root:
+        max_scale: 1.0
+        min_scale: 0.95
+        size: 32
+  experiment:
+    family: cifar_gate
+    name: gate1depth4-cifar10-v7_product_endpoint
+    status: 'Hierarchy-depth ablation: the ONLY change from the bigcal gate is a third
+      nested edge (crop 0.5-1.0, flip only), so the view tree has four levels and
+      the composed path three edges.  Everything else, including the calibration budget,
+      is the bigcal protocol verbatim.  Absolute numbers comparable only within this
+      gate.  Disclosed: level_stages becomes [0,1,2,3] so each of the four levels
+      owns one backbone stage; the root tap sits one stage earlier than in the 3-level
+      gates, which is part of what ''deeper hierarchy'' means here.'
+  loss:
+    additive_recipe: faithful_trace
+    alpha: 0.2
+    beta: 128.0
+    closure_stop_grad: false
+    ema_target_momentum: 0.99
+    epsilon: 1.0e-06
+    flat_recipe: faithful_trace
+    gamma: 1.0
+    leaf_reward_weight: 1.0
+    product_recipe: faithful_bootstrap
+    ridge: 0.001
+    whitening_mode: differentiable
+  model:
+    activation: gelu
+    backbone_width: 64
+    feature_dim: 128
+    head_hidden_dims:
+    - 512
+    level_stages:
+    - 0
+    - 1
+    - 2
+    - 3
+  objective_note: additive variants take their maximizing per-edge sign inside the
+    module; alpha/beta here only affect product_endpoint
+  optimizer:
+    learning_rate: 0.1
+    momentum: 0.9
+    name: sgd
+    scheduler: cosine
+    weight_decay: 0.0001
+  output_root: /projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs
+  probe:
+    batch_size: 256
+    epochs: 100
+    learning_rate: 0.1
+    momentum: 0.9
+    n_val: 5000
+    num_workers: 4
+  seed: 1
+  trainer:
+    accelerator: gpu
+    deterministic: true
+    devices: 1
+    enable_progress_bar: false
+    max_epochs: 200
+    precision: 32-true
+    strategy: auto
+  variant: product_endpoint
