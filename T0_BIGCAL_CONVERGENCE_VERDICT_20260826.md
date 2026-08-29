@@ -118,3 +118,48 @@ The first QC probe died in 8 seconds (level_stages declared three taps
 for a four-level tree) and the fleet was withheld.  Fixed
 ([0,1,2,3], root tap moving one stage earlier disclosed as part of
 the estimand), probe resubmitted.  The fleet waits on its verdict.
+
+---
+
+# Addendum 2026-08-28: the tin200 seven-arm spectrum
+
+All twelve completion units landed; with the earlier three arms the
+third dataset now carries the full V1-V7 spectrum (small-budget
+protocol, 3 seeds):
+
+    composed cluster                     flat cluster           degenerate
+    V7 [0.316,0.357] probe 34.0-34.8     V1 [0.418,0.436]       V6 [0.407,2010.7]
+    V3 [0.348,0.386] probe 32.7-33.4     V2 [0.442,0.445]       probe 4.5-18.8%
+    V5 [0.350,0.411] probe 33.9-35.2         probe 34.6-40.6
+    V4 [0.353,0.376] probe 35.2-35.4
+
+What replicates from the bigcal spectrum, dataset three of three:
+
+- The cluster structure by loss form, still disjoint (composed max
+  0.411 vs flat min 0.418) though the margin narrows from 0.21 to
+  0.007 at this small budget -- and A3 already showed the tin200 arm
+  gap widens with calibration budget, so the narrow margin is the
+  budget's, not the dataset's.  V7 alone vs both flat arms is clearly
+  disjoint (0.357 vs 0.418).
+- mview beats 2view on the probe within BOTH loss forms (V2 over V1 by
+  ~5 points, V4 over V3 by ~2), and view count still does not move the
+  certificate cluster.
+- V6 without the endpoint anchor is catastrophically degenerate here
+  (ratio up to 2010, probes at 4.5-18.8%): the harder dataset makes
+  the anchor's role more visible, not less.
+
+What does NOT replicate: V7's probe lead inside the composed cluster.
+On bigcal V7 led its cluster by 6-8 points; on tin200 it sits
+mid-cluster (V4 slightly ahead).  The conjunctive win -- flat-level
+probe at composed-level closure -- is a CIFAR-scale result until the
+tin200 gate is rerun at an enlarged budget; the certificate ordering,
+by contrast, has now survived every dataset and budget it was given.
+
+# Depth-4 gate: probe passed, fleet released
+
+The corrected 4-level QC probe is healthy: 79.5% probe, no collapse,
+three edges measured, normalized ratio 0.339 against the 3-level
+bigcal V7's 0.185-0.202 -- one more interface costs real closure, as
+the chain-track L-scan predicts for trained hierarchies too.  The
+8-unit fleet (V2, V4 x3 seeds; V7 seeds 2-3) is in the queue; the
+depth-4 reading waits for it.
