@@ -144,6 +144,12 @@ class HierarchyCertificateModule(L.LightningModule):
         # inert once training is healthy (128/128 directions retained on the
         # trained checkpoint) and active only where it is needed.
         self.gram_tau = float(loss.get("gram_tau", 0.1))
+        if self.gram_corrected_closure and self.variant not in {"product_only", "product_endpoint"}:
+            raise ValueError(
+                f"gram_corrected_closure is defined only for the arms that COMPOSE "
+                f"operators (product_only, product_endpoint); variant {self.variant!r} "
+                f"scores single operators, where the interior-interface derivation "
+                f"does not apply and the flag would be an undeclared method change")
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
             [(int(a), int(b)) for a, b in pairs] if pairs is not None else None
@@ -304,6 +310,22 @@ class HierarchyCertificateModule(L.LightningModule):
         total = -score + self.gamma * whitening
         return total, {"leaf_score": float(score.detach()), "whitening": float(whitening.detach())}
 
+    def _gram_correction(self, whitened, last_state):
+        """Per-level Gram correction for a composed operator.
+
+        Only the arms that COMPOSE need this: the derivation is about the
+        interior interfaces, where multiplying ridge-whitened cross-matrices
+        inserts F F* instead of an orthogonal projection.  A single-operator
+        score has no interior interface, so the correction has no argument
+        behind it there and is deliberately not offered.
+        """
+
+        level_states = list(whitened.chain[: self.num_levels - 1]) + [last_state]
+        if self.gram_detach_metric:
+            level_states = [state.detach() for state in level_states]
+        return build_correction([gram_matrix(state) for state in level_states],
+                                tau_relative=self.gram_tau)
+
     def _variant_loss(self, features: ChainFeatureBatch) -> Tuple[Tensor, Dict[str, float]]:
         if self.variant == "final_2view":
             return self._flat_leaf_loss(features, views=2)
@@ -381,15 +403,11 @@ class HierarchyCertificateModule(L.LightningModule):
             c_comp = compose_edge_operators(shared_edges)
             c_dir = train_endpoint_operator(whitened)
             if self.gram_corrected_closure:
-                # One shared per-level state supplies each Gram; the endpoint
-                # metric comes from the same object c_dir's right factor uses,
-                # so both ends of both operators carry the SAME G_0 and G_L.
-                level_states = list(whitened.chain[: self.num_levels - 1])
-                level_states.append(whitened.endpoint_descendants.mean(dim=1))
-                if self.gram_detach_metric:
-                    level_states = [state.detach() for state in level_states]
-                correction = build_correction(
-                    [gram_matrix(state) for state in level_states], tau_relative=self.gram_tau)
+                # The endpoint metric comes from the same object c_dir's right
+                # factor uses, so both ends of both operators carry the SAME
+                # G_0 and G_L.
+                correction = self._gram_correction(
+                    whitened, whitened.endpoint_descendants.mean(dim=1))
                 c_comp = corrected_composition(shared_edges, correction)
                 c_dir = corrected_endpoint(c_dir, correction)
             closure_target = c_dir.detach() if self.closure_stop_grad else c_dir
@@ -451,10 +469,24 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "product_only":
             whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
-            score = normalized_score(compose_edge_operators(edges))
+            retained = float("nan")
+            if self.gram_corrected_closure:
+                # V6 composes too, so the same correction applies -- and here
+                # it lands on the scored operator itself rather than on a
+                # closure term, which is the cleanest place to see it.
+                correction = self._gram_correction(
+                    whitened, whitened.children[-1].mean(dim=1))
+                composed = corrected_composition(edges, correction)
+                retained = float(min(correction.retained_ranks))
+            else:
+                composed = compose_edge_operators(edges)
+            score = normalized_score(composed)
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
-            return total, {"product_score": float(score.detach()), "whitening": float(whitening.detach())}
+            return total, {"product_score": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "gram_corrected_closure": float(self.gram_corrected_closure),
+                           "gram_retained_min": retained}
         terms = certificate_training_loss(
             features,
             alpha=self.alpha,
