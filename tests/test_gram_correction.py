@@ -242,3 +242,40 @@ class FiniteSampleTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DevicePlacementTest(unittest.TestCase):
+    """The correction is now called from inside a training step.
+
+    gram.py was written for the analysis path, where every tensor is on
+    the CPU, and built its identity matrices there unconditionally.  The
+    first Gram-in-training probe died in six seconds on exactly that.
+    This pins the contract the training path needs: every tensor the
+    correction manufactures follows the Gram it was built from.
+    """
+
+    def _chain_on(self, device, dim=6):
+        edges, c_dir = _chain(dim=dim, seed=23)
+        edges = [e.to(device) for e in edges]
+        grams = [torch.eye(dim, dtype=torch.float64, device=device) * 0.9 + 0.1
+                 for _ in range(3)]
+        return edges, c_dir.to(device), grams
+
+    def test_correction_stays_on_the_grams_device(self):
+        edges, c_dir, grams = self._chain_on(torch.device("cpu"))
+        correction = build_correction(grams)
+        for tensor in (*correction.interior_inverses, *correction.end_inverse_sqrts):
+            self.assertEqual(tensor.device.type, "cpu")
+        self.assertEqual(corrected_composition(edges, correction).device.type, "cpu")
+        steps = cumulative_interface_attribution(edges, c_dir, correction)
+        self.assertEqual(len(steps), 2)
+
+    @unittest.skipUnless(torch.cuda.is_available(), "needs a GPU")
+    def test_correction_runs_on_cuda(self):
+        device = torch.device("cuda")
+        edges, c_dir, grams = self._chain_on(device)
+        correction = build_correction(grams)
+        composed = corrected_composition(edges, correction)
+        self.assertEqual(composed.device.type, "cuda")
+        self.assertEqual(corrected_endpoint(c_dir, correction).device.type, "cuda")
+        cumulative_interface_attribution(edges, c_dir, correction)

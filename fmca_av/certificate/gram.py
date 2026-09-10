@@ -106,9 +106,12 @@ def build_correction(
         if gram.ndim != 2 or gram.shape[0] != gram.shape[1]:
             raise ValueError(f"level {level} Gram must be square, got {tuple(gram.shape)}")
     # Levels of a real chain carry different widths (64 -> 256 -> ... ->
-    # 2048), so every identity here is the one for ITS own level.
+    # 2048), so every identity here is the one for ITS own level -- and on
+    # ITS own device, because this module is now also called from inside a
+    # training step where the Grams live on the accelerator.
     deviation = [float(torch.linalg.matrix_norm(
-        g.double() - torch.eye(g.shape[0], dtype=torch.float64), ord=2)) for g in grams]
+        g.double() - torch.eye(g.shape[0], dtype=torch.float64, device=g.device),
+        ord=2)) for g in grams]
     ranks: List[int] = []
     interior: List[Tensor] = []
     for level, gram in enumerate(grams):
@@ -164,7 +167,8 @@ def cumulative_interface_attribution(
     """
 
     def eye(level: int) -> Tensor:
-        return torch.eye(correction.grams[level].shape[0], dtype=torch.float64)
+        gram = correction.grams[level]
+        return torch.eye(gram.shape[0], dtype=torch.float64, device=gram.device)
 
     # interior_inverses[i] sits at level i+1, between edges i and i+1, so a
     # switched-off interface is that level's identity -- not level 0's.
