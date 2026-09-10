@@ -163,3 +163,54 @@ bigcal V7's 0.185-0.202 -- one more interface costs real closure, as
 the chain-track L-scan predicts for trained hierarchies too.  The
 8-unit fleet (V2, V4 x3 seeds; V7 seeds 2-3) is in the queue; the
 depth-4 reading waits for it.
+
+---
+
+# Addendum 2026-09-10: the depth-4 gate, and a coverage gap on CIFAR-10
+
+## Hierarchy depth costs closure, and the cluster ordering survives it
+
+The 4-level view tree (three composed edges instead of two), CIFAR-10,
+protocol otherwise the bigcal gate verbatim:
+
+    arm        depth-3 ratio      depth-4 ratio      depth-3 probe   depth-4 probe
+    V7         [0.185,0.202]      [0.349,0.476]      81.4-82.8%      79.6%  (n=2)
+    V4         [0.185,0.225]      [0.413,0.473]      74.5-75.8%      63.5-64.0%
+    V2 (flat)  [0.466,0.477]      [0.598,0.604]      85.7-86.5%      82.5-83.3%
+
+Three readings:
+
+1.  Every arm's defect RISES with hierarchy depth -- one more interface
+    is one more place for closure to fail, matching what the chain
+    track's L-scan found for pretrained networks.  The effect is far
+    larger for the composed arms (roughly doubling) than for flat
+    (+28%), because flat's defect was already structural rather than
+    interface-limited.
+2.  The composed-vs-flat cluster ordering SURVIVES the deeper tree
+    (V7/V4 max 0.476 vs flat min 0.598, disjoint), so the loss-form
+    result is not an artifact of the two-edge tree it was discovered
+    on.  That is the ablation's main deliverable.
+3.  The composed cluster's internal margin does NOT survive: V7 and V4
+    ranges overlap heavily at depth 4, and V7's probe advantage over V4
+    widens sharply (79.6 vs 63.5-64.0).  Deeper hierarchies hurt the
+    additive arm's representation much more than the endpoint-anchored
+    one -- consistent with the anchor's role established by V6's
+    degeneracy, now visible as a graded effect rather than a corner.
+
+Caveat: V7 reports n=2 (the QC probe unit is the seed-1 cell and lives
+in the probe directory), and the depth-4 gate moves the root feature
+tap one stage earlier as disclosed in the config status, so absolute
+numbers are comparable only within this gate.
+
+## A coverage gap found while auditing the CIFAR-10 classification results
+
+The Gram correction is measurement-side only: it appears nowhere in
+configs/ or hierarchy_module.py, so there is no separately trained
+"Gram version" and accuracy is unaffected by it.  All seven CIFAR-10
+bigcal arms carry linear-probe and kNN accuracy; the Gram-CORRECTED
+certificate, however, had only ever been computed for three of them
+(V2/V4/V7).  The four completion arms (V1/V3/V5/V6) had surrogate
+certificates paired with accuracy but no corrected counterpart, so the
+accuracy table and the corrected-certificate table did not cover the
+same arms.  Checkpoints for all four exist; the corrected sweeps are
+queued on both datasets (analysis-only, no retraining).
