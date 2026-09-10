@@ -54,6 +54,55 @@ def identity_penalty(moment: Tensor) -> Tensor:
     return (moment - identity).square().mean()
 
 
+def truncated_whitener(moment: Tensor, tau: float = 1e-3, iterations: int = 12):
+    """The paper's symmetric TRUNCATED inverse square root (supplement Eq. 7).
+
+    Retain ``{r : eta_r > 0, eta_r >= tau * eta_max}`` and form
+    ``W = sum_r eta_r^{-1/2} v_r v_r^T`` on that subspace.  Unlike a ridge
+    whitener this satisfies ``W R W = Pi`` exactly, so the plain product of
+    whitened edge matrices is already the projected composition and needs no
+    inserted Gram inverse -- which is precisely why the paper specifies
+    truncation and notes that ridge-regularized inverse roots would define a
+    DIFFERENT operator estimate.
+
+    Differentiability follows the supplement: the discrete rank decision is
+    detached, and the inverse square root on the retained block is computed
+    by a coupled Newton-Schulz iteration rather than by differentiating
+    individual eigenvectors, which is unstable at repeated eigenvalues.
+
+    Returns ``(W, retained_rank)``; a retained rank of zero is a signal to the
+    caller to invalidate the batch, not an exception.
+    """
+
+    symmetric = 0.5 * (moment + moment.transpose(0, 1))
+    with torch.no_grad():
+        values = torch.linalg.eigvalsh(symmetric)
+        largest = float(values.max())
+        if largest <= 0:
+            return None, 0
+        keep_values = values[(values > 0) & (values >= tau * largest)]
+        retained = int(keep_values.numel())
+        if retained == 0:
+            return None, 0
+        # Projector onto the retained subspace, detached: the RANK is a
+        # discrete decision and the supplement forbids differentiating it.
+        eigenvalues, vectors = torch.linalg.eigh(symmetric)
+        mask = (eigenvalues > 0) & (eigenvalues >= tau * largest)
+        basis = vectors[:, mask]
+        scale = float(eigenvalues[mask].max())
+    # Newton-Schulz for A^{-1/2} on the retained block, in the retained basis.
+    block = basis.transpose(0, 1) @ symmetric @ basis
+    normalized = block / scale
+    size = normalized.shape[0]
+    identity = torch.eye(size, dtype=normalized.dtype, device=normalized.device)
+    y, z = normalized, identity
+    for _ in range(iterations):
+        step = 0.5 * (3.0 * identity - z @ y)
+        y, z = y @ step, step @ z
+    inverse_root = z / (scale ** 0.5)
+    return basis @ inverse_root @ basis.transpose(0, 1), retained
+
+
 def cholesky_whitener(moment: Tensor, ridge: float = 1e-3) -> Tensor:
     """Differentiable whitening transform W with W^T R W = I.
 
@@ -76,7 +125,9 @@ def whiten_chain_batch(
     batch: ChainFeatureBatch,
     ridge: float = 0.1,
     detach_whitener: bool = True,
-) -> Tuple[ChainFeatureBatch, List[Tensor]]:
+    mode: str = "ridge",
+    tau: float = 1e-3,
+):
     """Center and batch-whiten every level with ONE shared transform.
 
     This is the train-time counterpart of the frozen ontology's whitened
@@ -98,10 +149,23 @@ def whiten_chain_batch(
     """
 
     means, moments = batch_level_statistics(batch)
-    whiteners = [
-        cholesky_whitener(moment.detach() if detach_whitener else moment, ridge)
-        for moment in moments
-    ]
+    if mode == "truncated":
+        pairs = [truncated_whitener(moment.detach() if detach_whitener else moment, tau)
+                 for moment in moments]
+        whiteners = [w for w, _ in pairs]
+        retained_ranks = [r for _, r in pairs]
+        if any(rank == 0 for rank in retained_ranks):
+            # Supplement: an empty retained set flags the batch; the caller
+            # takes no parameter update.  It is not an exception.
+            return None, moments, retained_ranks
+    elif mode == "ridge":
+        whiteners = [
+            cholesky_whitener(moment.detach() if detach_whitener else moment, ridge)
+            for moment in moments
+        ]
+        retained_ranks = [int(moment.shape[0]) for moment in moments]
+    else:
+        raise ValueError('whitening mode must be "truncated" or "ridge"')
     chain = [
         (batch.chain[level] - means[level]) @ whiteners[level]
         for level in range(batch.num_levels)
@@ -115,7 +179,7 @@ def whiten_chain_batch(
         if batch.endpoint_descendants is not None
         else None
     )
-    return ChainFeatureBatch(chain=chain, children=children, endpoint_descendants=endpoint), moments
+    return ChainFeatureBatch(chain=chain, children=children, endpoint_descendants=endpoint), moments, retained_ranks
 
 
 def batch_level_statistics(batch: ChainFeatureBatch) -> Tuple[List[Tensor], List[Tensor]]:
@@ -222,7 +286,7 @@ def certificate_training_loss(
     default.
     """
 
-    whitened, moments = whiten_chain_batch(batch, ridge=ridge, detach_whitener=detach_whitener)
+    whitened, moments, _ = whiten_chain_batch(batch, ridge=ridge, detach_whitener=detach_whitener)
     edges = train_edge_operators(whitened)
     c_comp = compose_edge_operators(edges)
     c_dir = train_endpoint_operator(whitened)

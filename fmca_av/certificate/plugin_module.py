@@ -96,7 +96,7 @@ class PluginSSLModule(HierarchyCertificateModule):
             features_raw = self.feature_batch(batch)
         edge_traces = trace_score_edges(features_raw)
         edge_sum = torch.stack(edge_traces).sum()
-        whitened, moments = whiten_chain_batch(
+        whitened, moments, _ = whiten_chain_batch(
             features_raw, ridge=self.ridge, detach_whitener=self.detach_whitener
         )
         edges = train_edge_operators(whitened)

@@ -61,7 +61,7 @@ def main() -> None:
             batch = {k: ([t.to(device) for t in v] if isinstance(v, list) else v.to(device))
                      for k, v in batch.items()}
             features = module.feature_batch(batch)
-            whitened, _ = whiten_chain_batch(features, ridge=module.ridge,
+            whitened, _, _ = whiten_chain_batch(features, ridge=module.ridge,
                                              detach_whitener=module.detach_whitener)
             states = list(whitened.chain[: module.num_levels - 1])
             states.append(whitened.endpoint_descendants.mean(dim=1))

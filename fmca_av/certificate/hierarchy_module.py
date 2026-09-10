@@ -47,6 +47,7 @@ from .gram import (
 from .triplet import compose_edge_operators
 
 GATE_VARIANTS = (
+    "paper_composition",
     "final_2view",
     "final_mview",
     "additive_2view",
@@ -144,6 +145,23 @@ class HierarchyCertificateModule(L.LightningModule):
         # inert once training is healthy (128/128 directions retained on the
         # trained checkpoint) and active only where it is needed.
         self.gram_tau = float(loss.get("gram_tau", 0.1))
+        # The paper arm: truncated symmetric inverse roots at relative cutoff
+        # tau, shared per level, with the plain product as the composition.
+        self.spectral_tau = float(loss.get("spectral_tau", 1e-3))
+        self.invalid_batches = 0
+        if self.variant == "paper_composition":
+            # "There is no stopped-gradient endpoint estimate or matrix
+            # exponential moving average", and gradients must reach the Gram
+            # transforms.  These are part of the method, so they are asserted
+            # here rather than left to a config that could drift.
+            if self.closure_stop_grad:
+                raise ValueError("paper_composition forbids closure_stop_grad")
+            if float(loss.get("ema_target_momentum", 0.0)) > 0:
+                raise ValueError("paper_composition forbids ema_target_momentum")
+            if self.detach_whitener:
+                raise ValueError(
+                    "paper_composition requires whitening_mode=differentiable: "
+                    "gradients propagate through the continuous Gram transforms")
         if self.gram_corrected_closure and self.variant not in {"product_only", "product_endpoint"}:
             raise ValueError(
                 f"gram_corrected_closure is defined only for the arms that COMPOSE "
@@ -211,6 +229,10 @@ class HierarchyCertificateModule(L.LightningModule):
             self.variant == "product_endpoint"
             and self.product_recipe == "faithful_bootstrap"
             and self.leaf_reward_weight > 0
+        ) or (
+            # The paper's lambda_mv term (Eq. 25) needs the same aggregation
+            # head; setting lambda_mv = 0 removes both, as the paper states.
+            self.variant == "paper_composition" and self.leaf_reward_weight > 0
         )
         if needs_flat_head:
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
@@ -326,7 +348,59 @@ class HierarchyCertificateModule(L.LightningModule):
         return build_correction([gram_matrix(state) for state in level_states],
                                 tau_relative=self.gram_tau)
 
+    def _paper_composition_loss(self, features: ChainFeatureBatch):
+        """Supplement Eq. (9)-(10) and section Eq. (25), implemented literally.
+
+        Every score uses the SAME shared truncated coordinates -- the paper
+        is explicit that the trace scores use "these same coordinates", so a
+        pair-specific ridge trace here would be a different estimator.  The
+        composition is the plain ordered product, which is already the
+        projected composition because truncated whitening is exactly
+        idempotent (W R W = Pi).  No Gram inverse is inserted anywhere.
+
+        Returns ``None`` when a level's retained set is empty: the supplement
+        says the batch is flagged and no parameter update is taken.
+        """
+
+        if features.endpoint_descendants is None:
+            raise ValueError("paper_composition requires endpoint descendants")
+        whitened, moments, retained = whiten_chain_batch(
+            features, detach_whitener=self.detach_whitener,
+            mode="truncated", tau=self.spectral_tau)
+        if whitened is None:
+            return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+
+        edges = train_edge_operators(whitened)
+        c_comp = compose_edge_operators(edges)
+        c_dir = train_endpoint_operator(whitened)
+
+        # r_hat = ||C||_F^2 in the shared retained coordinates (Eq. 10).
+        reward_dir = c_dir.square().sum()
+        edge_sum = torch.stack([edge.square().sum() for edge in edges]).sum()
+        closure = (c_dir - c_comp).square().sum() / (c_dir.square().sum() + self.epsilon)
+        whitening = self._whitening_penalty(moments, range(self.num_levels))
+
+        total = -reward_dir - self.alpha * edge_sum + self.beta * closure + self.gamma * whitening
+        metrics = {"dir_score": float(reward_dir.detach()),
+                   "edge_score_sum": float(edge_sum.detach()),
+                   "closure_ratio": float(closure.detach()),
+                   "whitening": float(whitening.detach()),
+                   "retained_min": float(min(retained)),
+                   "invalid_batch": 0.0}
+
+        if self.leaf_reward_weight > 0:
+            assert self.flat_f_head is not None
+            leaf_views = features.endpoint_descendants
+            f_features = self.flat_f_head(leaf_views.mean(dim=1))
+            leaf_reward = trace_score(
+                estimate_moments(f_features, leaf_views, centered=True), ridge=1e-3)
+            total = total - self.leaf_reward_weight * leaf_reward
+            metrics["leaf_trace"] = float(leaf_reward.detach())
+        return total, metrics
+
     def _variant_loss(self, features: ChainFeatureBatch) -> Tuple[Tensor, Dict[str, float]]:
+        if self.variant == "paper_composition":
+            return self._paper_composition_loss(features)
         if self.variant == "final_2view":
             return self._flat_leaf_loss(features, views=2)
         if self.variant == "final_mview":
@@ -346,7 +420,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"edge_trace_sum": float(score.detach())}
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
@@ -366,7 +440,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"cross_trace_sum": float(score.detach())}
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
             score = torch.stack(scores).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
@@ -396,7 +470,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 for edge in range(self.num_levels - 1)
             ]
             edge_sum = torch.stack(edge_traces).sum()
-            whitened, moments = whiten_chain_batch(
+            whitened, moments, _ = whiten_chain_batch(
                 features, ridge=self.ridge, detach_whitener=self.detach_whitener
             )
             shared_edges = train_edge_operators(whitened)
@@ -467,7 +541,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 metrics["leaf_trace"] = float(leaf_reward.detach())
             return total, metrics
         if self.variant == "product_only":
-            whitened, moments = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
             retained = float("nan")
             if self.gram_corrected_closure:
@@ -502,12 +576,26 @@ class HierarchyCertificateModule(L.LightningModule):
     def _shared_step(self, batch: Dict[str, Any], split: str) -> Tensor:
         features = self.feature_batch(batch)
         total, metrics = self._variant_loss(features)
+        if total is None:
+            # Supplement: a level with an empty retained set flags the batch
+            # and no parameter update is taken.  Returning None is how
+            # Lightning skips the step; the flag is counted, not swallowed,
+            # so a run that silently stops learning is visible in the log.
+            self.invalid_batches += 1
+            self.log(f"{split}/invalid_batches", float(self.invalid_batches),
+                     on_step=False, on_epoch=True)
+            return None
         self.log(f"{split}/loss", total, on_step=False, on_epoch=True, prog_bar=True)
         for name, value in metrics.items():
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
         if split == "val":
             with torch.no_grad():
-                whitened, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=True)
+                mode = "truncated" if self.variant == "paper_composition" else "ridge"
+                whitened, _, _ = whiten_chain_batch(
+                    features, ridge=self.ridge, detach_whitener=True,
+                    mode=mode, tau=self.spectral_tau)
+                if whitened is None:
+                    return total
                 edges = train_edge_operators(whitened)
                 c_dir = train_endpoint_operator(whitened)
                 c_comp = compose_edge_operators(edges)

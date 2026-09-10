@@ -50,6 +50,7 @@ VARIANT_TAGS = {
     "additive_2view": "v3_additive_2view", "additive_mview": "v4_additive_mview",
     "amdim_cross": "v5_amdim_cross", "product_only": "v6_product_only",
     "product_endpoint": "v7_product_endpoint",
+    "paper_composition": "paper_composition",
 }
 
 
