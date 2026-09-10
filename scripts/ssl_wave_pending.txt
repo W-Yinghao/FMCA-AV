@@ -6,3 +6,12 @@ sbatch scripts/launch_analysis_gpu.sbatch scripts/run_validity_gate.py --config-
 sbatch scripts/launch_analysis_gpu.sbatch scripts/run_validity_gate.py --config-dir configs/gate_c100_bigcal --output-root results/gate1/gate1_20260824_c100_bigcal --variant amdim_cross --seed 1 --mode convergence --gram-corrected --out results/validity/bigcal_c100_convergence_amdim_cross.json
 sbatch scripts/launch_analysis_gpu.sbatch scripts/run_validity_gate.py --config-dir configs/gate_v8_bigcal --output-root results/gate1/gate1_20260824_v8_bigcal --variant product_only --seed 1 --mode convergence --gram-corrected --out results/validity/bigcal_c10_convergence_product_only.json
 sbatch scripts/launch_analysis_gpu.sbatch scripts/run_validity_gate.py --config-dir configs/gate_c100_bigcal --output-root results/gate1/gate1_20260824_c100_bigcal --variant product_only --seed 1 --mode convergence --gram-corrected --out results/validity/bigcal_c100_convergence_product_only.json
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_lambda0 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_lambda0 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_lambda0 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_alpha0 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_alpha0 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_alpha0 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_T2 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_T2 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper results/gate1/gate1_20260910_paper_v1 paper_T2 3
