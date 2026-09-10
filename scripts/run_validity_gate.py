@@ -158,6 +158,32 @@ def gram_corrected_report(module, data_module, device, seed, measurement_ridge,
     }
 
 
+def require_accelerator(allow_cpu: bool) -> "torch.device":
+    """Pick the device, and refuse a silent CPU fallback.
+
+    These runners encode every sample through the backbone; the matrix
+    algebra around it is 128x128 and free.  Landing on the CPU therefore
+    costs two orders of magnitude and looks exactly like a slow job rather
+    than a misplaced one -- five sweeps reached N=2500 of 20000 in eight
+    and a half hours before that was noticed.  Opting into CPU is fine;
+    doing it by accident is not.
+    """
+
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if allow_cpu:
+        print("WARNING: running the encoder on CPU because --allow-cpu was given")
+        return torch.device("cpu")
+    raise SystemExit(
+        "no CUDA device: this runner encodes through the backbone and is "
+        "orders of magnitude slower on CPU. Submit it with a --gres=gpu:1 "
+        "partition (scripts/launch_analysis_gpu.sbatch), or pass --allow-cpu "
+        "if you really mean it."
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-dir", required=True)
@@ -170,6 +196,8 @@ def main() -> None:
     parser.add_argument("--ridge", type=float, default=1e-3)
     parser.add_argument("--gram-corrected", action="store_true",
                         help="report the projection defect alongside the surrogate")
+    parser.add_argument("--allow-cpu", action="store_true",
+                        help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
@@ -178,7 +206,7 @@ def main() -> None:
     )
     config["seed"] = arguments.seed
     L.seed_everything(arguments.seed, workers=True)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = require_accelerator(arguments.allow_cpu)
     data_module = GateDataModule(config["data"], arguments.seed)
     data_module.setup()
     module = HierarchyCertificateModule(config)

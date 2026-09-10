@@ -78,6 +78,32 @@ def cross_moment(parent, child_mean, correction=None):
     return raw if correction is None else corrected_endpoint(raw, correction)
 
 
+def require_accelerator(allow_cpu: bool) -> "torch.device":
+    """Pick the device, and refuse a silent CPU fallback.
+
+    These runners encode every sample through the backbone; the matrix
+    algebra around it is 128x128 and free.  Landing on the CPU therefore
+    costs two orders of magnitude and looks exactly like a slow job rather
+    than a misplaced one -- five sweeps reached N=2500 of 20000 in eight
+    and a half hours before that was noticed.  Opting into CPU is fine;
+    doing it by accident is not.
+    """
+
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if allow_cpu:
+        print("WARNING: running the encoder on CPU because --allow-cpu was given")
+        return torch.device("cpu")
+    raise SystemExit(
+        "no CUDA device: this runner encodes through the backbone and is "
+        "orders of magnitude slower on CPU. Submit it with a --gres=gpu:1 "
+        "partition (scripts/launch_analysis_gpu.sbatch), or pass --allow-cpu "
+        "if you really mean it."
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-dir", required=True)
@@ -90,13 +116,15 @@ def main() -> None:
     parser.add_argument("--resamples", type=int, default=12)
     parser.add_argument("--pool", type=int, default=16,
                         help="child views generated per parent; m is drawn from this pool")
+    parser.add_argument("--allow-cpu", action="store_true",
+                        help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--out", required=True)
     arguments = parser.parse_args()
 
     config = json.loads(
         (Path(arguments.config_dir) / f"gate1_cifar10_{VARIANT_TAGS[arguments.variant]}.json").read_text())
     config["seed"] = arguments.seed
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = require_accelerator(arguments.allow_cpu)
 
     unit = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
     checkpoint = unit / "checkpoints" / "last.ckpt"
