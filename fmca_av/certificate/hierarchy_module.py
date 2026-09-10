@@ -381,8 +381,14 @@ class HierarchyCertificateModule(L.LightningModule):
         whitening = self._whitening_penalty(moments, range(self.num_levels))
 
         total = -reward_dir - self.alpha * edge_sum + self.beta * closure + self.gamma * whitening
-        metrics = {"dir_score": float(reward_dir.detach()),
-                   "edge_score_sum": float(edge_sum.detach()),
+        # These are trace-scale quantities: the paper's r_hat = ||C||_F^2 has
+        # no 1/K normalisation, so each operator is bounded by K = 128 modes,
+        # not by 1.  They therefore carry the TRACE metric names, whose guard
+        # bounds are already calibrated for that scale.  Logging them under
+        # the normalized-score names would have applied a bound meant for a
+        # different quantity -- which is what the first probe caught.
+        metrics = {"dir_trace": float(reward_dir.detach()),
+                   "edge_trace_sum": float(edge_sum.detach()),
                    "closure_ratio": float(closure.detach()),
                    "whitening": float(whitening.detach()),
                    "retained_min": float(min(retained)),
