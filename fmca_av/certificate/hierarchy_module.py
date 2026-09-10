@@ -535,7 +535,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 "alpha_effective": float(alpha),
                 "gram_corrected_closure": float(self.gram_corrected_closure),
                 "gram_retained_min": (float(min(correction.retained_ranks))
-                                      if self.gram_corrected_closure else float("nan")),
+                                      if self.gram_corrected_closure else -1.0),
             }
             if leaf_reward is not None:
                 metrics["leaf_trace"] = float(leaf_reward.detach())
@@ -543,7 +543,7 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.variant == "product_only":
             whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
             edges = train_edge_operators(whitened)
-            retained = float("nan")
+            retained = -1.0  # sentinel: correction off, nothing truncated
             if self.gram_corrected_closure:
                 # V6 composes too, so the same correction applies -- and here
                 # it lands on the scored operator itself rather than on a

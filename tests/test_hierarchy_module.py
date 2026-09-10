@@ -19,7 +19,12 @@ def _config(variant: str) -> dict:
             "activation": "gelu",
         },
         "variant": variant,
-        "loss": {"alpha": 0.0, "beta": 1.0, "gamma": 1.0, "epsilon": 1e-6},
+        "loss": dict(
+            {"alpha": 0.0, "beta": 1.0, "gamma": 1.0, "epsilon": 1e-6},
+            # The paper arm's method requirements are asserted by the module,
+            # so a config that omits them is refused by design.
+            **({"whitening_mode": "differentiable", "spectral_tau": 1e-3}
+               if variant == "paper_composition" else {})),
         "optimizer": {"name": "adamw", "learning_rate": 1e-3},
         "trainer": {"max_epochs": 1},
     }
@@ -48,6 +53,45 @@ class HierarchyModuleTests(unittest.TestCase):
             self.assertTrue(torch.isfinite(total), msg=variant)
             for name, value in metrics.items():
                 self.assertTrue(torch.isfinite(torch.tensor(value)), msg=f"{variant}/{name}")
+
+    def test_paper_arm_refuses_the_recipe_the_paper_forbids(self) -> None:
+        """"No stopped-gradient endpoint estimate or matrix exponential
+        moving average", and gradients must reach the Gram transforms.
+        These are part of the estimator, so a config that contradicts them
+        must be refused rather than quietly trained."""
+
+        for key, value in (("ema_target_momentum", 0.99),
+                           ("closure_stop_grad", True),
+                           ("whitening_mode", "detached")):
+            config = _config("paper_composition")
+            config["loss"][key] = value
+            with self.assertRaises(ValueError, msg=key):
+                HierarchyCertificateModule(config)
+
+    def test_paper_arm_inserts_no_gram_inverse(self) -> None:
+        """Truncated whitening is idempotent, so the plain product already IS
+        the projected composition.  If someone reintroduces a correction on
+        this path, W R W stops being a projector and this catches it."""
+
+        from fmca_av.certificate.objective import truncated_whitener
+
+        generator = torch.Generator().manual_seed(3)
+        raw = torch.randn(200, 16, generator=generator, dtype=torch.float64)
+        moment = raw.transpose(0, 1) @ raw / raw.shape[0]
+        whitener, retained = truncated_whitener(moment, 1e-3)
+        self.assertEqual(retained, 16)
+        gram = whitener @ moment @ whitener
+        self.assertLess(float(torch.linalg.matrix_norm(gram - gram @ gram, ord="fro")), 1e-9)
+
+    def test_paper_arm_flags_a_degenerate_batch_instead_of_raising(self) -> None:
+        """Supplement: an empty retained set flags the batch and takes no
+        update.  A raise here would kill a whole run over one bad batch."""
+
+        from fmca_av.certificate.objective import truncated_whitener
+
+        whitener, retained = truncated_whitener(torch.zeros(8, 8, dtype=torch.float64), 1e-3)
+        self.assertIsNone(whitener)
+        self.assertEqual(retained, 0)
 
     def test_full_method_backpropagates_into_backbone_and_all_projectors(self) -> None:
         module = HierarchyCertificateModule(_config("product_endpoint"))
