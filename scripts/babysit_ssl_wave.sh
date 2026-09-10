@@ -39,7 +39,7 @@ while [ -s "$PENDING" ]; do
         line=${line#GATED:}
         ;;
     esac
-    if out=$($line 2>&1); then
+    if out=$(eval "$line" 2>&1); then
       echo "$(date '+%F %T') OK   $line -> $out" >> runs/babysit_ssl.log
     else
       echo "$(date '+%F %T') FAIL $line -> $out" >> "$PENDING.failed"
