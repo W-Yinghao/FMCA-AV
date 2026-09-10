@@ -2,7 +2,7 @@
   "experiment": {
     "name": "gate1gram-cifar10-v7_product_endpoint",
     "family": "cifar_gate",
-    "status": "Type-2 Gram arm for the five-question wave (prereg SSL_FIVE_QUESTION_PREREG_FROZEN_20260910). SINGLE CHANGE from the bigcal V7 config: loss.gram_corrected_closure = true. EMA, the faithful_bootstrap product recipe, alpha/beta/gamma, closure_stop_grad, leaf reward, view budget, epochs, calibration budget and seed handling are byte-identical to the bigcal V7 config, so any difference is attributable to the Gram treatment alone. The metric is detached within a step (gram_detach_metric), which is declared, not incidental."
+    "status": "Type-2 Gram arm for the five-question wave (prereg SSL_FIVE_QUESTION_PREREG_FROZEN_20260910). SINGLE CHANGE from the bigcal V7 config: loss.gram_corrected_closure = true. EMA, the faithful_bootstrap product recipe, alpha/beta/gamma, closure_stop_grad, leaf reward, view budget, epochs, calibration budget and seed handling are byte-identical to the bigcal V7 config, so any difference is attributable to the Gram treatment alone. The metric is detached within a step (gram_detach_metric), which is declared, not incidental. Spectral floor gram_tau=0.1 set from the initialisation-state measurement (appendum GRAM_TRAINING_CONDITIONING_20260910), not tuned on outcomes."
   },
   "seed": 20260816,
   "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
@@ -72,7 +72,8 @@
     "leaf_reward_weight": 1.0,
     "ema_target_momentum": 0.99,
     "gram_corrected_closure": true,
-    "gram_detach_metric": true
+    "gram_detach_metric": true,
+    "gram_tau": 0.1
   },
   "objective_note": "additive variants take their maximizing per-edge sign inside the module; alpha/beta here only affect product_endpoint",
   "optimizer": {

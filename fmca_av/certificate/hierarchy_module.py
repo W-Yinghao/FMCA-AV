@@ -136,6 +136,14 @@ class HierarchyCertificateModule(L.LightningModule):
         # backpropagating through eigenvectors of a near-degenerate Gram is
         # where this would blow up rather than where the signal is.
         self.gram_detach_metric = bool(loss.get("gram_detach_metric", True))
+        # Spectral floor for the training-time inverses.  Measured, not
+        # guessed: at initialisation the level-1 batch Gram has minimum
+        # eigenvalue ~0.03 and G^-1 amplifies by ~30x, while the CONVERGED
+        # model sits at ~0.25 and ~4x.  A floor that caps early
+        # amplification at the level the converged model shows naturally is
+        # inert once training is healthy (128/128 directions retained on the
+        # trained checkpoint) and active only where it is needed.
+        self.gram_tau = float(loss.get("gram_tau", 0.1))
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
             [(int(a), int(b)) for a, b in pairs] if pairs is not None else None
@@ -380,7 +388,8 @@ class HierarchyCertificateModule(L.LightningModule):
                 level_states.append(whitened.endpoint_descendants.mean(dim=1))
                 if self.gram_detach_metric:
                     level_states = [state.detach() for state in level_states]
-                correction = build_correction([gram_matrix(state) for state in level_states])
+                correction = build_correction(
+                    [gram_matrix(state) for state in level_states], tau_relative=self.gram_tau)
                 c_comp = corrected_composition(shared_edges, correction)
                 c_dir = corrected_endpoint(c_dir, correction)
             closure_target = c_dir.detach() if self.closure_stop_grad else c_dir
@@ -433,6 +442,8 @@ class HierarchyCertificateModule(L.LightningModule):
                 "whitening": float(whitening.detach()),
                 "alpha_effective": float(alpha),
                 "gram_corrected_closure": float(self.gram_corrected_closure),
+                "gram_retained_min": (float(min(correction.retained_ranks))
+                                      if self.gram_corrected_closure else float("nan")),
             }
             if leaf_reward is not None:
                 metrics["leaf_trace"] = float(leaf_reward.detach())
