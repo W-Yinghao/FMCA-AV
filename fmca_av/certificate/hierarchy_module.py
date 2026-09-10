@@ -28,6 +28,7 @@ from ..objectives import trace_score
 from ..operators import estimate_moments
 from .estimation import ChainFeatureBatch
 from .objective import (
+    truncated_whitener,
     certificate_training_loss,
     cholesky_whitener,
     cross_pair_score,
@@ -48,7 +49,6 @@ from .triplet import compose_edge_operators
 
 GATE_VARIANTS = (
     "paper_composition",
-    "paper_full",
     "paper_beta0",
     "paper_lambda0",
     "paper_alpha0",
@@ -402,12 +402,33 @@ class HierarchyCertificateModule(L.LightningModule):
 
         if self.leaf_reward_weight > 0:
             assert self.flat_f_head is not None
+            # Supplement §1.3: the multiview term uses pair-specific Grams with
+            # the SAME cutoff, not a ridge.  Eq. (13)-(14) take the marginals
+            # from INDIVIDUAL vectors -- the Gram of finite averages would
+            # measure their covariance instead -- and Eq. (15) pairs f against
+            # the endpoint mean.  These coordinates serve this score only and
+            # are never substituted into the chain operators.
             leaf_views = features.endpoint_descendants
             f_features = self.flat_f_head(leaf_views.mean(dim=1))
-            leaf_reward = trace_score(
-                estimate_moments(f_features, leaf_views, centered=True), ridge=1e-3)
+            f_centered = f_features - f_features.mean(dim=0, keepdim=True)
+            g_flat = leaf_views.flatten(0, 1)
+            g_centered = leaf_views - g_flat.mean(dim=0, keepdim=True)
+            gram_f = f_centered.transpose(0, 1) @ f_centered / f_centered.shape[0]
+            g_pool = g_centered.flatten(0, 1)
+            gram_g = g_pool.transpose(0, 1) @ g_pool / g_pool.shape[0]
+            w_f, rank_f = truncated_whitener(
+                gram_f.detach() if self.gram_detach_metric else gram_f, self.spectral_tau)
+            w_g, rank_g = truncated_whitener(
+                gram_g.detach() if self.gram_detach_metric else gram_g, self.spectral_tau)
+            if w_f is None or w_g is None:
+                # "empty retained support in either auxiliary Gram matrix also
+                # invalidates the batch"
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            cross = f_centered.transpose(0, 1) @ g_centered.mean(dim=1) / f_centered.shape[0]
+            leaf_reward = (w_f @ cross @ w_g).square().sum()
             total = total - self.leaf_reward_weight * leaf_reward
             metrics["leaf_trace"] = float(leaf_reward.detach())
+            metrics["mv_retained_min"] = float(min(rank_f, rank_g))
         return total, metrics
 
     def _variant_loss(self, features: ChainFeatureBatch) -> Tuple[Tensor, Dict[str, float]]:
