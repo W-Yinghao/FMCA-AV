@@ -1,0 +1,2 @@
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_v8_gram results/gate1/gate1_20260910_gram_v1 product_endpoint 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_v8_gram results/gate1/gate1_20260910_gram_v1 product_endpoint 3
