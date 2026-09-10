@@ -24,7 +24,7 @@ def _config(variant: str) -> dict:
             # The paper arm's method requirements are asserted by the module,
             # so a config that omits them is refused by design.
             **({"whitening_mode": "differentiable", "spectral_tau": 1e-3}
-               if variant == "paper_composition" else {})),
+               if variant.startswith("paper_") else {})),
         "optimizer": {"name": "adamw", "learning_rate": 1e-3},
         "trainer": {"max_epochs": 1},
     }

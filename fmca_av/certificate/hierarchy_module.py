@@ -48,6 +48,12 @@ from .triplet import compose_edge_operators
 
 GATE_VARIANTS = (
     "paper_composition",
+    "paper_full",
+    "paper_beta0",
+    "paper_lambda0",
+    "paper_alpha0",
+    "paper_T2",
+
     "final_2view",
     "final_mview",
     "additive_2view",
@@ -149,7 +155,7 @@ class HierarchyCertificateModule(L.LightningModule):
         # tau, shared per level, with the plain product as the composition.
         self.spectral_tau = float(loss.get("spectral_tau", 1e-3))
         self.invalid_batches = 0
-        if self.variant == "paper_composition":
+        if self.variant.startswith("paper_"):
             # "There is no stopped-gradient endpoint estimate or matrix
             # exponential moving average", and gradients must reach the Gram
             # transforms.  These are part of the method, so they are asserted
@@ -232,7 +238,7 @@ class HierarchyCertificateModule(L.LightningModule):
         ) or (
             # The paper's lambda_mv term (Eq. 25) needs the same aggregation
             # head; setting lambda_mv = 0 removes both, as the paper states.
-            self.variant == "paper_composition" and self.leaf_reward_weight > 0
+            self.variant.startswith("paper_") and self.leaf_reward_weight > 0
         )
         if needs_flat_head:
             self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
@@ -405,7 +411,7 @@ class HierarchyCertificateModule(L.LightningModule):
         return total, metrics
 
     def _variant_loss(self, features: ChainFeatureBatch) -> Tuple[Tensor, Dict[str, float]]:
-        if self.variant == "paper_composition":
+        if self.variant.startswith("paper_"):
             return self._paper_composition_loss(features)
         if self.variant == "final_2view":
             return self._flat_leaf_loss(features, views=2)
@@ -596,7 +602,7 @@ class HierarchyCertificateModule(L.LightningModule):
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
         if split == "val":
             with torch.no_grad():
-                mode = "truncated" if self.variant == "paper_composition" else "ridge"
+                mode = "truncated" if self.variant.startswith("paper_") else "ridge"
                 whitened, _, _ = whiten_chain_batch(
                     features, ridge=self.ridge, detach_whitener=True,
                     mode=mode, tau=self.spectral_tau)

@@ -98,6 +98,11 @@ VARIANT_TAGS = {
     "product_only": "v6_product_only",
     "product_endpoint": "v7_product_endpoint",
     "paper_composition": "paper_composition",
+    "paper_full": "paper_full",
+    "paper_beta0": "paper_beta0",
+    "paper_lambda0": "paper_lambda0",
+    "paper_alpha0": "paper_alpha0",
+    "paper_T2": "paper_T2",
 }
 
 
