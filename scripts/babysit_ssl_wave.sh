@@ -10,7 +10,6 @@
 set -u
 cd /home/infres/yinwang/FMCA-AV
 PENDING=scripts/ssl_wave_pending.txt
-GRAM_PROBE=results/gate1/gate1_20260910_gram_probe/units/product_endpoint__seed1/unit.json
 LIMIT=29
 PY=/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python
 
@@ -30,13 +29,17 @@ while [ -s "$PENDING" ]; do
     tail -n +2 "$PENDING" > "$PENDING.tmp" && mv "$PENDING.tmp" "$PENDING"
     case "$line" in
       GATED:*)
-        status=$(probe_status "$GRAM_PROBE")
+        # GATED:<probe-unit.json>:<command> -- each arm waits on ITS OWN
+        # probe, so one arm's failure cannot release or block another's.
+        rest=${line#GATED:}
+        probe=${rest%%:*}
+        status=$(probe_status "$probe")
         if [ "$status" != "complete" ]; then
           echo "$line" >> "$PENDING"          # back of the queue, try later
           rotated=$((rotated + 1))
           continue
         fi
-        line=${line#GATED:}
+        line=${rest#*:}
         ;;
     esac
     if out=$(eval "$line" 2>&1); then
