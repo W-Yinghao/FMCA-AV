@@ -9,6 +9,16 @@
 # the list, so it never blocks the rest of the wave.
 set -u
 cd /home/infres/yinwang/FMCA-AV
+
+# Single instance, enforced by an atomic mkdir rather than by inspecting the
+# process table: two babysitters double-submit, and a dead one silently
+# releases nothing.  Whichever outcome you get here is definitive.
+LOCK=runs/.babysit_ssl.lock
+if ! mkdir "$LOCK" 2>/dev/null; then
+  echo "$(date '+%F %T') another babysitter holds $LOCK; exiting" >> runs/babysit_ssl.log
+  exit 3
+fi
+trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 PENDING=scripts/ssl_wave_pending.txt
 LIMIT=29
 PY=/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python
@@ -42,6 +52,17 @@ while [ -s "$PENDING" ]; do
         line=${rest#*:}
         ;;
     esac
+    # Idempotent submission.  A babysitter instance started before the lock
+    # existed is not bound by it, and two instances releasing the same gated
+    # line would put two jobs into one unit directory.  The ledger makes a
+    # repeat submission a no-op no matter how many instances there are.
+    LEDGER=runs/babysit_ssl.submitted
+    touch "$LEDGER"
+    if grep -Fxq "$line" "$LEDGER"; then
+      echo "$(date '+%F %T') SKIP already submitted: $line" >> runs/babysit_ssl.log
+      continue
+    fi
+    echo "$line" >> "$LEDGER"
     if out=$(eval "$line" 2>&1); then
       echo "$(date '+%F %T') OK   $line -> $out" >> runs/babysit_ssl.log
     else
@@ -49,6 +70,10 @@ while [ -s "$PENDING" ]; do
     fi
     count=$((count + 1))
   done
+  # Heartbeat: gated lines rotate without logging, so without this a live
+  # babysitter and a dead one look identical in the log.
+  echo "$(date '+%F %T') alive: $(wc -l < "$PENDING") pending, $(squeue -u "$USER" -h | wc -l) queued" \
+    >> runs/babysit_ssl.log
   sleep 420
 done
 echo "$(date '+%F %T') ssl wave pending drained" >> runs/babysit_ssl.log
