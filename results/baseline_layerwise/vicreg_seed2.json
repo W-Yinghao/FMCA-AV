@@ -1,0 +1,71 @@
+{
+  "profile_version": "baseline_layerwise_v1",
+  "method": "vicreg",
+  "seed": 20260850,
+  "dataset": "cifar10",
+  "backbone_fingerprint": 142333.7652548686,
+  "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslmatched_vicreg_seed2/checkpoints/last.ckpt",
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "probe": {
+        "test_accuracy": 0.5625,
+        "train_accuracy": 0.5700199604034424
+      },
+      "spectrum": {
+        "effective_rank": 9.487982749938965,
+        "normalized_effective_rank": 0.14824973046779633,
+        "top_eigenvalue_share": 0.39935333448377786,
+        "trace": 1.0642238105724957,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "probe": {
+        "test_accuracy": 0.6805999875068665,
+        "train_accuracy": 0.6831799745559692
+      },
+      "spectrum": {
+        "effective_rank": 15.046887397766113,
+        "normalized_effective_rank": 0.11755380779504776,
+        "top_eigenvalue_share": 0.28858388674048796,
+        "trace": 4.535272841297754,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "probe": {
+        "test_accuracy": 0.7853999733924866,
+        "train_accuracy": 0.7986199855804443
+      },
+      "spectrum": {
+        "effective_rank": 26.814014434814453,
+        "normalized_effective_rank": 0.10474224388599396,
+        "top_eigenvalue_share": 0.2264077317393668,
+        "trace": 14.81198652430576,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "probe": {
+        "test_accuracy": 0.8143999576568604,
+        "train_accuracy": 0.8413199782371521
+      },
+      "spectrum": {
+        "effective_rank": 33.5540657043457,
+        "normalized_effective_rank": 0.0655352845788002,
+        "top_eigenvalue_share": 0.12311890450041149,
+        "trace": 200.30614084121146,
+        "dimension": 512
+      }
+    }
+  ],
+  "status": "complete"
+}
