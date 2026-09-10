@@ -38,6 +38,12 @@ from .objective import (
     whiten_chain_batch,
 )
 from .stage_backbone import StageTappedCIFARResNet
+from .gram import (
+    build_correction,
+    corrected_composition,
+    corrected_endpoint,
+    gram_matrix,
+)
 from .triplet import compose_edge_operators
 
 GATE_VARIANTS = (
@@ -118,6 +124,18 @@ class HierarchyCertificateModule(L.LightningModule):
             raise ValueError("loss.whitening_mode must be detached or differentiable")
         self.detach_whitener = whitening_mode == "detached"
         self.closure_stop_grad = bool(loss.get("closure_stop_grad", False))
+        # Gram-corrected closure: the ONLY thing this flag may change is the
+        # geometry the closure discrepancy is measured in.  Ridge whitening
+        # leaves G = W R W != I, so composing whitened cross-moments inserts
+        # F F* rather than an orthogonal projection; with the flag on, the
+        # closure term measures the corrected quantity the certificate
+        # reports instead of the surrogate the loss historically used.
+        self.gram_corrected_closure = bool(loss.get("gram_corrected_closure", False))
+        # The metric is treated as frozen within a step by default: the
+        # correction needs an eigendecomposition per batch, and
+        # backpropagating through eigenvectors of a near-degenerate Gram is
+        # where this would blow up rather than where the signal is.
+        self.gram_detach_metric = bool(loss.get("gram_detach_metric", True))
         pairs = config.get("cross_pairs", None)
         self.cross_pairs: Optional[List[Tuple[int, int]]] = (
             [(int(a), int(b)) for a, b in pairs] if pairs is not None else None
@@ -354,6 +372,17 @@ class HierarchyCertificateModule(L.LightningModule):
             shared_edges = train_edge_operators(whitened)
             c_comp = compose_edge_operators(shared_edges)
             c_dir = train_endpoint_operator(whitened)
+            if self.gram_corrected_closure:
+                # One shared per-level state supplies each Gram; the endpoint
+                # metric comes from the same object c_dir's right factor uses,
+                # so both ends of both operators carry the SAME G_0 and G_L.
+                level_states = list(whitened.chain[: self.num_levels - 1])
+                level_states.append(whitened.endpoint_descendants.mean(dim=1))
+                if self.gram_detach_metric:
+                    level_states = [state.detach() for state in level_states]
+                correction = build_correction([gram_matrix(state) for state in level_states])
+                c_comp = corrected_composition(shared_edges, correction)
+                c_dir = corrected_endpoint(c_dir, correction)
             closure_target = c_dir.detach() if self.closure_stop_grad else c_dir
             closure_denominator = (
                 c_dir.detach().square().sum() if self.closure_stop_grad else c_dir.square().sum()
@@ -403,6 +432,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 "closure_ratio": float(closure.detach()),
                 "whitening": float(whitening.detach()),
                 "alpha_effective": float(alpha),
+                "gram_corrected_closure": float(self.gram_corrected_closure),
             }
             if leaf_reward is not None:
                 metrics["leaf_trace"] = float(leaf_reward.detach())
