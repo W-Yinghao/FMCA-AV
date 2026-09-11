@@ -36,13 +36,23 @@ class DivergenceGuard(Callback):
     probe job, which blocks the dependent fleet automatically.
     """
 
+    # Per-mode normalized, so these do not move with K.
     SCORE_BOUNDS = {
         "train/endpoint_score": 2.5,
         "train/leaf_score": 2.5,
         "train/edge_score_sum": 5.0,
         "train/cross_score_sum": 7.5,
         "train/product_score": 2.5,
-        # Faithful trace scores are bounded by K (=128 modes) per operator.
+    }
+    # Faithful trace scores are bounded by K modes per operator, so they
+    # scale with K.  Quoted at the K=128 the whole corpus was built at
+    # and multiplied by K/128, which leaves every existing arm's bound
+    # bit-identical.  Hard-coding them mis-bounds any arm that moves K:
+    # at K=256 the composition arm's own healthy plateau (211.8 at
+    # K=128) lands above the old 400, so the guard would abort a run
+    # that is behaving exactly as intended -- and five hours in, the
+    # resulting "failed" is indistinguishable on disk from a real one.
+    TRACE_BOUNDS_AT_K128 = {
         "train/flat_trace_score": 200.0,
         "train/dir_trace": 200.0,
         "train/leaf_trace": 200.0,
@@ -51,8 +61,16 @@ class DivergenceGuard(Callback):
         "train/loss": 700.0,
     }
 
+    def __init__(self, feature_dim: int = 128) -> None:
+        super().__init__()
+        scale = float(feature_dim) / 128.0
+        self.bounds = dict(self.SCORE_BOUNDS)
+        self.bounds.update(
+            {name: bound * scale for name, bound in self.TRACE_BOUNDS_AT_K128.items()}
+        )
+
     def on_train_epoch_end(self, trainer, module) -> None:
-        for name, bound in self.SCORE_BOUNDS.items():
+        for name, bound in self.bounds.items():
             value = trainer.callback_metrics.get(name)
             if value is None:
                 continue
@@ -386,7 +404,7 @@ def main() -> None:
             dirpath=str(unit_dir / "checkpoints"), save_last=True, save_top_k=0,
             every_n_epochs=1,
         )
-        guard = DivergenceGuard()
+        guard = DivergenceGuard(int(config["model"].get("feature_dim", 128)))
         trainer = L.Trainer(
             accelerator="gpu",
             devices=1,
