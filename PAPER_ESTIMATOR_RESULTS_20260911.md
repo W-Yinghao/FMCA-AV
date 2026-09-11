@@ -101,12 +101,39 @@ constraint.
 ## lambda0: n=2, and the instability is the finding
 
 Seed 2 tripped the divergence guard at epoch 193 (edge_trace_sum 413.9
-against 400) and was NOT rescued; the config is deterministic, so a
-rerun would reproduce it exactly.  Across seeds this arm swings
+against 400) and was NOT rescued.  Across seeds this arm swings
 edge_trace_sum 115 to 388, and one certificate shows retained ranks
 [88, 1, 2] with endpoint norm 0.099 -- a near-collapse.  Removing the
 multiview aggregation term destabilises training and admits collapse.
 The prereg gave lambda0 no prediction; this is the report.
+
+CORRECTION 2026-09-12.  This section first said "the config is
+deterministic, so a rerun would reproduce it exactly."  That is false
+and is withdrawn.  A rerun of this exact unit exists -- same config,
+identical hparams.yaml checksum, same seed -- and it is bit-identical
+to the first on none of their 55 overlapping epochs:
+
+    epoch    attempt 1    attempt 2
+        0      31.2114      31.0043
+       54      90.5777      82.0685
+
+The trainer is built with deterministic="warn", which warns on a
+non-deterministic kernel rather than refusing it, while the config
+records deterministic: true; and the launcher submits to
+--partition=A100,H100,L40S, so a unit and its rerun need not even land
+on the same architecture.  These two did not: attempt 1 ran on an H100
+NVL, attempt 2 on an A100-PCIE-40GB.  Attempt 2 was cancelled at epoch
+54 -- while running about 9% BELOW attempt 1 at the same epoch -- so
+whether it would have tripped the guard at all is unknown.
+
+What survives unchanged: the instability itself, which rests on the
+across-seed spread rather than on any single trajectory, and which the
+CIFAR-100 replication independently reproduces (two further guard trips
+at 417.7 and 400.2).  What does NOT survive: any reading in which this
+arm's n=2 is a fixed property of the arm.  It is one outcome of a
+fleet that is not reproducible unit-by-unit, and the guard bound of
+400.0 is a hard-coded operational sentinel, not a preregistered
+threshold -- all three trips land within 4.5% of it.
 
 ## Standing caveats
 
