@@ -103,6 +103,8 @@ VARIANT_TAGS = {
     "paper_alpha0": "paper_alpha0",
     "paper_T2": "paper_T2",
     "paper_endpoint_only": "paper_endpoint_only",
+    "paper_T4": "paper_T4",
+    "paper_K256": "paper_K256",
 }
 
 

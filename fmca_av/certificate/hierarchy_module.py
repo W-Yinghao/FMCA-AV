@@ -54,6 +54,8 @@ GATE_VARIANTS = (
     "paper_alpha0",
     "paper_T2",
     "paper_endpoint_only",
+    "paper_T4",
+    "paper_K256",
 
     "final_2view",
     "final_mview",
