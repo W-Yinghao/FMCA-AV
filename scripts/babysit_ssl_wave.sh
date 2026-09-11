@@ -30,7 +30,13 @@ try: print(json.load(open('$1')).get('status','missing'))
 except Exception: print('missing')"
 }
 
-while [ -s "$PENDING" ]; do
+# Run until told to stop, not until the list is momentarily empty: work is
+# appended to this list while the babysitter runs, and an exit-on-drained
+# loop silently stops watching exactly when more arrives.  That happened --
+# 17 lines sat unsubmitted on an idle partition.
+STOP=runs/.babysit_ssl.stop
+rm -f "$STOP"
+while [ ! -f "$STOP" ]; do
   count=$(squeue -u "$USER" -h | wc -l)
   rotated=0
   total=$(wc -l < "$PENDING")
@@ -76,4 +82,4 @@ while [ -s "$PENDING" ]; do
     >> runs/babysit_ssl.log
   sleep 420
 done
-echo "$(date '+%F %T') ssl wave pending drained" >> runs/babysit_ssl.log
+echo "$(date '+%F %T') stopped by $STOP" >> runs/babysit_ssl.log

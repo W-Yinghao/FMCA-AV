@@ -1,0 +1,6 @@
+{
+  "unit_key": "paper_lambda0/seed2",
+  "status": "failed",
+  "reason": "RuntimeError('divergence guard: train/edge_trace_sum=4.139e+02 exceeds bound 400.0')",
+  "wall_seconds": 13191.292119264603
+}
