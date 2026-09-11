@@ -183,6 +183,8 @@ def main() -> None:
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--variant", required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--allow-cpu", action="store_true",
+                        help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--probe-subsample", type=int, default=0,
                         help="use only this many training points for the probes (0 = all)")
     arguments = parser.parse_args()
