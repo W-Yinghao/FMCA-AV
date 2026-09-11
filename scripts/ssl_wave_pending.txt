@@ -1,13 +1,15 @@
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_T2 --seed 1
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_T2 --seed 2
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_T2 --seed 3
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_alpha0 --seed 1
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_alpha0 --seed 2
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_alpha0 --seed 3
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_beta0 --seed 1
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_beta0 --seed 2
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_beta0 --seed 3
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_composition --seed 2
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_composition --seed 3
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_lambda0 --seed 1
-sbatch scripts/launch_analysis_gpu.sbatch scripts/run_layerwise_profile.py --config-dir configs/gate_paper --output-root results/gate1/gate1_20260910_paper_v1 --variant paper_lambda0 --seed 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_composition 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_composition 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_composition 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_beta0 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_beta0 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_beta0 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_lambda0 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_lambda0 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_lambda0 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_alpha0 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_alpha0 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_alpha0 3
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_T2 1
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_T2 2
+sbatch scripts/launch_gate1_generic.sbatch configs/gate_paper_c100 results/gate1/gate1_20260911_paper_c100 paper_T2 3
