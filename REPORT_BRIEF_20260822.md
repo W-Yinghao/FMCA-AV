@@ -1,5 +1,15 @@
 # 汇报材料速览（2026-08-22）
 
+> **RIDGE-CORPUS BRIEF — NOT MAJOR'S MAIN RESULTS.** Every number below
+> was produced under the ridge estimator, before MAJOR was separated
+> from it.  Per `PAPER_ESTIMATOR_WAVE_PREREG_FROZEN_20260910` this
+> corpus is a loss-form ladder and is not evidence about the paper's
+> method.  §5.5's endpoint-capacity cost is not merely superseded but
+> CONTRADICTED under the paper's estimator (full has the highest
+> endpoint effective rank, not the lowest).  For what currently stands
+> as MAJOR's, see `MAJOR_RESULT_PROVENANCE_AUDIT_20260912.md` and
+> `PAPER_ESTIMATOR_RESULTS_20260911.md`.  Content below is unedited.
+
 图表在 `outputs/report_20260822/`，重跑 `scripts/make_report_figures.py`
 可用最新结果刷新（CPU，秒级）。以下按建议的叙事顺序。
 
