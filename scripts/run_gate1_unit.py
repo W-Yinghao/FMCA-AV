@@ -335,6 +335,8 @@ def linear_probe_evaluation(module, config, seed, unit_dir, probe_mode):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--variant", required=True, choices=sorted(GATE_VARIANTS))
+    parser.add_argument("--force", action="store_true",
+                        help="rerun a unit that is already complete")
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--config-dir", default="configs/gate")
     parser.add_argument("--output-root", default="results/gate1/" + GATE_VERSION)
@@ -345,6 +347,21 @@ def main() -> None:
     unit_dir = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
     if arguments.probe_mode:
         unit_dir = Path(arguments.output_root) / "probe" / f"{arguments.variant}__seed{arguments.seed}"
+    # Idempotency comes from the TARGET STATE, not from a submitter's ledger.
+    # Duplicate submissions have reached this script from more than one
+    # babysitter instance, and two jobs writing one unit directory is how a
+    # completed unit gets silently overwritten by a rerun.  A completed unit
+    # is left alone unless --force says otherwise.
+    existing = unit_dir / "unit.json"
+    if existing.is_file() and not arguments.force:
+        try:
+            status = json.loads(existing.read_text()).get("status")
+        except Exception:
+            status = None
+        if status == "complete":
+            print(f"unit {unit_key} is already complete at {existing}; "
+                  f"refusing to rerun it (pass --force to override)")
+            return
     unit_dir.mkdir(parents=True, exist_ok=True)
     record_path = unit_dir / "unit.json"
     if record_path.is_file() and json.loads(record_path.read_text()).get("status") == "complete":
