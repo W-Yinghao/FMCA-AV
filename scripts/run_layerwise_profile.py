@@ -48,6 +48,43 @@ PROFILE_VERSION = "layerwise_profile_20260823_v1"
 
 
 @torch.no_grad()
+def block_taps(backbone):
+    """(name, module) after the stem and after every residual block.
+
+    Four stage-level points undersample the profile: the taps sit at stage
+    boundaries, so a stage-level curve only ever shows the boundaries and
+    says nothing about what happens between them.  The chain track found
+    that the fine profile is a sawtooth rather than a slope, which a
+    four-point curve cannot distinguish from a smooth rise.
+    """
+
+    # The gate wraps the ResNet in StageBackbone, which holds the stages in a
+    # ModuleList and exposes no .layer1 attribute.  Read them from there.
+    taps = [("stem", backbone.stem)]
+    for stage_index, stage in enumerate(backbone.stages):
+        for index, block in enumerate(stage):
+            taps.append((f"layer{stage_index + 1}.{index}", block))
+    return taps
+
+
+@torch.no_grad()
+def block_features(backbone, loader, device, max_batches=0):
+    """Pooled features after the stem and after every residual block."""
+
+    backbone.eval()
+    taps = block_taps(backbone)
+    collected, labels = [[] for _ in taps], []
+    for batch_index, (images, targets) in enumerate(loader):
+        if max_batches and batch_index >= max_batches:
+            break
+        value = images.to(device)
+        for index, (_, module) in enumerate(taps):
+            value = module(value)
+            collected[index].append(backbone.pool(value).flatten(1).float().cpu())
+        labels.append(targets)
+    return [torch.cat(parts) for parts in collected], torch.cat(labels), [n for n, _ in taps]
+
+
 def stage_features(backbone, loader, device):
     """Pooled features after every backbone stage, plus labels."""
 
@@ -183,6 +220,15 @@ def main() -> None:
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--variant", required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--max-batches", type=int, default=0,
+                        help="encode only this many batches per split (0 = all). For "
+                             "correctness smoke runs: the output is then written to a "
+                             "*_smoke.json name and marked truncated, so a partial "
+                             "profile can never be mistaken for a real one.")
+    parser.add_argument("--granularity", choices=("stage", "block"), default="stage",
+                        help="stage = 4 taps at stage boundaries; block = stem plus "
+                             "every residual block, which is what shows the shape "
+                             "between boundaries")
     parser.add_argument("--force", action="store_true",
                         help="recompute a profile that already exists")
     parser.add_argument("--allow-cpu", action="store_true",
@@ -193,8 +239,15 @@ def main() -> None:
 
     unit_dir = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
     # Idempotency from the target state, not from a submitter's ledger.
-    if (unit_dir / "layerwise_profile.json").is_file() and not arguments.force:
-        print(f"layerwise_profile.json already exists for {arguments.variant} "
+    out_name = ("layerwise_profile.json" if arguments.granularity == "stage"
+                else "blockwise_profile.json")
+    if arguments.max_batches:
+        # A truncated run never claims the canonical filename.  This is a
+        # correctness check, not a measurement, and the two must not be
+        # confusable on disk.
+        out_name = out_name.replace(".json", "_smoke.json")
+    if (unit_dir / out_name).is_file() and not arguments.force:
+        print(f"{out_name} already exists for {arguments.variant} "
               f"seed{arguments.seed}; pass --force to recompute")
         return
     checkpoint_path = unit_dir / "checkpoints" / "last.ckpt"
@@ -213,8 +266,15 @@ def main() -> None:
     module = module.to(device).eval()
 
     train_loader, test_loader = _plain_loaders(config["data"])
-    train_features, train_labels = stage_features(module.backbone, train_loader, device)
-    test_features, test_labels = stage_features(module.backbone, test_loader, device)
+    if arguments.granularity == "block":
+        train_features, train_labels, tap_names = block_features(
+            module.backbone, train_loader, device, arguments.max_batches)
+        test_features, test_labels, _ = block_features(
+            module.backbone, test_loader, device, arguments.max_batches)
+    else:
+        train_features, train_labels = stage_features(module.backbone, train_loader, device)
+        test_features, test_labels = stage_features(module.backbone, test_loader, device)
+        tap_names = [f"layer{i + 1}" for i in range(len(train_features))]
     classes = dataset_classes(config)
 
     if arguments.probe_subsample:
@@ -222,15 +282,35 @@ def main() -> None:
         train_features = [f[keep] for f in train_features]
         train_labels = train_labels[keep]
 
+    # Which taps the hierarchy actually reads, derived from level_stages rather
+    # than hard-coded to stage indices: at block granularity a fixed map would
+    # label the wrong taps, and level_stages is the only source of truth.
+    level_stages = list(config["model"]["level_stages"])
+    role_of_stage = {}
+    for level, stage_index in enumerate(level_stages):
+        role_of_stage[stage_index] = (
+            "root tap (level 0)" if level == 0 else
+            f"endpoint tap (level {level})" if level == len(level_stages) - 1 else
+            f"interior interface (level {level})")
+    tap_roles = []
+    for index, name in enumerate(tap_names):
+        stage_index = (index - 1 if arguments.granularity == "stage"
+                       else (-1 if name == "stem" else int(name[5]) - 1))
+        role = role_of_stage.get(stage_index, "below/between taps")
+        last_block = len(module.backbone.stages[stage_index]) - 1 if stage_index >= 0 else -1
+        if arguments.granularity == "block" and role != "below/between taps" \
+                and not name.endswith(f".{last_block}"):
+            role = f"inside {role.split(' (')[0]} stage"
+        tap_roles.append(role)
+
     stages = []
     for index, (train_x, test_x) in enumerate(zip(train_features, test_features)):
         probe = convex_probe(train_x, train_labels, test_x, test_labels, classes, device)
         statistics = spectrum_statistics(test_x)
         stages.append({
             "stage": index,
-            "backbone_layer": f"layer{index + 1}",
-            "level_role": {1: "root tap (level 0)", 2: "interior interface (level 1)",
-                           3: "endpoint tap (level 2)"}.get(index, "below all taps"),
+            "backbone_layer": tap_names[index],
+            "level_role": tap_roles[index],
             "probe": probe,
             "spectrum": statistics,
         })
@@ -256,7 +336,12 @@ def main() -> None:
         "interfaces": interfaces,
         "status": "complete",
     }
-    (unit_dir / "layerwise_profile.json").write_text(json.dumps(record, indent=2))
+    record["granularity"] = arguments.granularity
+    record["truncated_smoke_run"] = bool(arguments.max_batches)
+    if arguments.max_batches:
+        record["max_batches"] = arguments.max_batches
+        record["status"] = "smoke"
+    (unit_dir / out_name).write_text(json.dumps(record, indent=2))
     print(json.dumps({"variant": arguments.variant, "seed": arguments.seed,
                       "probe_by_stage": [round(s["probe"]["test_accuracy"] * 100, 2) for s in stages],
                       "eff_rank_by_stage": [round(s["spectrum"]["effective_rank"], 1) for s in stages]},
