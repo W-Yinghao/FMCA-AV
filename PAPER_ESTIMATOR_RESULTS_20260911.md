@@ -1,5 +1,37 @@
 # The paper estimator on CIFAR-10 — adjudication, 2026-09-11
 
+## Naming
+
+The method this paper proposes is **MAJOR**: FMCA-AV's trace objective
+with a Gram-normalized composition constraint along the view chain
+(section Eq. 25, supplement Eq. 6-10).
+
+Method and estimator are separate things and are named separately,
+because conflating them is what produced this wave in the first place:
+
+    MAJOR                the method -- the objective of Eq. (25)
+    truncated            the estimator MAJOR is defined on: shared
+                         symmetric TRUNCATED inverse roots at relative
+                         cutoff tau = 1e-3, so W R W is exactly a
+                         projector and the plain ordered product already
+                         IS the projected composition
+    ridge plain          (R + rho s I)^{-1/2} with the plain product --
+                         the supplement calls this a DIFFERENT operator
+                         estimate, and it is what the V1-V7 corpus used
+    ridge + correction   ridge whitening with G^{-1} inserted afterwards
+                         to compensate; our own construction, not the
+                         paper's
+
+"The Gram version" is retired as a term.  All three normalize by a
+Gram; they differ only in how the inverse root is regularized, and that
+ambiguity is exactly what it cost us to discover.
+
+Code identifiers still read `paper_*` (variant names, config dirs,
+result roots) because a fleet is running against them; they will be
+renamed to `major*` in one sweep once it lands.  MAJOR is the name used
+in all prose, tables and figures from here on.
+
+
 Against PAPER_ESTIMATOR_WAVE_PREREG_FROZEN_20260910.  Five arms, three
 disjoint seeds each, trained from scratch under the supplement's
 estimator (truncated inverse roots, tau=1e-3, plain ordered product, no
