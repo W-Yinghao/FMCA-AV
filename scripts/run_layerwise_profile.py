@@ -183,6 +183,8 @@ def main() -> None:
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--variant", required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--force", action="store_true",
+                        help="recompute a profile that already exists")
     parser.add_argument("--allow-cpu", action="store_true",
                         help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--probe-subsample", type=int, default=0,
@@ -190,6 +192,11 @@ def main() -> None:
     arguments = parser.parse_args()
 
     unit_dir = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
+    # Idempotency from the target state, not from a submitter's ledger.
+    if (unit_dir / "layerwise_profile.json").is_file() and not arguments.force:
+        print(f"layerwise_profile.json already exists for {arguments.variant} "
+              f"seed{arguments.seed}; pass --force to recompute")
+        return
     checkpoint_path = unit_dir / "checkpoints" / "last.ckpt"
     if not checkpoint_path.is_file():
         raise SystemExit(f"no checkpoint at {checkpoint_path}")

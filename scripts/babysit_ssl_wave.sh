@@ -58,17 +58,10 @@ while [ ! -f "$STOP" ]; do
         line=${rest#*:}
         ;;
     esac
-    # Idempotent submission.  A babysitter instance started before the lock
-    # existed is not bound by it, and two instances releasing the same gated
-    # line would put two jobs into one unit directory.  The ledger makes a
-    # repeat submission a no-op no matter how many instances there are.
-    LEDGER=runs/babysit_ssl.submitted
-    touch "$LEDGER"
-    if grep -Fxq "$line" "$LEDGER"; then
-      echo "$(date '+%F %T') SKIP already submitted: $line" >> runs/babysit_ssl.log
-      continue
-    fi
-    echo "$line" >> "$LEDGER"
+    # No submitter-side ledger.  It recorded "submitted" rather than
+    # "succeeded", so eleven lines that failed on a bug could never be
+    # retried.  The runners guard on their own target state instead, which
+    # makes a duplicate submission a no-op and a retry always possible.
     if out=$(eval "$line" 2>&1); then
       echo "$(date '+%F %T') OK   $line -> $out" >> runs/babysit_ssl.log
     else

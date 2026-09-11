@@ -106,6 +106,8 @@ def main() -> None:
     parser.add_argument("--calibration-roots", type=int, default=10000)
     parser.add_argument("--evaluation-roots", type=int, default=10000)
     parser.add_argument("--tau", type=float, default=1e-3)
+    parser.add_argument("--force", action="store_true",
+                        help="recompute a certificate that already exists")
     parser.add_argument("--allow-cpu", action="store_true",
                         help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--out", required=True)
@@ -114,6 +116,9 @@ def main() -> None:
     config = json.loads(
         (Path(arguments.config_dir) / f"gate1_cifar10_{VARIANT_TAGS[arguments.variant]}.json").read_text())
     config["seed"] = arguments.seed
+    if Path(arguments.out).is_file() and not arguments.force:
+        print(f"{arguments.out} already exists; pass --force to recompute")
+        return
     device = require_accelerator(arguments.allow_cpu)
 
     unit = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
