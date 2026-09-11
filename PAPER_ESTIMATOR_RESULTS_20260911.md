@@ -82,3 +82,54 @@ Single dataset.  The external-baseline comparison is carried over from
 the matched-budget wave and is estimator-independent, but those arms
 were compared against the RIDGE corpus; a like-for-like table against
 these arms is not yet drawn.  BYOL remains excluded as a collapsed run.
+
+---
+
+# Like-for-like against the matched-budget baselines
+
+Added after the adjudication above; the arms and the baselines are now
+compared on the same footing.  Same backbone class (CIFARResNet, width
+64), 45000 training images, 200 epochs, batch 256, and the SAME convex
+probe run by the same code on encoder features before the projection
+heads.  BYOL is excluded: it collapsed (validation score 0.9965, probe
+declining with depth), and the prereg forbade re-tuning a baseline's
+recipe, so it is reported as not successfully trained rather than beaten.
+
+    method            layer1          layer2          layer3          layer4      n
+    OURS full     [58.06,60.03]  [79.56,80.29]  [82.63,82.88]  [82.36,82.74]  3
+    OURS beta0    [57.87,59.18]  [78.45,79.23]  [82.10,83.04]  [82.15,82.57]  3
+    OURS alpha0   [57.26,58.73]  [76.63,77.22]  [79.99,80.83]  [79.52,80.08]  3
+    OURS lambda0  [58.08,58.53]  [76.10,76.19]  [78.84,79.07]  [78.70,79.31]  2
+    OURS T2       [53.74,55.98]  [68.37,70.53]  [69.84,71.88]  [68.50,70.69]  3
+    vicreg        [56.02,56.33]  [67.21,68.06]  [78.16,78.54]  [81.44,81.66]  3
+    simclr        [56.12,56.96]  [67.14,67.52]  [77.70,77.95]  [81.90,82.28]  3
+    barlow_twins  [54.76,55.52]  [66.16,67.33]  [76.98,77.30]  [79.84,80.81]  3
+    moco_v2       [54.64,55.48]  [65.52,65.70]  [75.14,75.51]  [78.65,79.30]  3
+    byol (failed) [43.83,44.20]  [44.28,45.81]  [41.47,43.43]  [36.55,38.64]  3
+
+## What may be claimed, and at what strength
+
+SHALLOW LAYER, strong.  At layer2 the full arm's three-seed range is
+disjoint from every baseline's, by 11.5 points.  This is the result.
+
+ENDPOINT, competitive only.  At layer4 the ranges are also disjoint --
+82.36 against the best baseline's 82.28 -- but by 0.08 points, which one
+more seed could erase.  This must be written as "competitive at the
+endpoint", which is what the frozen P1.1 asked for (within 3.0 points,
+comfortably met), NOT as "best at the endpoint".  A 0.08-point margin
+is not a ranking.
+
+## The division of labour this table does NOT settle
+
+An external baseline carries no training signal at intermediate layers,
+so part of the 11.5-point layer2 margin is the trivial fact that we
+train there and they do not.  The mechanism claim rests on full versus
+beta0 -- both trained at every tap, differing only in beta -- which is
+one point, disjoint, and localized to layer2.
+
+So the two contrasts do different jobs and must be written separately:
+the baselines establish that the method is practically competitive and
+markedly better shallow; beta0 establishes that the composition
+constraint is what produces the interior gain, and bounds how large that
+effect is.  Quoting the 11.5 points as evidence for the composition
+constraint would be wrong.
