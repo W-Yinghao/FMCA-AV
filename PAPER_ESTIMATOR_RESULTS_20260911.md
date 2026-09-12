@@ -135,6 +135,65 @@ fleet that is not reproducible unit-by-unit, and the guard bound of
 400.0 is a hard-coded operational sentinel, not a preregistered
 threshold -- all three trips land within 4.5% of it.
 
+## endpoint_only (added 2026-09-12): P-E1 refuted, on a degenerate arm
+
+Against `ENDPOINT_ONLY_APPENDUM_FROZEN_20260912`, frozen before these
+numbers were viewed.
+
+    arm             n        layer4 range      mean    endpoint eff.rank
+    composition     3   [82.43, 82.84]        82.70    [78.3, 79.7]
+    beta0           3   [82.08, 82.70]        82.31    [73.8, 74.9]
+    endpoint_only   3   [73.01, 74.30]        73.45    [1.03, 1.09]
+    T2              3   [67.56, 69.83]        68.93    [20.0, 24.9]
+
+P-E1 predicted endpoint_only would BEAT composition, because the ridge
+corpus's flat advantage is large and replicated on two datasets.  It
+does not: composition wins by 9.25 points with disjoint ranges.  The
+prediction is refuted.
+
+**The refutation does not license the strong reading.**  The frozen
+grid's third cell says a reversal would be "the strongest available
+result for the method".  This is not that, because the comparator is
+degenerate:
+
+    seed   probe    eff_rank   top eigenvalue share    trace
+    1      74.30      1.04            0.9964          855.1
+    2      73.01      1.03            0.9968          968.6
+    3      73.03      1.09            0.9907          336.8
+
+All three seeds put over 99% of the feature variance in a SINGLE
+direction and inflate the trace by 5-13x against composition's 71.5.
+The arm decodes at 73% anyway -- the probe standardizes per dimension,
+so the surviving fraction of a percent of variance still carries class
+information -- but this is not a healthy flat baseline losing to a
+composed one.  It is the endpoint objective, under the paper's
+estimator, failing to train a well-conditioned representation.
+
+So what this arm settles is narrower than what it was added for.  It
+does NOT make the "best paper-grid accuracy vs best ridge accuracy"
+comparison estimator-controlled, because the ridge flat arm
+(final_mview, 88.97) is not degenerate and this one is.  What it does
+show is consistent with the paper's own warning that closure alone
+"permits both endpoint matrices to vanish": remove alpha, beta and
+lambda_mv together and the endpoint does degenerate, under truncation,
+on every seed.
+
+A like-for-like estimator-controlled flat comparison still does not
+exist.
+
+## QC: the `collapsed` field does not mean what it says
+
+Every unit record carries `"collapsed": false` including these three.
+The field is `test_accuracy < 0.15` (run_gate1_unit.py:452) -- a probe
+floor, not a spectral test.  An arm with effective rank 1.04 of 128 and
+99.6% of its variance in one direction passes it.  BYOL was excluded
+from competitiveness claims as "a collapsed run" by judgement, not by
+this flag, which also did not fire on it.
+
+No result already reported changes because of this; the field is not
+used as a gate anywhere.  It is recorded because `collapsed: false`
+reads like an assurance of exactly the property these three arms lack.
+
 ## Standing caveats
 
 Single dataset.  The external-baseline comparison is carried over from
