@@ -24,15 +24,20 @@ class EstimatorSwitchTests(unittest.TestCase):
 
         paths = sorted(glob.glob("configs/gate*/*.json"))
         self.assertGreater(len(paths), 50)
+        implicit = 0
         for path in paths:
             config = json.loads(Path(path).read_text())
-            self.assertNotIn(
-                "estimator", config.get("loss", {}),
-                msg=f"{path} carries an explicit estimator; this test assumes none do")
+            declared = config.get("loss", {}).get("estimator")
             variant = config.get("variant", "product_endpoint")
-            expected = "truncated" if variant.startswith("paper_") else "ridge"
+            # No key -> the prefix rule, unchanged.  A key -> exactly the key,
+            # which is the whole point of having one.
+            expected = declared or (
+                "truncated" if variant.startswith("paper_") else "ridge")
+            implicit += declared is None
             with self.subTest(path=path):
                 self.assertEqual(build(path).estimator, expected)
+        # The corpus this guarantee is about: everything predating the switch.
+        self.assertGreater(implicit, 50)
 
     def test_switch_decouples_estimator_from_recipe(self) -> None:
         v8 = "configs/gate_v8/gate1_cifar10_v7_product_endpoint.json"
