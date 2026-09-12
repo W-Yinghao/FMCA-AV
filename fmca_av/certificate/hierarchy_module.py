@@ -480,14 +480,16 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"edge_trace_sum": float(score.detach())}
-            whitened, moments, _ = self._whiten(features)
+            whitened, moments, ranks = self._whiten(features)
             if whitened is None:
                 return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
-            return total, {"edge_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
+            return total, {"edge_score_sum": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "retained_min": float(min(ranks))}
         if self.variant == "amdim_cross":
             pairs = self.cross_pairs or [
                 (i, j) for i in range(self.num_levels) for j in range(1, self.num_levels) if i < j
@@ -502,14 +504,16 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"cross_trace_sum": float(score.detach())}
-            whitened, moments, _ = self._whiten(features)
+            whitened, moments, ranks = self._whiten(features)
             if whitened is None:
                 return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
             score = torch.stack(scores).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
             total = -score + self.gamma * whitening
-            return total, {"cross_score_sum": float(score.detach()), "whitening": float(whitening.detach())}
+            return total, {"cross_score_sum": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "retained_min": float(min(ranks))}
         if self.variant == "product_endpoint" and self.product_recipe == "faithful_bootstrap":
             if features.endpoint_descendants is None:
                 raise ValueError("product_endpoint requires endpoint descendants")
@@ -534,7 +538,7 @@ class HierarchyCertificateModule(L.LightningModule):
                 for edge in range(self.num_levels - 1)
             ]
             edge_sum = torch.stack(edge_traces).sum()
-            whitened, moments, _ = self._whiten(features)
+            whitened, moments, ranks = self._whiten(features)
             if whitened is None:
                 return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             shared_edges = train_edge_operators(whitened)
@@ -600,12 +604,16 @@ class HierarchyCertificateModule(L.LightningModule):
                 "gram_corrected_closure": float(self.gram_corrected_closure),
                 "gram_retained_min": (float(min(correction.retained_ranks))
                                       if self.gram_corrected_closure else -1.0),
+                # How much the ESTIMATOR discarded, which is a different
+                # question from the Gram correction's sentinel above and the
+                # only way to see truncation biting on a non-paper arm.
+                "retained_min": float(min(ranks)),
             }
             if leaf_reward is not None:
                 metrics["leaf_trace"] = float(leaf_reward.detach())
             return total, metrics
         if self.variant == "product_only":
-            whitened, moments, _ = self._whiten(features)
+            whitened, moments, ranks = self._whiten(features)
             if whitened is None:
                 return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             edges = train_edge_operators(whitened)
@@ -626,7 +634,8 @@ class HierarchyCertificateModule(L.LightningModule):
             return total, {"product_score": float(score.detach()),
                            "whitening": float(whitening.detach()),
                            "gram_corrected_closure": float(self.gram_corrected_closure),
-                           "gram_retained_min": retained}
+                           "gram_retained_min": retained,
+                           "retained_min": float(min(ranks))}
         terms = certificate_training_loss(
             features,
             alpha=self.alpha,
