@@ -157,6 +157,19 @@ class HierarchyCertificateModule(L.LightningModule):
         # The paper arm: truncated symmetric inverse roots at relative cutoff
         # tau, shared per level, with the plain product as the composition.
         self.spectral_tau = float(loss.get("spectral_tau", 1e-3))
+        # Estimator and recipe are separate choices, and until now the
+        # truncated estimator was reachable ONLY through the paper_ prefix.
+        # That welded the paper's method to the paper's estimator -- the
+        # same conflation this wave exists to undo, running the other way:
+        # it made "the V8 recipe under the correct estimator" inexpressible,
+        # so the gap between the two corpora could not be split into a
+        # recipe part and an estimator part.  With no key present the prefix
+        # rule is reproduced exactly, so every config on disk resolves to
+        # what it resolved to before.
+        self.estimator = str(loss.get(
+            "estimator", "truncated" if self.variant.startswith("paper_") else "ridge"))
+        if self.estimator not in {"truncated", "ridge"}:
+            raise ValueError("loss.estimator must be truncated or ridge")
         self.invalid_batches = 0
         if self.variant.startswith("paper_"):
             # "There is no stopped-gradient endpoint estimate or matrix
@@ -357,6 +370,19 @@ class HierarchyCertificateModule(L.LightningModule):
         return build_correction([gram_matrix(state) for state in level_states],
                                 tau_relative=self.gram_tau)
 
+    def _whiten(self, features: ChainFeatureBatch):
+        """The one place that knows which estimator this arm runs under.
+
+        Returns (None, moments, ranks) when a level's retained set is
+        empty -- possible under truncated only -- and every caller must
+        treat that as "flag the batch, take no update" rather than let a
+        None reach an operator builder.
+        """
+
+        return whiten_chain_batch(
+            features, ridge=self.ridge, detach_whitener=self.detach_whitener,
+            mode=self.estimator, tau=self.spectral_tau)
+
     def _paper_composition_loss(self, features: ChainFeatureBatch):
         """Supplement Eq. (9)-(10) and section Eq. (25), implemented literally.
 
@@ -373,9 +399,7 @@ class HierarchyCertificateModule(L.LightningModule):
 
         if features.endpoint_descendants is None:
             raise ValueError("paper_composition requires endpoint descendants")
-        whitened, moments, retained = whiten_chain_batch(
-            features, detach_whitener=self.detach_whitener,
-            mode="truncated", tau=self.spectral_tau)
+        whitened, moments, retained = self._whiten(features)
         if whitened is None:
             return None, {"invalid_batch": 1.0, "retained_min": 0.0}
 
@@ -456,7 +480,9 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"edge_trace_sum": float(score.detach())}
-            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             edges = train_edge_operators(whitened)
             score = torch.stack([normalized_score(edge) for edge in edges]).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
@@ -476,7 +502,9 @@ class HierarchyCertificateModule(L.LightningModule):
                 ]
                 score = torch.stack(scores).sum()
                 return -score, {"cross_trace_sum": float(score.detach())}
-            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
             score = torch.stack(scores).sum()
             whitening = self._whitening_penalty(moments, range(self.num_levels))
@@ -506,9 +534,9 @@ class HierarchyCertificateModule(L.LightningModule):
                 for edge in range(self.num_levels - 1)
             ]
             edge_sum = torch.stack(edge_traces).sum()
-            whitened, moments, _ = whiten_chain_batch(
-                features, ridge=self.ridge, detach_whitener=self.detach_whitener
-            )
+            whitened, moments, _ = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             shared_edges = train_edge_operators(whitened)
             c_comp = compose_edge_operators(shared_edges)
             c_dir = train_endpoint_operator(whitened)
@@ -577,7 +605,9 @@ class HierarchyCertificateModule(L.LightningModule):
                 metrics["leaf_trace"] = float(leaf_reward.detach())
             return total, metrics
         if self.variant == "product_only":
-            whitened, moments, _ = whiten_chain_batch(features, ridge=self.ridge, detach_whitener=self.detach_whitener)
+            whitened, moments, _ = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
             edges = train_edge_operators(whitened)
             retained = -1.0  # sentinel: correction off, nothing truncated
             if self.gram_corrected_closure:
@@ -626,10 +656,9 @@ class HierarchyCertificateModule(L.LightningModule):
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
         if split == "val":
             with torch.no_grad():
-                mode = "truncated" if self.variant.startswith("paper_") else "ridge"
                 whitened, _, _ = whiten_chain_batch(
                     features, ridge=self.ridge, detach_whitener=True,
-                    mode=mode, tau=self.spectral_tau)
+                    mode=self.estimator, tau=self.spectral_tau)
                 if whitened is None:
                     return total
                 edges = train_edge_operators(whitened)
