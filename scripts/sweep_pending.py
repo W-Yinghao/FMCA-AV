@@ -201,12 +201,16 @@ def sweep(report_blocked=False):
             continue
         for unit in sorted(units.glob("*__seed*")):
             variant, seed = unit.name.split("__seed")
-            if not variant.startswith("paper_") or status(unit) != "complete":
+            if status(unit) != "complete":
                 continue
             # run_paper_certificate builds TRUNCATED transforms.  Pointing it
             # at a ridge-trained arm would stamp "estimator": "truncated" on a
             # measurement of something else, which is the exact provenance
-            # confusion this whole wave exists to undo.
+            # confusion this whole wave exists to undo.  So the test is the
+            # ESTIMATOR, not the variant name: gating on a paper_ prefix also
+            # excluded the 2x2's truncated cell, whose variant is
+            # product_endpoint but whose coordinates are the paper's, and for
+            # which the instrument is perfectly valid.
             if resolved_estimator(config_for(root, variant), variant) != "truncated":
                 continue
             out = certificates / f"{variant}{ROOT_TAG[root]}_seed{seed}.json"

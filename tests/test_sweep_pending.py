@@ -49,8 +49,9 @@ class SweepRuleTests(unittest.TestCase):
                 continue
             for unit in sorted(units.glob("*__seed*")):
                 variant, seed = unit.name.split("__seed")
-                if not variant.startswith("paper_"):
-                    continue
+                # Every variant, not just paper_ ones: the certificate rule
+                # gates on the estimator now, so product_endpoint under
+                # truncation writes a certificate too.
                 name = f"{variant}{tag}_seed{seed}.json"
                 self.assertNotIn(
                     name, seen,
