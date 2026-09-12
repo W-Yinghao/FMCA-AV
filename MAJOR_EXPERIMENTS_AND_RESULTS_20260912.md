@@ -173,7 +173,7 @@ Separates MAJOR's 82.70 from the ridge corpus's 84.98.
     cell  recipe             estimator    n    probe range
     A     paper_composition  truncated    3   [82.43, 82.84]   = MAJOR
     B     product_endpoint   ridge        5   [83.63, 85.56]   = V8
-    C     product_endpoint   truncated    2   [81.79, 81.90]   IN PROGRESS (1 seed running)
+    C     product_endpoint   truncated    3   [81.17, 81.90]
     D     paper_composition  ridge        3   [80.07, 81.34]
 
 Neither C nor D is MAJOR: C runs a recipe the paper forbids (matrix
@@ -181,7 +181,9 @@ EMA), D an estimator the supplement calls a different operator
 estimate. Cell C's n_calibration is matched to A's 10000; cell B used
 2500.
 
-Per-tap, cell C seed1: layer2.1 79.2, layer3.1 82.4, layer4.0 82.9.
+Cell C per-seed: 81.90, 81.79, 81.17; eff_rank 69.3, 69.3, 69.4;
+trace 105.6, 105.0, 105.3. Per-tap, cell C seed1: layer2.1 79.2,
+layer3.1 82.4, layer4.0 82.9.
 Cell D: layer2.1 78.8-80.2, layer3.1 81.3-82.3, layer4.0 81.7-82.1.
 
 ## 6. Star negative control
@@ -220,12 +222,24 @@ relative_closure_error 0.1476, against nested's [128,128,128], 9.076 -
     T4, K256                       none                                descriptive only
     external baselines             matched-budget wave                 carried over
 
-## 8. What is still running
+## 8. Completion state, 2026-09-12 22:30
 
-    cell C seed3     product_endpoint @ truncated, CIFAR-10
+Every experiment in sections 1-6 is complete. No GPU job is queued or
+running. The sweep reports 0 outstanding and 0 blocked, and an audit of
+every declared root found 0 anomalies: each complete unit has its block
+profile, and each complete truncated unit has its certificate.
 
-Everything else in sections 1-6 is complete. Remaining queued work
-after it lands: its block profile and its certificate.
+    arm                              complete
+    ablation grid, CIFAR-10           17/18   (lambda0 seed2 failed)
+    ablation grid, CIFAR-100          16/18   (lambda0 seeds 1,2 failed)
+    T4                                  3/3   (seed1 in the probe root)
+    K256                                3/3   (seed1 in the probe root)
+    2x2 cell C                          3/3
+    2x2 cell D                          3/3
+    star control                        3/3
+
+The three incomplete units are the divergence-guard failures in 1e.
+Nothing else is outstanding.
 
 ## 9. Known measurement caveats recorded elsewhere
 
