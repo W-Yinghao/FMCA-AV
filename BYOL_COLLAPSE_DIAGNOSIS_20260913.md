@@ -87,3 +87,58 @@ baselines were treated identically in this respect. MAJOR's objective
 carries explicit trace and covariance terms, so it is not exposed to
 this failure in the way BYOL is. No MAJOR result is implicated by this
 diagnosis.
+
+---
+
+# Result, n=3 — the diagnosis is confirmed, on two of the three clauses
+
+Against `BYOL_NORMALIZATION_PREREG_FROZEN_20260913`. Three seeds,
+identical budget to the collapsed runs, 45000 training images, 200
+epochs, `last.ckpt` throughout.
+
+    arm                  layer1          layer2          layer3          layer4
+    BYOL + BatchNorm  [54.70,55.92]  [64.15,64.52]  [70.77,72.04]  [73.46,74.76]
+    BYOL no BN        [43.83,44.20]  [44.28,45.81]  [41.47,43.43]  [36.55,38.64]
+
+    P-B1  final val cosine < 0.95    0.8302 / 0.8250 / 0.8316    PASS on all 3
+    P-B1  layer1 eff_rank > 20       6.28 / 7.91 / 7.28          FAILED
+    P-B2  layer4 > layer1            +19.5 / +18.8 / +18.7       PASS on all 3
+          (no-BN, same measure)      -7.3 / -6.8 / -5.2          falls
+
+**P-B1 is half confirmed and half refuted, and the refuted half used a
+metric this wave showed to be invalid.** Effective rank does not track
+collapse: the collapsed arm reads 58.47 at layer4, higher than simclr,
+vicreg and the fixed BYOL, while having the worst probe accuracy of the
+four. That threshold should not have been written. See
+`EFFECTIVE_RANK_IS_NOT_A_COLLAPSE_TEST_20260913.md`.
+
+What the diagnosis rests on is P-B2 and the cosine: with the BatchNorm
+that BYOL specifies, the representation improves monotonically with
+depth on every seed and the target agreement stops at 0.83 instead of
+0.99. Without it, accuracy falls with depth on every seed. The collapse
+was ours.
+
+## P-B3, which carried no prediction
+
+    method          layer4          n
+    simclr       [81.90,82.28]      3
+    vicreg       [81.44,81.66]      3
+    barlow_twins [79.84,80.81]      3
+    moco_v2      [78.65,79.30]      3
+    byol + BN    [73.46,74.76]      3
+
+A faithfully implemented BYOL is still the weakest of the five matched
+baselines, by 5.2 points against the next lowest. The prereg committed
+in advance that this is a SEPARATE finding from the diagnosis, and it
+is: the original exclusion reached a conclusion that survives — BYOL
+does not beat us here — for a reason that did not.
+
+## Standing caveat this wave creates
+
+Only BYOL now has the projector its method specifies. simclr, vicreg,
+barlow_twins and moco_v2 still run the normalization-free `MLP`, which
+is not the standard recipe for any of them either. They did not
+collapse, because each carries an anti-collapse term in its loss, but
+their numbers may be understated by an unknown amount. No baseline
+comparison in this repo is a comparison against reference
+implementations, and that limitation now applies asymmetrically.
