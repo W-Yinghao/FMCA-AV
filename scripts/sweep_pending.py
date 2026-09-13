@@ -33,6 +33,11 @@ ANALYSIS = "sbatch scripts/launch_analysis_gpu.sbatch"
 # a refilling babysitter in front of an unproven runner is how 15h once
 # disappeared, and two of these arms have never run in any form.
 WAVE = [
+    # --- MAJOR main run, frozen 2026-09-13: 45000 images, 800 epochs ----
+    ("configs/gate_major45k",      "results/gate1/gate1_20260913_major45k",
+     "paper_composition", 1, (2, 3)),
+    ("configs/gate_major45k_c100", "results/gate1/gate1_20260913_major45k_c100",
+     "paper_composition", 1, (2, 3)),
     # --- MAJOR completion wave, frozen 2026-09-12 -----------------------
     ("configs/gate_x_v8trunc",    "results/gate1/gate1_20260912_x2x2",
      "product_endpoint",  1, (2, 3)),
@@ -65,6 +70,8 @@ DERIVED_ROOTS = {
     "results/gate1/gate1_20260911_paper_robust": "configs/gate_paper",
     "results/gate1/gate1_20260912_x2x2":        None,   # per-variant, below
     "results/gate1/gate1_20260912_star":        "configs/gate_x_star",
+    "results/gate1/gate1_20260913_major45k":      "configs/gate_major45k",
+    "results/gate1/gate1_20260913_major45k_c100": "configs/gate_major45k_c100",
 }
 X2X2_CONFIG = {
     "product_endpoint":  "configs/gate_x_v8trunc",
@@ -84,6 +91,8 @@ ROOT_TAG = {
     "results/gate1/gate1_20260911_paper_robust": "_robust",
     "results/gate1/gate1_20260912_x2x2": "_x2x2",
     "results/gate1/gate1_20260912_star": "_star",
+    "results/gate1/gate1_20260913_major45k": "_45k",
+    "results/gate1/gate1_20260913_major45k_c100": "_45k_c100",
 }
 
 
