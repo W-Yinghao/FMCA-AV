@@ -229,6 +229,7 @@ class BaselineSSL(L.LightningModule):
                 projection_dim,
                 model.get("projection_hidden_dims", [2048, 2048]),
                 str(model.get("activation", "gelu")),
+                str(model.get("head_normalization", "none")),
             )
         self.online_classifier = None
         if self.method == "frossl" and bool(config["objective"].get("online_classifier", False)):
@@ -248,6 +249,7 @@ class BaselineSSL(L.LightningModule):
                 projection_dim,
                 model.get("predictor_hidden_dims", [512]),
                 str(model.get("activation", "gelu")),
+                str(model.get("head_normalization", "none")),
             )
         if self.method in {"byol", "moco_v2", "dino"}:
             self.target_backbone = copy.deepcopy(self.backbone)

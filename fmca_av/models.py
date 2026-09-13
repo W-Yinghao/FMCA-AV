@@ -20,13 +20,29 @@ class MLP(nn.Module):
         output_dim: int,
         hidden_dims: Iterable[int] = (128, 128),
         activation: str = "gelu",
+        normalization: str = "none",
     ) -> None:
+        """normalization="batch" puts BatchNorm1d after each hidden Linear.
+
+        Default "none" reproduces the head every arm on disk was trained
+        with, byte for byte.  The option exists because BYOL specifies
+        BatchNorm in its projector and predictor and, having no negatives
+        and no variance term, has nothing else standing between it and
+        the constant solution -- which is the solution all three of its
+        runs found.  Methods whose loss carries an anti-collapse term are
+        unaffected either way and keep the default.
+        """
+
         super().__init__()
+        if normalization not in {"none", "batch"}:
+            raise ValueError("MLP normalization must be none or batch")
         dimensions: List[int] = [input_dim, *list(hidden_dims), output_dim]
         layers: List[nn.Module] = []
         for index, (left, right) in enumerate(zip(dimensions[:-1], dimensions[1:])):
             layers.append(nn.Linear(left, right))
             if index < len(dimensions) - 2:
+                if normalization == "batch":
+                    layers.append(nn.BatchNorm1d(right))
                 layers.append(_activation(activation))
         self.network = nn.Sequential(*layers)
 
