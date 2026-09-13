@@ -188,7 +188,9 @@ The field is `test_accuracy < 0.15` (run_gate1_unit.py:452) -- a probe
 floor, not a spectral test.  An arm with effective rank 1.04 of 128 and
 99.6% of its variance in one direction passes it.  BYOL was excluded
 from competitiveness claims as "a collapsed run" by judgement, not by
-this flag, which also did not fire on it.
+this flag, which also did not fire on it -- and that judgement has since
+been traced to a missing normalization layer on our side rather than to
+BYOL.
 
 No result already reported changes because of this; the field is not
 used as a gate anywhere.  It is recorded because `collapsed: false`
@@ -199,7 +201,9 @@ reads like an assurance of exactly the property these three arms lack.
 Single dataset.  The external-baseline comparison is carried over from
 the matched-budget wave and is estimator-independent, but those arms
 were compared against the RIDGE corpus; a like-for-like table against
-these arms is not yet drawn.  BYOL remains excluded as a collapsed run.
+these arms is not yet drawn.  BYOL remains excluded, but as OUR failed
+run rather than as a collapsed method -- see the correction above and
+`BYOL_COLLAPSE_DIAGNOSIS_20260913.md`.
 
 ---
 
@@ -212,6 +216,18 @@ probe run by the same code on encoder features before the projection
 heads.  BYOL is excluded: it collapsed (validation score 0.9965, probe
 declining with depth), and the prereg forbade re-tuning a baseline's
 recipe, so it is reported as not successfully trained rather than beaten.
+
+CORRECTION 2026-09-13.  The attribution in that sentence is withdrawn.
+The collapse traces to our own implementation: the shared `MLP` behind
+every projector and predictor carries no normalization layer, and
+BYOL's projector and predictor are specified with BatchNorm, which --
+given BYOL has no negatives and no variance term -- is its entire
+collapse avoidance.  The other four baselines each carry an
+anti-collapse term in the loss and were unaffected.  Supplying the
+normalization the method specifies is not the re-tuning the prereg
+forbade; it is implementing the method.  Until a BN'd BYOL has run, no
+claim about BYOL in either direction is supported by this row.  See
+`BYOL_COLLAPSE_DIAGNOSIS_20260913.md`.
 
     method            layer1          layer2          layer3          layer4      n
     OURS full     [58.06,60.03]  [79.56,80.29]  [82.63,82.88]  [82.36,82.74]  3

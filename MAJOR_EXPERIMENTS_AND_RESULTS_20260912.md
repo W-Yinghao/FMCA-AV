@@ -148,7 +148,11 @@ features before the projection heads.
     byol        [43.83,44.20]  [44.28,45.81]  [41.47,43.43]  [36.55,38.64]  3
 
 BYOL collapsed (validation score 0.9965) and is excluded from
-competitiveness claims.
+competitiveness claims.  The collapse is an implementation defect on
+our side, not a result about BYOL: the shared projector/predictor MLP
+has no normalization layer, and BatchNorm is BYOL's whole collapse
+avoidance.  The row records what was run and supports no claim about
+BYOL in either direction.  See `BYOL_COLLAPSE_DIAGNOSIS_20260913.md`.
 
 ## 4. Robustness axes
 
