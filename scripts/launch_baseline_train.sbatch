@@ -13,5 +13,8 @@ set -euo pipefail
 cd /home/infres/yinwang/FMCA-AV
 PYTHON=/projects/EEG-foundation-model/yinghao/FMCA-AV/envs/lightning/bin/python
 ROOT=/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs
-"$PYTHON" fmca_av/baseline_cli.py train \
+# -m, not a file path: baseline_cli uses package-relative imports and
+# running it as a script gives "attempted relative import with no known
+# parent package".
+"$PYTHON" -m fmca_av.baseline_cli train \
   --config "$1" --seed "$2" --output "$ROOT/$3"
