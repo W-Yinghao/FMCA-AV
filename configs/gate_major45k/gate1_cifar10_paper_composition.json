@@ -2,7 +2,7 @@
   "experiment": {
     "name": "gate1major45k-cifar10-paper_composition",
     "family": "cifar_gate",
-    "status": "MAIN MAJOR run on cifar10: Eq. (25) complete under the paper's truncated estimator, trained on 45000 images for 800 epochs. The gate_paper version trained on 30000, because n_calibration=10000 and n_val=10000 take 20000 out of 50000; this restores the split the matched external baselines use, at the cost of a 2500-root Stage-B calibration sample. Checkpoints kept at epochs 20, 200 and 800. Tests prereg/MAJOR_45K_800EPOCH_PREREG_FROZEN_20260913."
+    "status": "MAIN MAJOR run on cifar10: Eq. (25) complete under the paper's truncated estimator, trained on 45000 images for 200 epochs. The gate_paper version trained on 30000, because n_calibration=10000 and n_val=10000 take 20000 out of 50000; this restores the split the matched external baselines use, at the cost of a 2500-root Stage-B calibration sample. Checkpoints kept at epochs 20 and 200. Reduced from 800 epochs by MAJOR_45K_EPOCH_BUDGET_APPENDUM_20260913. Tests prereg/MAJOR_45K_800EPOCH_PREREG_FROZEN_20260913."
   },
   "seed": 20260816,
   "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
@@ -84,14 +84,13 @@
     "accelerator": "gpu",
     "devices": 1,
     "strategy": "auto",
-    "max_epochs": 800,
+    "max_epochs": 200,
     "precision": "32-true",
     "deterministic": true,
     "enable_progress_bar": false,
     "checkpoint_milestones": [
       20,
-      200,
-      800
+      200
     ]
   },
   "probe": {
