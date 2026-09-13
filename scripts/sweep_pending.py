@@ -276,7 +276,42 @@ def sweep(report_blocked=False):
                  f"--config-dir {config_for(root, variant)} --output-root {root} "
                  f"--variant {variant} --seed {seed} --out {out.relative_to(REPO)}")
 
-    # 3. block profiles -- cheap, so they go last and never block a training
+    # 3. milestone evaluations -- the epoch 20/200/800 checkpoints are only
+    #    SAVED by the runner; the unit's own probe and certificate describe
+    #    the final model alone.  A saved checkpoint nobody evaluates is not a
+    #    result, so each milestone gets its own profile and certificate.
+    for root in DERIVED_ROOTS:
+        units = Path(REPO, root, "units")
+        if not units.is_dir():
+            continue
+        for unit in sorted(units.glob("*__seed*")):
+            variant, seed = unit.name.split("__seed")
+            if status(unit) != "complete":
+                continue
+            config_dir = config_for(root, variant)
+            for ckpt in sorted((unit / "checkpoints").glob("epoch-*.ckpt")):
+                stem = ckpt.stem
+                prof = unit / f"blockwise_profile_{stem}.json"
+                if not prof.is_file():
+                    emit(f"mprof:{root}:{variant}:{seed}:{stem}",
+                         f"{ANALYSIS} scripts/run_layerwise_profile.py "
+                         f"--config-dir {config_dir} --output-root {root} "
+                         f"--variant {variant} --seed {seed} --granularity block "
+                         f"--checkpoint {ckpt.relative_to(REPO)}")
+                if not variant.startswith("paper_"):
+                    continue
+                if resolved_estimator(config_dir, variant) != "truncated":
+                    continue
+                out = certificates / f"{variant}{ROOT_TAG[root]}_seed{seed}_{stem}.json"
+                if not out.is_file():
+                    emit(f"mcert:{root}:{variant}:{seed}:{stem}",
+                         f"{ANALYSIS} scripts/run_paper_certificate.py "
+                         f"--config-dir {config_dir} --output-root {root} "
+                         f"--variant {variant} --seed {seed} "
+                         f"--checkpoint {ckpt.relative_to(REPO)} "
+                         f"--out {out.relative_to(REPO)}")
+
+    # 4. block profiles -- cheap, so they go last and never block a training
     for root in DERIVED_ROOTS:
         units = Path(REPO, root, "units")
         if not units.is_dir():

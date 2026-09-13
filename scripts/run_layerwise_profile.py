@@ -233,6 +233,10 @@ def main() -> None:
                         help="recompute a profile that already exists")
     parser.add_argument("--allow-cpu", action="store_true",
                         help="opt in to CPU; the encoder is far slower there")
+    parser.add_argument("--checkpoint", default="",
+                        help="evaluate this checkpoint instead of last.ckpt; "
+                             "a milestone checkpoint writes its own output name, "
+                             "so epoch 20 can never overwrite epoch 800")
     parser.add_argument("--probe-subsample", type=int, default=0,
                         help="use only this many training points for the probes (0 = all)")
     arguments = parser.parse_args()
@@ -241,6 +245,11 @@ def main() -> None:
     # Idempotency from the target state, not from a submitter's ledger.
     out_name = ("layerwise_profile.json" if arguments.granularity == "stage"
                 else "blockwise_profile.json")
+    if arguments.checkpoint:
+        # e.g. epoch-0020.ckpt -> blockwise_profile_epoch-0020.json
+        stem = Path(arguments.checkpoint).stem
+        if stem != "last":
+            out_name = out_name.replace(".json", f"_{stem}.json")
     if arguments.max_batches:
         # A truncated run never claims the canonical filename.  This is a
         # correctness check, not a measurement, and the two must not be
@@ -250,7 +259,8 @@ def main() -> None:
         print(f"{out_name} already exists for {arguments.variant} "
               f"seed{arguments.seed}; pass --force to recompute")
         return
-    checkpoint_path = unit_dir / "checkpoints" / "last.ckpt"
+    checkpoint_path = (Path(arguments.checkpoint) if arguments.checkpoint
+                       else unit_dir / "checkpoints" / "last.ckpt")
     if not checkpoint_path.is_file():
         raise SystemExit(f"no checkpoint at {checkpoint_path}")
     config = json.loads(
@@ -328,6 +338,7 @@ def main() -> None:
 
     record = {
         "profile_version": PROFILE_VERSION,
+        "checkpoint": str(checkpoint_path),
         "variant": arguments.variant,
         "seed": arguments.seed,
         "dataset": config["data"]["dataset"],

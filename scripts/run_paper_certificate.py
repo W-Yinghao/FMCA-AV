@@ -106,6 +106,8 @@ def main() -> None:
     parser.add_argument("--calibration-roots", type=int, default=10000)
     parser.add_argument("--evaluation-roots", type=int, default=10000)
     parser.add_argument("--tau", type=float, default=1e-3)
+    parser.add_argument("--checkpoint", default="",
+                        help="certify this checkpoint instead of last.ckpt")
     parser.add_argument("--force", action="store_true",
                         help="recompute a certificate that already exists")
     parser.add_argument("--allow-cpu", action="store_true",
@@ -122,7 +124,8 @@ def main() -> None:
     device = require_accelerator(arguments.allow_cpu)
 
     unit = Path(arguments.output_root) / "units" / f"{arguments.variant}__seed{arguments.seed}"
-    checkpoint = unit / "checkpoints" / "last.ckpt"
+    checkpoint = (Path(arguments.checkpoint) if arguments.checkpoint
+                  else unit / "checkpoints" / "last.ckpt")
     if not checkpoint.is_file():
         raise SystemExit(f"no checkpoint at {checkpoint}")
     module = HierarchyCertificateModule(config)
