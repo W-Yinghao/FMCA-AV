@@ -165,8 +165,11 @@ in `ROBUSTNESS_AXES_RESULTS_20260912.md`.
     K256   feature_dim 256         3  [76.91, 78.80]  [ 1.0,  4.1]  [291.4, 70648.0]
 
 K256 per-seed: eff_rank 4.09 / 1.23 / 1.01 of 256, trace 291 / 2367 /
-70648, against the composition arm's 69.7. The divergence guard did not
-fire: it bounds the objective's trace terms, which are computed on
+70648, against the composition arm's 69.7.  Probe accuracy nonetheless
+rises monotonically with depth (47.9 -> 78.6), so the representation is
+anisotropic and scale-inflated rather than non-functional --
+`EFFECTIVE_RANK_IS_NOT_A_COLLAPSE_TEST_20260913.md`.  The divergence
+guard did not fire: it bounds the objective's trace terms, which are computed on
 whitened operators and are scale-invariant.
 
 ## 5. The estimator x recipe 2x2

@@ -84,8 +84,15 @@ level cap near 20 regardless of K".
 ## What may and may not be said
 
 MAY: both axes were run at three seeds; T=4 trains stably at roughly a
-quarter rank and six points below the reference; K=256 does not train
-to a usable representation on any seed.
+quarter rank and six points below the reference; K=256 shows spectral
+collapse with scale runaway on every seed.
+
+CORRECTION 2026-09-13.  That last clause originally read "K=256 does
+not train to a usable representation on any seed".  Too strong: K256's
+probe accuracy rises monotonically with depth, 47.9 to 78.6 across nine
+taps, so the representation is functional.  The anisotropy and the
+scale runaway are unchanged and remain the finding.  See
+`EFFECTIVE_RANK_IS_NOT_A_COLLAPSE_TEST_20260913.md`.
 
 MAY NOT: that either result confirms or refutes anything, that K=256
 "shows K binds", or that the endpoint-level cap near 20 has been

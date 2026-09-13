@@ -151,6 +151,14 @@ corpus's flat advantage is large and replicated on two datasets.  It
 does not: composition wins by 9.25 points with disjoint ranges.  The
 prediction is refuted.
 
+CORRECTION 2026-09-13.  The paragraph below argues from effective rank
+that endpoint_only is not a usable comparator.  That is too strong: its
+probe accuracy rises monotonically across all nine block taps, 46.5 to
+77.0, so it is functional.  The conditioning claim stands, the
+"degenerate comparator" claim does not, and the 9.25-point gap is
+between two working arms differing in conditioning.  See
+`EFFECTIVE_RANK_IS_NOT_A_COLLAPSE_TEST_20260913.md`.
+
 **The refutation does not license the strong reading.**  The frozen
 grid's third cell says a reversal would be "the strongest available
 result for the method".  This is not that, because the comparator is
