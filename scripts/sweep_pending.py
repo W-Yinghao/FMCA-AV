@@ -32,12 +32,22 @@ ANALYSIS = "sbatch scripts/launch_analysis_gpu.sbatch"
 # Replicates are held until the probe seed's unit.json reads complete:
 # a refilling babysitter in front of an unproven runner is how 15h once
 # disappeared, and two of these arms have never run in any form.
+#
+# probe_seed None means UNGATED -- every seed in the tuple is submitted and
+# resumed independently.  Only for an arm whose runner is already proven,
+# and it matters for more than the launch: a gated replicate whose probe is
+# not yet complete is also not RESUMED by the sweep, so an 800-epoch seed
+# launched by hand behind a gate would stall at its first walltime kill.
 WAVE = [
     # --- MAJOR main run, frozen 2026-09-13: 45000 images, 800 epochs ----
+    # Ungated: seed 1 of each dataset cleared 12 epochs cleanly on the same
+    # runner that trained this arm at 200 epochs, so the gate has nothing
+    # left to catch, and every seed needs the sweep to resume it across the
+    # 24h partition cap.
     ("configs/gate_major45k",      "results/gate1/gate1_20260913_major45k",
-     "paper_composition", 1, (2, 3)),
+     "paper_composition", None, (1, 2, 3)),
     ("configs/gate_major45k_c100", "results/gate1/gate1_20260913_major45k_c100",
-     "paper_composition", 1, (2, 3)),
+     "paper_composition", None, (1, 2, 3)),
     # --- MAJOR completion wave, frozen 2026-09-12 -----------------------
     ("configs/gate_x_v8trunc",    "results/gate1/gate1_20260912_x2x2",
      "product_endpoint",  1, (2, 3)),
@@ -230,6 +240,12 @@ def sweep(report_blocked=False):
 
     # 1. training -- probe seeds unconditionally, replicates behind them
     for config_dir, root, variant, probe_seed, replicates in WAVE:
+        if probe_seed is None:
+            for seed in replicates:
+                if status(Path(REPO, root, "units", f"{variant}__seed{seed}")) != "complete":
+                    emit(f"train:{root}:{variant}:{seed}",
+                         f"{GENERIC} {config_dir} {root} {variant} {seed}")
+            continue
         unit = Path(REPO, root, "units", f"{variant}__seed{probe_seed}")
         if status(unit) != "complete":
             emit(f"train:{root}:{variant}:{probe_seed}",
