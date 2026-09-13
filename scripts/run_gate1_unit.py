@@ -23,6 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import lightning as L
 from lightning.pytorch.callbacks import Callback, ModelCheckpoint
+
+from fmca_av.profiling import MilestoneCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 
 
@@ -405,13 +407,20 @@ def main() -> None:
             every_n_epochs=1,
         )
         guard = DivergenceGuard(int(config["model"].get("feature_dim", 128)))
+        # Preregistered epoch checkpoints, kept alongside last.ckpt without
+        # touching selection.  An 800-epoch run that only keeps its final
+        # weights cannot answer what the representation looked like on the
+        # way there, and the answer is not recoverable afterwards.
+        milestones = [int(v) for v in config["trainer"].get("checkpoint_milestones", [])]
         trainer = L.Trainer(
             accelerator="gpu",
             devices=1,
             max_epochs=max_epochs,
             deterministic="warn",
             check_val_every_n_epoch=1 if arguments.probe_mode else 10,
-            callbacks=[checkpoint, guard],
+            callbacks=([checkpoint, guard] +
+                       ([MilestoneCheckpoint(unit_dir / "checkpoints", milestones)]
+                        if milestones else [])),
             logger=CSVLogger(str(unit_dir), name="train_logs"),
             enable_progress_bar=False,
             num_sanity_val_steps=0,

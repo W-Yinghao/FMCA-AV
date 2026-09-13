@@ -36,7 +36,13 @@ while [ ! -f "$STOP" ]; do
         # produce a duplicate.  inflight is pruned against squeue; attempts
         # is never pruned and is what stops a crash-loop.
         printf '%s\t%s\n' "$key" "$job" >> runs/inflight.tsv
-        printf '%s\t%s\n' "$key" "$job" >> runs/attempts.tsv
+        # Record the epoch this target had reached BEFORE the attempt, so a
+        # later sweep can tell a resumed long run from a crash-loop.
+        reached=$("$PY" -c "
+import sys; sys.path.insert(0,'scripts')
+import sweep_pending as sp
+print(sp._progress_epoch('$key'))" 2>/dev/null || echo -1)
+        printf '%s\t%s@%s\n' "$key" "$job" "${reached:--1}" >> runs/attempts.tsv
         echo "$(date '+%F %T') OK   $key -> $job" >> "$LOG"
         count=$((count + 1))
         submitted=$((submitted + 1))

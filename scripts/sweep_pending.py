@@ -147,12 +147,58 @@ def load_inflight() -> set:
     return {key for key, _ in kept}
 
 
+def _progress_epoch(key: str) -> int:
+    """Last epoch this training target has on disk, or -1 if it is not one."""
+    if not key.startswith("train:"):
+        return -1
+    try:
+        _, root, variant, seed = key.split(":")
+    except ValueError:
+        return -1
+    logs = Path(REPO, root, "units", f"{variant}__seed{seed}", "train_logs")
+    best = -1
+    for metrics in logs.glob("version_*/metrics.csv"):
+        try:
+            rows = metrics.read_text().splitlines()
+        except OSError:
+            continue
+        for line in reversed(rows[1:]):
+            head = line.split(",", 1)[0]
+            if head.isdigit():
+                best = max(best, int(head))
+                break
+    return best
+
+
 def exhausted() -> dict:
-    """Targets that have burned their attempts and must not be resubmitted."""
+    """Targets that have burned their attempts and must not be resubmitted.
+
+    An attempt that made PROGRESS is not a failure.  An 800-epoch unit
+    outlives the 24h cap on every GPU partition here, so it is killed and
+    resumed by design, and a naive count would block it on the second
+    walltime kill -- turning the retry cap, which exists to stop
+    crash-loops, into the thing that stops the wave.  Progress is recorded
+    next to the attempt and an attempt that advanced the last logged epoch
+    does not count against the cap.
+    """
+
     counts = {}
-    for key, _ in _read_pairs(ATTEMPTS):
-        counts[key] = counts.get(key, 0) + 1
-    return {key: n for key, n in counts.items() if n >= MAX_ATTEMPTS}
+    for key, marker in _read_pairs(ATTEMPTS):
+        # marker is "<jobid>" (legacy) or "<jobid>@<epoch reached before it)"
+        epoch = None
+        if "@" in marker:
+            _, _, tail = marker.partition("@")
+            if tail.lstrip("-").isdigit():
+                epoch = int(tail)
+        counts.setdefault(key, []).append(epoch)
+    spent = {}
+    for key, markers in counts.items():
+        reached = _progress_epoch(key)
+        # Count only attempts that started at the epoch we are still at.
+        stalled = [e for e in markers if e is None or e >= reached]
+        if len(stalled) >= MAX_ATTEMPTS:
+            spent[key] = len(stalled)
+    return spent
 
 
 def config_for(root: str, variant: str) -> str:
