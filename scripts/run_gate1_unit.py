@@ -402,9 +402,17 @@ def main() -> None:
         data_module.setup()
         module = HierarchyCertificateModule(config)
         max_epochs = 2 if arguments.probe_mode else int(config["trainer"]["max_epochs"])
+        # every_n_train_steps, NOT every_n_epochs.  With save_top_k=0 Lightning
+        # writes last.ckpt only when fit() returns normally -- measured, and
+        # visible in the corpus: the unit killed at epoch 193 left no
+        # checkpoints directory at all and its rerun started from zero.  On a
+        # 24h partition cap an 800-epoch unit is killed before it ever
+        # returns, so it would restart from scratch every time and never
+        # finish.  Step-based saving overwrites one file and bounds the loss
+        # from a kill to the interval below.
         checkpoint = ModelCheckpoint(
             dirpath=str(unit_dir / "checkpoints"), save_last=True, save_top_k=0,
-            every_n_epochs=1,
+            every_n_train_steps=int(config["trainer"].get("checkpoint_every_n_steps", 500)),
         )
         guard = DivergenceGuard(int(config["model"].get("feature_dim", 128)))
         # Preregistered epoch checkpoints, kept alongside last.ckpt without
