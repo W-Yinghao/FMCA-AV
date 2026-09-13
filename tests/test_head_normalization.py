@@ -43,9 +43,16 @@ class HeadNormalizationTests(unittest.TestCase):
             MLP(8, 8, [8], "gelu", "layer")
 
     def test_no_config_already_run_gains_a_normalization(self) -> None:
-        """The fix must not silently re-specify any existing arm's head."""
+        """The fix must not silently re-specify any ALREADY-RUN arm's head.
+
+        Scoped to the config trees whose runs are on disk.  configs/
+        ssl_reference is the reference-recipe wave, where a normalized
+        projector is the point of the wave and no run predates it.
+        """
+        already_run = (glob.glob(str(REPO / "configs/ssl_matched/*.json"))
+                       + glob.glob(str(REPO / "configs/gate*/*.json")))
         changed = []
-        for path in sorted(glob.glob(str(REPO / "configs/**/*.json"), recursive=True)):
+        for path in sorted(already_run):
             name = Path(path).name
             if name == "cifar10_byol_bn.json":
                 continue
