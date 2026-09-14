@@ -71,3 +71,23 @@ the methods. A MoCo v2 at 83.8 on CIFAR-10 exists in the literature and
 in this user's own prior runs; this wave's 77.7-78.5 is a statement
 about this recipe, this queue size and this learning rate, not about
 MoCo v2.
+
+---
+
+## Addendum, 14 September — BYOL at the reference recipe
+
+Against `SSL_REFERENCE_RECIPES_APPENDUM_BYOL_20260914`. Three seeds,
+4096 → 256 projector and predictor with BatchNorm, EMA momentum 0.996,
+same budget and optimizer, milestones 20 and 200.
+
+    epoch 200   layer1 [54.65,55.24]  layer2 [63.15,63.94]  layer3 [69.89,70.23]  layer4 [72.91,73.95]
+    epoch 20    layer1 [48.94,50.40]  layer2 [53.64,53.99]  layer3 [55.33,56.18]  layer4 [54.41,55.86]
+    validation cosine 0.8295 / 0.8348 / 0.8339
+
+P-B4: no collapse on any seed (accuracy rises 18.3–19.3 points from
+layer 1 to layer 4) — confirmed on that clause. On level, the range
+[72.91, 73.95] overlaps the old-template BN run's [73.46, 74.75] and its
+lower edge is 0.55 below; the wider reference projector did not improve
+BYOL at lr 0.03, consistent with the SimCLR and MoCo v2 outcome under
+P-R2. P-B5 carried no prediction: BYOL is seventh of seven at every
+stage.

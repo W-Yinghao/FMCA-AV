@@ -107,6 +107,7 @@ seeds each. Same stagewise evaluator as §2.
     MoCo v2         54.71–54.89    64.55–65.28    73.73–74.03    77.68–78.45
     FastSiam        55.49–55.58    64.62–65.42    72.62–72.78    75.35–75.58
     SimSiam         55.19–55.44    64.22–64.87    71.73–72.55    74.11–74.75
+    BYOL            54.65–55.24    63.15–63.94    69.89–70.23    72.91–73.95
 
 At stage 2 FMCA-AV's lower bound (77.72) exceeds every method's upper
 bound (best 68.70, VICReg) by 9.0 points. At stage 4 it exceeds Barlow
@@ -123,13 +124,16 @@ systems; they do not isolate the composition penalty (§5).
     MoCo v2         48.95–50.96    55.78–55.88    60.11–60.35    62.45–63.02
     FastSiam        51.23–51.51    56.38–57.23    59.11–59.78    58.46–59.84
     SimSiam         50.65–51.57    55.59–56.45    57.92–58.36    56.32–57.38
+    BYOL            48.94–50.40    53.64–53.99    55.33–56.18    54.41–55.86
 
-**BYOL** is not in the table. Its original runs collapsed because the
-shared projector lacked the BatchNorm BYOL requires (§10); with
-BatchNorm added to the old-template projector it trains
-(layer 4: 73.46–74.75) but has not been run at the reference projector
-width. Report it as "not run at the reference recipe", not as
-"collapsed".
+**BYOL** is at its own recipe (4096 → 256 projector and predictor with
+BatchNorm, EMA momentum 0.996), three seeds, added 14 September. Its
+original runs had collapsed because the shared projector lacked the
+BatchNorm BYOL requires (§10); at the reference recipe it trains
+(validation cosine 0.83, accuracy rising with depth on every seed) and
+is the lowest of the seven at every stage. The old-template projector
+with BatchNorm alone gave 73.46–74.75 at stage 4; the wider reference
+projector did not improve it at this learning rate.
 
 ---
 
@@ -320,4 +324,6 @@ kNN for ridge: 50.04 (49.81–50.38). The highest ridge stage mean is stage
   SimSiam and FastSiam at two views coincide.
 - BYOL's original collapse (validation cosine 0.98–0.99, accuracy falling
   with depth) is attributable to the missing projector BatchNorm; with
-  it, cosine settles at 0.83 and accuracy rises with depth on all seeds.
+  it, cosine settles at 0.83 and accuracy rises with depth on all seeds,
+  both at the old-template width (73.46–74.75) and at the reference
+  width (72.91–73.95).

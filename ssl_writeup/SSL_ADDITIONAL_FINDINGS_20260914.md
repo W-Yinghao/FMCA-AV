@@ -163,8 +163,6 @@ overlap) or should be made at the 30,000-image split only.
    five epochs across the existing seeds; no new training needed.
 2. Per-method learning rates for the three contrastive/decorrelation
    baselines, criterion frozen first (item 5). ~15 GPU-hours.
-3. BYOL at the reference projector width with milestones, so the six-
-   method table can become seven on one recipe. ~3 GPU-hours.
-4. A ridge β = 0 with epoch-20 checkpoints, if the paper wants the early
+3. A ridge β = 0 with epoch-20 checkpoints, if the paper wants the early
    depth profile of the matched ablation next to the full model's. ~40
    GPU-hours.
