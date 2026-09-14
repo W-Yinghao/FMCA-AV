@@ -1,0 +1,235 @@
+{
+  "profile_version": "layerwise_profile_20260823_v1",
+  "checkpoint": "results/gate1/gate1_20260914_ridge_ms_c100/units/product_endpoint__seed2/checkpoints/epoch-0020.ckpt",
+  "variant": "product_endpoint",
+  "seed": 2,
+  "dataset": "cifar100",
+  "level_stages": [
+    1,
+    2,
+    3
+  ],
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "stem",
+      "level_role": "below/between taps",
+      "probe": {
+        "test_accuracy": 0.21729999780654907,
+        "train_accuracy": 0.22168000042438507
+      },
+      "spectrum": {
+        "effective_rank": 5.235953330993652,
+        "normalized_effective_rank": 0.08181177079677582,
+        "top_eigenvalue_share": 0.4106436591642978,
+        "trace": 2.198009892434002,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer1.0",
+      "level_role": "below/between taps",
+      "probe": {
+        "test_accuracy": 0.27799999713897705,
+        "train_accuracy": 0.2968599796295166
+      },
+      "spectrum": {
+        "effective_rank": 8.12929916381836,
+        "normalized_effective_rank": 0.12702029943466187,
+        "top_eigenvalue_share": 0.36954445587093826,
+        "trace": 1.7418492545821258,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer1.1",
+      "level_role": "below/between taps",
+      "probe": {
+        "test_accuracy": 0.296999990940094,
+        "train_accuracy": 0.314439982175827
+      },
+      "spectrum": {
+        "effective_rank": 7.316623210906982,
+        "normalized_effective_rank": 0.1143222376704216,
+        "top_eigenvalue_share": 0.44165036591337575,
+        "trace": 2.771384822342702,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer2.0",
+      "level_role": "inside root tap stage",
+      "probe": {
+        "test_accuracy": 0.38439998030662537,
+        "train_accuracy": 0.4235599935054779
+      },
+      "spectrum": {
+        "effective_rank": 14.532856941223145,
+        "normalized_effective_rank": 0.11353794485330582,
+        "top_eigenvalue_share": 0.3220371245857777,
+        "trace": 1.47370802380796,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 4,
+      "backbone_layer": "layer2.1",
+      "level_role": "root tap (level 0)",
+      "probe": {
+        "test_accuracy": 0.42890000343322754,
+        "train_accuracy": 0.46697998046875
+      },
+      "spectrum": {
+        "effective_rank": 16.487668991088867,
+        "normalized_effective_rank": 0.12880991399288177,
+        "top_eigenvalue_share": 0.2497832739041347,
+        "trace": 9.357417570874743,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 5,
+      "backbone_layer": "layer3.0",
+      "level_role": "inside interior interface stage",
+      "probe": {
+        "test_accuracy": 0.45009997487068176,
+        "train_accuracy": 0.5261200070381165
+      },
+      "spectrum": {
+        "effective_rank": 22.67185401916504,
+        "normalized_effective_rank": 0.08856192976236343,
+        "top_eigenvalue_share": 0.21000824918355723,
+        "trace": 9.629043609447844,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 6,
+      "backbone_layer": "layer3.1",
+      "level_role": "interior interface (level 1)",
+      "probe": {
+        "test_accuracy": 0.4514999985694885,
+        "train_accuracy": 0.5175600051879883
+      },
+      "spectrum": {
+        "effective_rank": 19.28467559814453,
+        "normalized_effective_rank": 0.07533076405525208,
+        "top_eigenvalue_share": 0.2713404873253283,
+        "trace": 19.784564423296487,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 7,
+      "backbone_layer": "layer4.0",
+      "level_role": "inside endpoint tap stage",
+      "probe": {
+        "test_accuracy": 0.4601999819278717,
+        "train_accuracy": 0.5826599597930908
+      },
+      "spectrum": {
+        "effective_rank": 29.036867141723633,
+        "normalized_effective_rank": 0.05671263113617897,
+        "top_eigenvalue_share": 0.17447668239590003,
+        "trace": 107.60259915512661,
+        "dimension": 512
+      }
+    },
+    {
+      "stage": 8,
+      "backbone_layer": "layer4.1",
+      "level_role": "endpoint tap (level 2)",
+      "probe": {
+        "test_accuracy": 0.44029998779296875,
+        "train_accuracy": 0.5568199753761292
+      },
+      "spectrum": {
+        "effective_rank": 35.3392448425293,
+        "normalized_effective_rank": 0.06902196258306503,
+        "top_eigenvalue_share": 0.15777003826333877,
+        "trace": 309.78487826948754,
+        "dimension": 512
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "interface": "stage0->stage1",
+      "canonical_correlations": {
+        "top": 0.9994867298223875,
+        "mean_top_k": 0.9928891070838113,
+        "sum": 35.11747391649993,
+        "count_above_half": 35
+      }
+    },
+    {
+      "interface": "stage1->stage2",
+      "canonical_correlations": {
+        "top": 0.9995791028580627,
+        "mean_top_k": 0.996873063745521,
+        "sum": 47.13210568715488,
+        "count_above_half": 51
+      }
+    },
+    {
+      "interface": "stage2->stage3",
+      "canonical_correlations": {
+        "top": 0.998284989235676,
+        "mean_top_k": 0.9925550556895406,
+        "sum": 45.44608309482774,
+        "count_above_half": 49
+      }
+    },
+    {
+      "interface": "stage3->stage4",
+      "canonical_correlations": {
+        "top": 0.9989054773714323,
+        "mean_top_k": 0.9947279097214998,
+        "sum": 73.72560605146575,
+        "count_above_half": 75
+      }
+    },
+    {
+      "interface": "stage4->stage5",
+      "canonical_correlations": {
+        "top": 0.9991162442396462,
+        "mean_top_k": 0.9975948936794008,
+        "sum": 93.60270454314387,
+        "count_above_half": 102
+      }
+    },
+    {
+      "interface": "stage5->stage6",
+      "canonical_correlations": {
+        "top": 0.9996552308532565,
+        "mean_top_k": 0.9990224887582447,
+        "sum": 186.36085132719577,
+        "count_above_half": 207
+      }
+    },
+    {
+      "interface": "stage6->stage7",
+      "canonical_correlations": {
+        "top": 0.9992938975960338,
+        "mean_top_k": 0.998272061525,
+        "sum": 170.15693099919537,
+        "count_above_half": 179
+      }
+    },
+    {
+      "interface": "stage7->stage8",
+      "canonical_correlations": {
+        "top": 0.9997959565381735,
+        "mean_top_k": 0.999493489900565,
+        "sum": 352.12750844319294,
+        "count_above_half": 391
+      }
+    }
+  ],
+  "status": "complete",
+  "granularity": "block",
+  "truncated_smoke_run": false
+}

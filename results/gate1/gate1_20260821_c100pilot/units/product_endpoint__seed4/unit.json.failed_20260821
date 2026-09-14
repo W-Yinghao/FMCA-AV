@@ -1,0 +1,6 @@
+{
+  "unit_key": "product_endpoint/seed4",
+  "status": "failed",
+  "reason": "RuntimeError('CUDA driver initialization failed, you might not have a CUDA gpu.')",
+  "wall_seconds": 2.2668917179107666
+}

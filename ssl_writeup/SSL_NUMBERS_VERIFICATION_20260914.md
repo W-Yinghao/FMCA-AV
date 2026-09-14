@@ -71,3 +71,15 @@ Twenty stage-granularity profile jobs (the 19 above plus one recheck), all lande
 - **Epoch-20 checkpoints for the ridge method.** The archived ridge runs (Aug 20-22) saved only `last.ckpt`. The draft as written contains no epoch-20 ridge number, so none was fabricated and no retrain was started. A retrain with milestones is 3 seeds × 2 datasets × ~7 h ≈ 42 GPU-hours and would produce a new set of runs, not the archived ones.
 - **C100 ridge seed 4** failed at driver initialization; a rerun (~7 h) would bring CIFAR-100 to n = 5. Not started.
 - **Certificates for ridge arms**: the operator diagnostics in the draft are truncated-coordinate only, by design; nothing to add.
+
+## 6. Added after §5 was written (same day)
+
+- **Ridge epoch-20 now exists.** Six new units (3 seeds × 2 datasets),
+  config diff `checkpoint_milestones` only. P-R1 confirmed: every
+  epoch-200 range overlaps the archived one. Epoch-20 stage profiles are
+  in `RIDGE_MILESTONE_REPLICATION_RESULTS_20260914.md`.
+- **CIFAR-100 ridge is n = 5.** Seed 4 rerun complete (SGD 55.64).
+  Replacement numbers: SGD 55.78 [55.44, 56.19]; kNN 50.04 [49.81, 50.38];
+  stages 33.50 / 55.07 / 58.91 / 56.06 with ranges [33.08, 34.20],
+  [54.81, 55.48], [58.57, 59.59], [55.75, 56.39]. The §2b numbers (n = 4)
+  are superseded.
