@@ -85,12 +85,21 @@ def block_features(backbone, loader, device, max_batches=0):
     return [torch.cat(parts) for parts in collected], torch.cat(labels), [n for n, _ in taps]
 
 
-def stage_features(backbone, loader, device):
-    """Pooled features after every backbone stage, plus labels."""
+@torch.no_grad()
+def stage_features(backbone, loader, device, max_batches=0):
+    """Pooled features after every backbone stage, plus labels.
+
+    no_grad matters here: each appended CPU tensor otherwise keeps its
+    GPU autograd graph alive, so memory grows with every batch and the
+    98-batch pass over 50000 images exceeds a 40 GB card.  block_features
+    already had it; this path only ever ran on larger GPUs before.
+    """
 
     backbone.eval()
     stages, labels = None, []
-    for images, targets in loader:
+    for index, (images, targets) in enumerate(loader):
+        if max_batches and index >= max_batches:
+            break
         pooled = backbone.forward_stages(images.to(device))
         if stages is None:
             stages = [[] for _ in pooled]
@@ -282,8 +291,10 @@ def main() -> None:
         test_features, test_labels, _ = block_features(
             module.backbone, test_loader, device, arguments.max_batches)
     else:
-        train_features, train_labels = stage_features(module.backbone, train_loader, device)
-        test_features, test_labels = stage_features(module.backbone, test_loader, device)
+        train_features, train_labels = stage_features(
+            module.backbone, train_loader, device, arguments.max_batches)
+        test_features, test_labels = stage_features(
+            module.backbone, test_loader, device, arguments.max_batches)
         tap_names = [f"layer{i + 1}" for i in range(len(train_features))]
     classes = dataset_classes(config)
 
