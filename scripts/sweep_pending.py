@@ -39,6 +39,11 @@ ANALYSIS = "sbatch scripts/launch_analysis_gpu.sbatch"
 # not yet complete is also not RESUMED by the sweep, so an 800-epoch seed
 # launched by hand behind a gate would stall at its first walltime kill.
 WAVE = [
+    # --- ridge full model replicated with epoch-20/200 checkpoints ------
+    ("configs/gate_ridge_ms",      "results/gate1/gate1_20260914_ridge_ms",
+     "product_endpoint", None, (1, 2, 3)),
+    ("configs/gate_ridge_ms_c100", "results/gate1/gate1_20260914_ridge_ms_c100",
+     "product_endpoint", None, (1, 2, 3)),
     # --- MAJOR main run, frozen 2026-09-13: 45000 images, 800 epochs ----
     # Ungated: seed 1 of each dataset cleared 12 epochs cleanly on the same
     # runner that trained this arm at 200 epochs, so the gate has nothing
@@ -82,6 +87,8 @@ DERIVED_ROOTS = {
     "results/gate1/gate1_20260912_star":        "configs/gate_x_star",
     "results/gate1/gate1_20260913_major45k":      "configs/gate_major45k",
     "results/gate1/gate1_20260913_major45k_c100": "configs/gate_major45k_c100",
+    "results/gate1/gate1_20260914_ridge_ms":       "configs/gate_ridge_ms",
+    "results/gate1/gate1_20260914_ridge_ms_c100":  "configs/gate_ridge_ms_c100",
 }
 X2X2_CONFIG = {
     "product_endpoint":  "configs/gate_x_v8trunc",
@@ -103,6 +110,8 @@ ROOT_TAG = {
     "results/gate1/gate1_20260912_star": "_star",
     "results/gate1/gate1_20260913_major45k": "_45k",
     "results/gate1/gate1_20260913_major45k_c100": "_45k_c100",
+    "results/gate1/gate1_20260914_ridge_ms": "_ridge_ms",
+    "results/gate1/gate1_20260914_ridge_ms_c100": "_ridge_ms_c100",
 }
 
 
