@@ -218,6 +218,21 @@ Certificate, seed1: retained_ranks [125, 128, 18], endpoint_norm 3.880,
 relative_closure_error 0.1476, against nested's [128,128,128], 9.076 -
 9.287, 0.1602 - 0.1689.
 
+## 6b. The main run at 45000 images (added 2026-09-14)
+
+`MAJOR_45K_800EPOCH_PREREG_FROZEN_20260913` + budget appendum. Six
+units, `paper_composition`, 45000 images, 200 epochs, milestones 20/200.
+Full record in `MAJOR_45K_RESULTS_20260914.md`.
+
+    dataset    30k/200ep SGD probe   45k/200ep SGD probe   45k retained_min (ep2 -> ep199)
+    CIFAR-10   [82.43, 82.84]        [78.32, 78.47]        17-20 -> 18-21   (30k: 41-50 -> 128)
+    CIFAR-100  [44.66, 45.91]        [42.48, 44.48]        17-19 -> 18-20   (30k: 17-19 -> 19-20)
+
+P-M1 and P-M2 refuted: lower on both datasets, disjoint ranges. The
+CIFAR-10 45k runs pin retained rank at 18-21 from epoch 2, as every
+CIFAR-100 run does; the CIFAR-10 30k runs are the only MAJOR runs on
+disk that reach 128.
+
 ## 7. Preregistration status of every claim family
 
     experiment                     prereg                              status
@@ -225,6 +240,8 @@ relative_closure_error 0.1476, against nested's [128,128,128], 9.076 -
     endpoint_only                  ENDPOINT_ONLY_APPENDUM_FROZEN_0912  frozen post-hoc,
                                                                        before viewing
     2x2 cells C and D              MAJOR_COMPLETION_WAVE_FROZEN_0912   preregistered
+    main run, 45k/200ep            MAJOR_45K_800EPOCH_FROZEN_0913      preregistered
+                                   + EPOCH_BUDGET_APPENDUM_0913         (amended, pre-result)
     star control                   same, P3                            preregistered
     T4, K256                       none                                descriptive only
     external baselines             matched-budget wave                 carried over
