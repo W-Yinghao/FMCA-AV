@@ -1,0 +1,71 @@
+{
+  "profile_version": "baseline_layerwise_v1",
+  "method": "simsiam",
+  "seed": 20260850,
+  "dataset": "cifar10",
+  "backbone_fingerprint": 133305.36811477764,
+  "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_simsiam_seed2/checkpoints/epoch-0200.ckpt",
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "probe": {
+        "test_accuracy": 0.5518999695777893,
+        "train_accuracy": 0.5596199631690979
+      },
+      "spectrum": {
+        "effective_rank": 6.694802284240723,
+        "normalized_effective_rank": 0.10460628569126129,
+        "top_eigenvalue_share": 0.42727438516339633,
+        "trace": 1.5155977594717804,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "probe": {
+        "test_accuracy": 0.6486999988555908,
+        "train_accuracy": 0.6632800102233887
+      },
+      "spectrum": {
+        "effective_rank": 7.266848564147949,
+        "normalized_effective_rank": 0.05677225440740585,
+        "top_eigenvalue_share": 0.528310028588707,
+        "trace": 8.878059323961804,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "probe": {
+        "test_accuracy": 0.7177000045776367,
+        "train_accuracy": 0.7354399561882019
+      },
+      "spectrum": {
+        "effective_rank": 9.557219505310059,
+        "normalized_effective_rank": 0.037332888692617416,
+        "top_eigenvalue_share": 0.49683650845606486,
+        "trace": 36.070687233595095,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "probe": {
+        "test_accuracy": 0.7410999536514282,
+        "train_accuracy": 0.7700600028038025
+      },
+      "spectrum": {
+        "effective_rank": 8.469225883483887,
+        "normalized_effective_rank": 0.016541456803679466,
+        "top_eigenvalue_share": 0.5826067711699835,
+        "trace": 114.65128810207895,
+        "dimension": 512
+      }
+    }
+  ],
+  "status": "complete"
+}
