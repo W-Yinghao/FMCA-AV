@@ -42,7 +42,10 @@ WAVE = [
     # --- bifurcation diagnostic (5-epoch, per-step ranks) + warm-up-aligned 45k ---
     ("configs/gate_bifurc_30k",     "results/gate1/gate1_20260914_bifurc_30k",     "paper_composition", None, (1, 2, 3)),
     ("configs/gate_bifurc_45k",     "results/gate1/gate1_20260914_bifurc_45k",     "paper_composition", None, (1, 2, 3)),
-    ("configs/gate_bifurc_45k_wu7", "results/gate1/gate1_20260914_bifurc_45k_wu7", "paper_composition", None, (1, 2, 3)),
+    # gate_bifurc_45k_wu7 withdrawn 2026-09-15: its premise (warm-up steps decide
+    # the branch) was overtaken by the finding that the branch follows the
+    # multiview-term implementation (commit 02fa55e), and its 3 x 9h were
+    # blocking the 1-GPU-hour old-code check that settles that question.
     # --- ridge beta0 replicated with epoch-20/200 checkpoints -----------
     ("configs/gate_ridge_ms_beta0",      "results/gate1/gate1_20260914_ridge_ms_beta0",      "product_endpoint", None, (1, 2, 3)),
     ("configs/gate_ridge_ms_beta0_c100", "results/gate1/gate1_20260914_ridge_ms_beta0_c100", "product_endpoint", None, (1, 2, 3)),
