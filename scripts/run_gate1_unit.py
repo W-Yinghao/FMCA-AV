@@ -430,6 +430,7 @@ def main() -> None:
                        ([MilestoneCheckpoint(unit_dir / "checkpoints", milestones)]
                         if milestones else [])),
             logger=CSVLogger(str(unit_dir), name="train_logs"),
+            log_every_n_steps=int(config["trainer"].get("log_every_n_steps", 50)),
             enable_progress_bar=False,
             num_sanity_val_steps=0,
             gradient_clip_val=1.0,

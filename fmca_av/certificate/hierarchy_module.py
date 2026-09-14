@@ -171,6 +171,11 @@ class HierarchyCertificateModule(L.LightningModule):
         if self.estimator not in {"truncated", "ridge"}:
             raise ValueError("loss.estimator must be truncated or ridge")
         self.invalid_batches = 0
+        # Diagnostic: also log per-level retained ranks on every step.  The
+        # epoch-mean of the cross-level minimum cannot show which level drops
+        # first, or on which step -- the two things the bifurcation question
+        # needs -- and the branch is decided inside the first two epochs.
+        self.log_ranks_per_step = bool(config.get("trainer", {}).get("log_retained_per_step", False))
         if self.variant.startswith("paper_"):
             # "There is no stopped-gradient endpoint estimate or matrix
             # exponential moving average", and gradients must reach the Gram
@@ -425,6 +430,7 @@ class HierarchyCertificateModule(L.LightningModule):
                    "closure_ratio": float(closure.detach()),
                    "whitening": float(whitening.detach()),
                    "retained_min": float(min(retained)),
+                   **{f"retained_l{i}": float(r) for i, r in enumerate(retained)},
                    "invalid_batch": 0.0}
 
         if self.leaf_reward_weight > 0:
@@ -663,6 +669,8 @@ class HierarchyCertificateModule(L.LightningModule):
         self.log(f"{split}/loss", total, on_step=False, on_epoch=True, prog_bar=True)
         for name, value in metrics.items():
             self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
+            if self.log_ranks_per_step and split == "train" and name.startswith("retained_"):
+                self.log(f"step/{name}", value, on_step=True, on_epoch=False)
         if split == "val":
             with torch.no_grad():
                 whitened, _, _ = whiten_chain_batch(

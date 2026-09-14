@@ -39,6 +39,13 @@ ANALYSIS = "sbatch scripts/launch_analysis_gpu.sbatch"
 # not yet complete is also not RESUMED by the sweep, so an 800-epoch seed
 # launched by hand behind a gate would stall at its first walltime kill.
 WAVE = [
+    # --- bifurcation diagnostic (5-epoch, per-step ranks) + warm-up-aligned 45k ---
+    ("configs/gate_bifurc_30k",     "results/gate1/gate1_20260914_bifurc_30k",     "paper_composition", None, (1, 2, 3)),
+    ("configs/gate_bifurc_45k",     "results/gate1/gate1_20260914_bifurc_45k",     "paper_composition", None, (1, 2, 3)),
+    ("configs/gate_bifurc_45k_wu7", "results/gate1/gate1_20260914_bifurc_45k_wu7", "paper_composition", None, (1, 2, 3)),
+    # --- ridge beta0 replicated with epoch-20/200 checkpoints -----------
+    ("configs/gate_ridge_ms_beta0",      "results/gate1/gate1_20260914_ridge_ms_beta0",      "product_endpoint", None, (1, 2, 3)),
+    ("configs/gate_ridge_ms_beta0_c100", "results/gate1/gate1_20260914_ridge_ms_beta0_c100", "product_endpoint", None, (1, 2, 3)),
     # --- ridge full model replicated with epoch-20/200 checkpoints ------
     ("configs/gate_ridge_ms",      "results/gate1/gate1_20260914_ridge_ms",
      "product_endpoint", None, (1, 2, 3)),
@@ -89,6 +96,11 @@ DERIVED_ROOTS = {
     "results/gate1/gate1_20260913_major45k_c100": "configs/gate_major45k_c100",
     "results/gate1/gate1_20260914_ridge_ms":       "configs/gate_ridge_ms",
     "results/gate1/gate1_20260914_ridge_ms_c100":  "configs/gate_ridge_ms_c100",
+    "results/gate1/gate1_20260914_bifurc_30k":      "configs/gate_bifurc_30k",
+    "results/gate1/gate1_20260914_bifurc_45k":      "configs/gate_bifurc_45k",
+    "results/gate1/gate1_20260914_bifurc_45k_wu7":  "configs/gate_bifurc_45k_wu7",
+    "results/gate1/gate1_20260914_ridge_ms_beta0":      "configs/gate_ridge_ms_beta0",
+    "results/gate1/gate1_20260914_ridge_ms_beta0_c100": "configs/gate_ridge_ms_beta0_c100",
 }
 X2X2_CONFIG = {
     "product_endpoint":  "configs/gate_x_v8trunc",
@@ -112,6 +124,11 @@ ROOT_TAG = {
     "results/gate1/gate1_20260913_major45k_c100": "_45k_c100",
     "results/gate1/gate1_20260914_ridge_ms": "_ridge_ms",
     "results/gate1/gate1_20260914_ridge_ms_c100": "_ridge_ms_c100",
+    "results/gate1/gate1_20260914_bifurc_30k": "_bifurc30k",
+    "results/gate1/gate1_20260914_bifurc_45k": "_bifurc45k",
+    "results/gate1/gate1_20260914_bifurc_45k_wu7": "_bifurc45kwu7",
+    "results/gate1/gate1_20260914_ridge_ms_beta0": "_ridge_ms_beta0",
+    "results/gate1/gate1_20260914_ridge_ms_beta0_c100": "_ridge_ms_beta0_c100",
 }
 
 

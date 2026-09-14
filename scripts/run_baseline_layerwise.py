@@ -81,6 +81,10 @@ def main() -> None:
                         help="opt in to CPU; the encoder is far slower there")
     parser.add_argument("--out", required=True)
     parser.add_argument("--probe-subsample", type=int, default=0)
+    parser.add_argument("--holdout", type=int, default=0,
+                        help="score on this many training images held out by a fixed "
+                             "seed-0 permutation, fitting on the rest; the test set is "
+                             "never touched.  For hyperparameter SELECTION only.")
     arguments = parser.parse_args()
 
     config = json.loads(Path(arguments.config).read_text())
@@ -100,6 +104,16 @@ def main() -> None:
     print(f"backbone fingerprint {fingerprint:.6f} (unexpected keys: {len(unexpected)})")
 
     train_loader, test_loader = _plain_loaders(config["data"])
+    if arguments.holdout:
+        # Selection must not see the test set.  Carve a fixed holdout out of
+        # the training pool with a seed-0 permutation, fit on the rest, score
+        # on the holdout, and say so in the record.
+        from torch.utils.data import DataLoader, Subset
+        base = train_loader.dataset
+        order = torch.randperm(len(base), generator=torch.Generator().manual_seed(0)).tolist()
+        held, kept = order[:arguments.holdout], order[arguments.holdout:]
+        train_loader = DataLoader(Subset(base, kept), batch_size=512, num_workers=4, shuffle=False)
+        test_loader = DataLoader(Subset(base, held), batch_size=512, num_workers=4, shuffle=False)
     train_features, train_labels = stage_features(backbone, train_loader, device)
     test_features, test_labels = stage_features(backbone, test_loader, device)
     classes = dataset_classes(config)
@@ -122,6 +136,7 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
         "profile_version": "baseline_layerwise_v1",
+        "score_set": f"holdout-{arguments.holdout}" if arguments.holdout else "test",
         "method": config["experiment"].get("method"),
         "seed": config.get("seed"),
         "dataset": config["data"].get("dataset"),
