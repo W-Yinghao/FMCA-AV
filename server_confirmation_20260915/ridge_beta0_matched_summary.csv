@@ -1,0 +1,37 @@
+dataset,arm,measure,n,mean,sd,min,max
+cifar10,full_beta128,stage1,3,57.49,0.2762,57.23,57.78
+cifar10,full_beta128,stage2,3,78.6033,0.9166,77.72,79.55
+cifar10,full_beta128,stage3,3,85.4433,0.2801,85.12,85.61
+cifar10,full_beta128,stage4,3,85.4567,0.1801,85.25,85.58
+cifar10,full_beta128,sgd,3,85.36,0.1778,85.22,85.56
+cifar10,full_beta128,knn,3,83.1533,0.3275,82.89,83.52
+cifar10,beta0,stage1,3,59.8667,0.5273,59.27,60.27
+cifar10,beta0,stage2,3,80.0033,0.095,79.91,80.1
+cifar10,beta0,stage3,3,83.9433,0.0305,83.91,83.97
+cifar10,beta0,stage4,3,83.53,0.1114,83.41,83.63
+cifar10,beta0,sgd,3,83.6767,0.1097,83.55,83.74
+cifar10,beta0,knn,3,81.2167,0.1419,81.09,81.37
+cifar10,paired full - beta0 (same seed),stage1,3,-2.3767,0.6207,-3.04,-1.81
+cifar10,paired full - beta0 (same seed),stage2,3,-1.4,1.0113,-2.38,-0.36
+cifar10,paired full - beta0 (same seed),stage3,3,1.5,0.2516,1.21,1.66
+cifar10,paired full - beta0 (same seed),stage4,3,1.9267,0.2159,1.7,2.13
+cifar10,paired full - beta0 (same seed),sgd,3,1.6833,0.1795,1.48,1.82
+cifar10,paired full - beta0 (same seed),knn,3,1.9367,0.3459,1.68,2.33
+cifar100,full_beta128,stage1,3,33.4033,0.3027,33.08,33.68
+cifar100,full_beta128,stage2,3,54.9733,0.1601,54.81,55.13
+cifar100,full_beta128,stage3,3,58.7267,0.1914,58.57,58.94
+cifar100,full_beta128,stage4,3,56.06,0.2751,55.78,56.33
+cifar100,full_beta128,sgd,3,55.89,0.3969,55.44,56.19
+cifar100,full_beta128,knn,3,49.9133,0.1537,49.81,50.09
+cifar100,beta0,stage1,3,33.55,0.346,33.22,33.91
+cifar100,beta0,stage2,3,53.7033,0.3027,53.38,53.98
+cifar100,beta0,stage3,3,58.2967,0.351,58.06,58.7
+cifar100,beta0,stage4,3,55.0733,0.1966,54.95,55.3
+cifar100,beta0,sgd,3,55.24,0.3989,54.79,55.55
+cifar100,beta0,knn,3,50.0533,0.5896,49.65,50.73
+cifar100,paired full - beta0 (same seed),stage1,3,-0.1467,0.6484,-0.83,0.46
+cifar100,paired full - beta0 (same seed),stage2,3,1.27,0.4613,0.83,1.75
+cifar100,paired full - beta0 (same seed),stage3,3,0.43,0.4952,-0.13,0.81
+cifar100,paired full - beta0 (same seed),stage4,3,0.9867,0.1401,0.83,1.1
+cifar100,paired full - beta0 (same seed),sgd,3,0.65,0.5951,0.06,1.25
+cifar100,paired full - beta0 (same seed),knn,3,-0.14,0.6811,-0.89,0.44

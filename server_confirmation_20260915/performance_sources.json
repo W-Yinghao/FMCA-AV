@@ -1,0 +1,656 @@
+{
+ "FMCA-AV hierarchical (ridge, product_endpoint)": {
+  "evaluations": [
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "product_endpoint__seed1",
+    "seed": 1,
+    "profile": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed1/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed1/checkpoints/last.ckpt",
+    "train_commit": "1c747ea",
+    "start": "2026-08-20 12:43",
+    "gpu": "NVIDIA L40S",
+    "stages": [
+     0.5722999572753906,
+     0.7954999804496765,
+     0.8560000061988831,
+     0.8557999730110168
+    ],
+    "sgd": 0.8555999994277954,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "product_endpoint__seed2",
+    "seed": 2,
+    "profile": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed2/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed2/checkpoints/last.ckpt",
+    "train_commit": "63071af",
+    "start": "2026-08-20 13:43",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "stages": [
+     0.5777999758720398,
+     0.7853999733924866,
+     0.8560999631881714,
+     0.8553999662399292
+    ],
+    "sgd": 0.8529999852180481,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "product_endpoint__seed3",
+    "seed": 3,
+    "profile": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed3/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed3/checkpoints/last.ckpt",
+    "train_commit": "63071af",
+    "start": "2026-08-20 14:07",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "stages": [
+     0.5745999813079834,
+     0.7771999835968018,
+     0.8511999845504761,
+     0.8524999618530273
+    ],
+    "sgd": 0.8521999716758728,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "product_endpoint__seed4",
+    "seed": 4,
+    "profile": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed4/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed4/checkpoints/last.ckpt",
+    "train_commit": "648c54e",
+    "start": "2026-08-21 22:19",
+    "gpu": "NVIDIA L40S",
+    "stages": [
+     0.5780999660491943,
+     0.8026999831199646,
+     0.8539999723434448,
+     0.8509999513626099
+    ],
+    "sgd": 0.8517000079154968,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "product_endpoint__seed5",
+    "seed": 5,
+    "profile": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed5/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/product_endpoint__seed5/checkpoints/last.ckpt",
+    "train_commit": "6b3ab67",
+    "start": "2026-08-21 22:46",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "stages": [
+     0.5949999690055847,
+     0.8068999648094177,
+     0.8395999670028687,
+     0.8379999995231628
+    ],
+    "sgd": 0.8363000154495239,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260914_ridge_ms",
+    "unit": "product_endpoint__seed1",
+    "seed": 1,
+    "profile": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed1/blockwise_profile_epoch-0200.json",
+    "checkpoint": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed1/checkpoints/last.ckpt",
+    "train_commit": "99b904d",
+    "start": "2026-09-14 12:47",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "stages": [
+     0.5999999642372131,
+     0.8089999556541443,
+     0.8420000076293945,
+     0.8364999890327454
+    ],
+    "sgd": 0.8391000032424927,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260914_ridge_ms",
+    "unit": "product_endpoint__seed2",
+    "seed": 2,
+    "profile": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed2/blockwise_profile_epoch-0200.json",
+    "checkpoint": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed2/checkpoints/last.ckpt",
+    "train_commit": "99b904d",
+    "start": "2026-09-14 12:47",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "stages": [
+     0.5777999758720398,
+     0.7853999733924866,
+     0.8560999631881714,
+     0.8553999662399292
+    ],
+    "sgd": 0.8529999852180481,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260914_ridge_ms",
+    "unit": "product_endpoint__seed3",
+    "seed": 3,
+    "profile": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed3/blockwise_profile_epoch-0200.json",
+    "checkpoint": "results/gate1/gate1_20260914_ridge_ms/units/product_endpoint__seed3/checkpoints/last.ckpt",
+    "train_commit": "99b904d",
+    "start": "2026-09-14 12:47",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "stages": [
+     0.5745999813079834,
+     0.7771999835968018,
+     0.8511999845504761,
+     0.8524999618530273
+    ],
+    "sgd": 0.8521999716758728,
+    "profile_version": "layerwise_profile_20260823_v1"
+   }
+  ],
+  "objective": "hierarchical FMCA-AV: adjacent-stage traces alpha=0.2, composition beta=128, covariance gamma=1, final-stage multiview 1; ridge 1e-3; EMA endpoint target 0.99",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18 (width 64)",
+  "projection": "128-d heads, one 512 GELU hidden layer, per level",
+  "note": "group = archived v8 seeds 1-5 + 14-Sep milestone replication seeds 1-3; replication seeds 2,3 are same-GPU-family near-replicas of v8 seeds 2,3 (max |dw| < 1e-2)"
+ },
+ "FMCA-AV final-level multiview (ridge, final_mview)": {
+  "evaluations": [
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "final_mview__seed1",
+    "seed": 1,
+    "profile": "results/gate1/gate1_20260820_v8/units/final_mview__seed1/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/final_mview__seed1/checkpoints/last.ckpt",
+    "train_commit": "77a3a7b",
+    "start": "2026-08-20 00:44",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "stages": [
+     0.5568000078201294,
+     0.6850000023841858,
+     0.8461999893188477,
+     0.8876999616622925
+    ],
+    "sgd": 0.8899000287055969,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "final_mview__seed2",
+    "seed": 2,
+    "profile": "results/gate1/gate1_20260820_v8/units/final_mview__seed2/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/final_mview__seed2/checkpoints/last.ckpt",
+    "train_commit": "77a3a7b",
+    "start": "2026-08-20 00:44",
+    "gpu": "NVIDIA H100 NVL",
+    "stages": [
+     0.5622999668121338,
+     0.6866999864578247,
+     0.848800003528595,
+     0.8863999843597412
+    ],
+    "sgd": 0.8919000029563904,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "final_mview__seed3",
+    "seed": 3,
+    "profile": "results/gate1/gate1_20260820_v8/units/final_mview__seed3/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/final_mview__seed3/checkpoints/last.ckpt",
+    "train_commit": "77a3a7b",
+    "start": "2026-08-20 00:44",
+    "gpu": "NVIDIA H100 NVL",
+    "stages": [
+     0.5583999752998352,
+     0.6843000054359436,
+     0.849299967288971,
+     0.8889999985694885
+    ],
+    "sgd": 0.8888999819755554,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "final_mview__seed4",
+    "seed": 4,
+    "profile": "results/gate1/gate1_20260820_v8/units/final_mview__seed4/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/final_mview__seed4/checkpoints/last.ckpt",
+    "train_commit": "4bacc5a",
+    "start": "2026-08-21 23:59",
+    "gpu": "NVIDIA H100 NVL",
+    "stages": [
+     0.5600000023841858,
+     0.6815999746322632,
+     0.8464999794960022,
+     0.8876999616622925
+    ],
+    "sgd": 0.8894000053405762,
+    "profile_version": "layerwise_profile_20260823_v1"
+   },
+   {
+    "root": "gate1_20260820_v8",
+    "unit": "final_mview__seed5",
+    "seed": 5,
+    "profile": "results/gate1/gate1_20260820_v8/units/final_mview__seed5/layerwise_profile.json",
+    "checkpoint": "results/gate1/gate1_20260820_v8/units/final_mview__seed5/checkpoints/last.ckpt",
+    "train_commit": "4bacc5a",
+    "start": "2026-08-22 02:07",
+    "gpu": "NVIDIA L40S",
+    "stages": [
+     0.5580999851226807,
+     0.6904000043869019,
+     0.8481999635696411,
+     0.8881999850273132
+    ],
+    "sgd": 0.8884999752044678,
+    "profile_version": "layerwise_profile_20260823_v1"
+   }
+  ],
+  "objective": "final-stage multiview trace objective only (alpha=0, beta=0 by variant); ridge 1e-3",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18 (width 64)",
+  "projection": "128-d head, one 512 GELU hidden layer",
+  "note": "separate method row; different objective"
+ },
+ "SimCLR (lr 0.1)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/reflr_simclr_lr0.1_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_simclr_lr0.1_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5521000027656555,
+     0.6791999936103821,
+     0.821399986743927,
+     0.863599956035614
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_simclr_lr0.1_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_simclr_lr0.1_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5532000064849854,
+     0.6744999885559082,
+     0.8223999738693237,
+     0.8618999719619751
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_simclr_lr0.1_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_simclr_lr0.1_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5476999878883362,
+     0.684499979019165,
+     0.8180999755859375,
+     0.8604999780654907
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   }
+  ],
+  "objective": "NT-Xent, temperature 0.5",
+  "projection": "2048 hidden BN -> 128",
+  "train_commit": "e537490 (seed1) / 9f4580c (seeds 2,3)",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "Barlow Twins (lr 0.1)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/reflr_barlow_twins_lr0.1_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_barlow_twins_lr0.1_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5529999732971191,
+     0.6730999946594238,
+     0.8248999714851379,
+     0.8772000074386597
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_barlow_twins_lr0.1_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_barlow_twins_lr0.1_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5662999749183655,
+     0.6825000047683716,
+     0.8242999911308289,
+     0.8739999532699585
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_barlow_twins_lr0.1_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_barlow_twins_lr0.1_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5620999932289124,
+     0.6766999959945679,
+     0.8255999684333801,
+     0.8741999864578247
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   }
+  ],
+  "objective": "Barlow Twins, lambda 0.0051",
+  "projection": "2048-2048 hidden BN -> 2048",
+  "train_commit": "e537490 / 9f4580c",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "VICReg (lr 0.3)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/reflr_vicreg_lr0.3_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_vicreg_lr0.3_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5566999912261963,
+     0.6753999590873718,
+     0.8283999562263489,
+     0.8837999701499939
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_vicreg_lr0.3_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_vicreg_lr0.3_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5645999908447266,
+     0.6699999570846558,
+     0.8353999853134155,
+     0.8860999941825867
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_vicreg_lr0.3_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_vicreg_lr0.3_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5607999563217163,
+     0.6785999536514282,
+     0.8346999883651733,
+     0.8822999596595764
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   }
+  ],
+  "objective": "VICReg 25/25/1",
+  "projection": "2048-2048 hidden BN -> 2048",
+  "train_commit": "e537490 / 9f4580c",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "MoCo v2 (lr 0.3)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/reflr_moco_v2_lr0.3_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_moco_v2_lr0.3_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5539999604225159,
+     0.6467999815940857,
+     0.7840999960899353,
+     0.8373000025749207
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_moco_v2_lr0.3_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_moco_v2_lr0.3_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5530999898910522,
+     0.6459999680519104,
+     0.7829999923706055,
+     0.8341999650001526
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   },
+   {
+    "profile": "results/baseline_layerwise/reflr_moco_v2_lr0.3_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslreflr_moco_v2_lr0.3_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5379999876022339,
+     0.6488999724388123,
+     0.784500002861023,
+     0.8384000062942505
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": "test"
+   }
+  ],
+  "objective": "MoCo v2, momentum 0.999, temperature 0.2, queue 4096",
+  "projection": "2048 hidden BN -> 128",
+  "train_commit": "e537490 / 9f4580c",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "FastSiam (lr 0.03)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/ref_fastsiam_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_fastsiam_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5548999905586243,
+     0.652999997138977,
+     0.7274999618530273,
+     0.7558000087738037
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_fastsiam_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_fastsiam_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5557000041007996,
+     0.6462000012397766,
+     0.7261999845504761,
+     0.7534999847412109
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_fastsiam_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_fastsiam_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5557999610900879,
+     0.6541999578475952,
+     0.7277999520301819,
+     0.7554999589920044
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   }
+  ],
+  "objective": "FastSiam, 4 views, mean-of-other-views target",
+  "projection": "2048-2048 BN -> 2048; predictor 512",
+  "train_commit": "523feab",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "SimSiam (lr 0.03)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/ref_simsiam_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_simsiam_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5543999671936035,
+     0.6424999833106995,
+     0.7254999876022339,
+     0.7475000023841858
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_simsiam_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_simsiam_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5518999695777893,
+     0.6486999988555908,
+     0.7177000045776367,
+     0.7410999536514282
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_simsiam_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_simsiam_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.553600013256073,
+     0.6421999931335449,
+     0.7172999978065491,
+     0.7416999936103821
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   }
+  ],
+  "objective": "SimSiam",
+  "projection": "2048-2048 BN -> 2048; predictor 512",
+  "train_commit": "523feab",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "BYOL reference recipe (lr 0.03)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/ref_byol_seed1_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_byol_seed1/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5523999929428101,
+     0.6315000057220459,
+     0.6988999843597412,
+     0.7290999889373779
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_byol_seed2_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_byol_seed2/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5464999675750732,
+     0.6359999775886536,
+     0.702299952507019,
+     0.7317000031471252
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/ref_byol_seed3_epoch-0200.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_byol_seed3/checkpoints/epoch-0200.ckpt",
+    "stages": [
+     0.5518999695777893,
+     0.6394000053405762,
+     0.7020999789237976,
+     0.7394999861717224
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   }
+  ],
+  "objective": "BYOL, EMA 0.996",
+  "projection": "4096 BN -> 256; predictor 4096 BN",
+  "train_commit": "a4eafc2",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ },
+ "BYOL old-template projector + BN (lr 0.03)": {
+  "evaluations": [
+   {
+    "profile": "results/baseline_layerwise/byol_bn_seed1.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslmatched_byolbn_seed1/checkpoints/last.ckpt",
+    "stages": [
+     0.5521000027656555,
+     0.6414999961853027,
+     0.7203999757766724,
+     0.7475999593734741
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/byol_bn_seed2.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslmatched_byolbn_seed2/checkpoints/last.ckpt",
+    "stages": [
+     0.546999990940094,
+     0.6434000134468079,
+     0.7076999545097351,
+     0.7346000075340271
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   },
+   {
+    "profile": "results/baseline_layerwise/byol_bn_seed3.json",
+    "seed": 20260850,
+    "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslmatched_byolbn_seed3/checkpoints/last.ckpt",
+    "stages": [
+     0.5591999888420105,
+     0.6451999545097351,
+     0.7149999737739563,
+     0.7457999587059021
+    ],
+    "profile_version": "baseline_layerwise_v1",
+    "score_set": null
+   }
+  ],
+  "objective": "BYOL, EMA 0.996",
+  "projection": "512-512 BN (old template); predictor 512",
+  "train_commit": "see manifest",
+  "images": 45000,
+  "epochs": 200,
+  "backbone": "CIFAR ResNet-18",
+  "note": ""
+ }
+}

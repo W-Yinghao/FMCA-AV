@@ -46,3 +46,25 @@ is preserved beside it as `unit.json.failed_20260821`. With five seeds:
 
 The seed-4 rerun (SGD 55.64) sits inside the range of the four August
 seeds.
+
+## Note added 2026-09-15 — four of the six replications are near-copies of the archived weights
+
+Checked while answering the server confirmation checklist. The six
+14 September units and their archived counterparts, compared checkpoint
+to checkpoint:
+
+    unit        archived GPU     new GPU        max |dw|    SGD probe (archived / new)
+    C10 s1      L40S             A100-PCIE      7.1        85.56 / 83.91
+    C10 s2      A100-SXM4        A100-PCIE      7.7e-3     85.30 / 85.30
+    C10 s3      A100-PCIE        A100-PCIE      8.5e-3     85.22 / 85.22
+    C100 s1     A100-PCIE        A100-PCIE      1.3e-2     55.44 / 55.44
+    C100 s2     A100-SXM4        A100-PCIE      1.3e-2     56.19 / 56.19
+    C100 s3     L40S             A100-PCIE      4.6        56.04 / 56.09
+
+On the same GPU family the training is deterministic up to 1e-2 in the
+weights and the probe, kNN and every stage value coincide to four
+decimals; across families the runs are unrelated. P-R1's "every range
+overlaps" was therefore near-certain for four of the six units and is
+an independent replication for two (C10 s1, C100 s3). The epoch-20
+rows are unaffected (they are new measurements either way); the
+epoch-200 ranges should be read as 5 + 2 independent samples, not 5 + 3.
