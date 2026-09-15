@@ -12,8 +12,9 @@ under `BASELINE_LR_SELECTION_PREREG_FROZEN_20260914`; the stage-4
 comparison changes sign. §6–§9: the truncated arms are annotated with
 the multiview-term code version (`02fa55e`), which — not the data
 split — decides the retained-rank branch
-(`BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`). One wave (ridge β = 0
-with epoch-20 checkpoints) is still running and is not in this file.
+(`BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`). The ridge β = 0
+replication with epoch-20 checkpoints completed on 15 September and is
+in §5.
 
 Terminology follows the 14 September reorganization: **FMCA-AV (ridge)**
 is the practical method (`product_endpoint`: ridge-normalized pairwise
@@ -201,6 +202,33 @@ stages 2–4 by 0.4–0.8 at the nearest edges. The intermediate-stage
 advantage over external methods is therefore present without the
 composition penalty on CIFAR-10. The parallel-children control is not
 below the full model at any stage on either dataset.
+
+**β = 0 replicated with epoch-20/200 checkpoints (15 September;
+`RIDGE_BETA0_MILESTONE_RESULTS_20260915.md`).** Three fresh seeds per
+dataset, config diff against the archived β = 0 exactly
+`checkpoint_milestones`, and against the same-day full-model replication
+exactly `loss.beta`. P-C1 confirmed: every epoch-200 range overlaps the
+archived β = 0 range (CIFAR-10 SGD 83.42–83.58, stage 2 79.55–79.92,
+stage 4 83.19–83.53; CIFAR-100 54.79–55.55, 53.75–53.98, 54.90–55.30).
+Same-seed pairs, new runs only (full − β = 0, mean ± SD over three seeds):
+
+    CIFAR-10   epoch 20    full  52.25–54.34   61.77–68.09   67.05–70.88   67.62–70.83
+                           β = 0 56.11–56.87   67.11–67.81   68.83–70.10   68.15–69.89
+               epoch 200   full  57.46–60.00   77.72–80.90   84.20–85.61   83.65–85.54
+                           β = 0 59.78–60.61   79.55–79.92   83.66–83.83   83.19–83.53
+                           paired, epoch 200:  −1.73±0.97  −0.66±1.75  +1.21±0.63  +1.46±1.16
+    CIFAR-100  epoch 20    full  29.70–30.14   42.89–43.87   45.15–46.46   44.03–44.82
+                           β = 0 29.84–30.71   40.73–41.70   41.78–44.14   40.77–43.12
+               epoch 200   full  33.09–33.86   54.82–55.35   58.55–59.57   55.72–56.26
+                           β = 0 33.22–34.22   53.75–53.98   57.66–58.70   54.90–55.30
+                           paired, epoch 20:   −0.32±0.66  +2.27±0.95  +3.14±1.87  +2.69±1.61
+                           paired, epoch 200:  −0.11±0.89  +1.20±0.38  +0.89±0.91  +1.00±0.21
+
+On CIFAR-100 the full model is above β = 0 at stages 2–4 with disjoint
+ranges at epoch 20 and at epoch 200; on CIFAR-10 β = 0 is above the full
+model at stages 1–2 at epoch 20 and the two overlap at stages 3–4.
+Two of the six β = 0 units (CIFAR-100 seeds 2, 3) are same-GPU-family
+near-copies of the archived units; the other four are independent.
 
 ---
 

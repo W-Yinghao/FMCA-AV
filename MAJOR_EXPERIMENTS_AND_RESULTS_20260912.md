@@ -273,7 +273,7 @@ epoch 5 on both splits. `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
                                                                        refuted; A2 withdrawn);
                                                                        old-code check NOT prereg'd
     baseline learning rates        BASELINE_LR_SELECTION_FROZEN_0914    preregistered (P-L1 confirmed)
-    ridge beta0 milestones         RIDGE_BETA0_MILESTONE_FROZEN_0914    preregistered, running
+    ridge beta0 milestones         RIDGE_BETA0_MILESTONE_FROZEN_0914    preregistered (P-C1 confirmed)
 
 ## 8. Completion state, 2026-09-12 22:30
 

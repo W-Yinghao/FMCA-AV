@@ -108,3 +108,9 @@ Twenty stage-granularity profile jobs (the 19 above plus one recheck), all lande
 - Affected `.tex`: `results_reorganized_20260914.tex` (baseline table,
   its caption, the stage-4 sentence, the 45k paragraph, the ablation
   table note). Not edited here.
+- **Ridge β = 0 with epoch-20/200 checkpoints landed** (15 Sep, 15:40):
+  P-C1 confirmed, all six epoch-200 ranges overlap the archived β = 0;
+  the new matched pair (full vs β = 0, same day, same seeds, both with
+  milestones) is in consolidated §5 and `RIDGE_BETA0_MILESTONE_RESULTS_20260915.md`.
+  The draft's matched-ablation table may now be replaced as a whole by
+  the 14/15-Sep pair; the archived trio stays valid as the alternative.

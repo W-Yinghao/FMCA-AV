@@ -162,7 +162,7 @@ overlap) or should be made at the 30,000-image split only.
     added 15 September             bifurcation diagnostic (P-D1, P-D2 refuted; P-D3 arm withdrawn;
                                    old-code check NOT preregistered); baseline learning rates
                                    (P-L1 confirmed; P-L3 rows replaced); ridge β = 0 milestones
-                                   (P-C1, running)
+                                   (P-C1 confirmed, 15 Sep)
 
 ## 10. Infrastructure facts that bear on the numbers
 
@@ -181,8 +181,8 @@ overlap) or should be made at the 30,000-image split only.
 1. ~~What decides the epoch-2 branch~~ — done 15 September: the
    multiview-term code version (item 1).
 2. ~~Per-method learning rates~~ — done 15 September (item 5).
-3. A ridge β = 0 with epoch-20 checkpoints — running 15 September
-   (`RIDGE_BETA0_MILESTONE_PREREG_FROZEN_20260914`).
+3. ~~A ridge β = 0 with epoch-20 checkpoints~~ — done 15 September
+   (`RIDGE_BETA0_MILESTONE_RESULTS_20260915.md`; P-C1 confirmed).
 4. New, and a decision before compute: which multiview term the
    manuscript's truncated formulation means. If the pre-`02fa55e`
    term, its 45k/200-epoch result does not exist and would need its own
