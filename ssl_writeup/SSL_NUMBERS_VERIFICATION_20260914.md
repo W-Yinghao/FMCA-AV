@@ -83,3 +83,28 @@ Twenty stage-granularity profile jobs (the 19 above plus one recheck), all lande
   stages 33.50 / 55.07 / 58.91 / 56.06 with ranges [33.08, 34.20],
   [54.81, 55.48], [58.57, 59.59], [55.75, 56.39]. The §2b numbers (n = 4)
   are superseded.
+
+## 7. Added 15 September
+
+- **The 30k-vs-45k truncated comparison is a code-version comparison.**
+  The "All dagger values … truncated 45k, rank trajectories" and "All 30k
+  truncated tables" rows in §1 still match their sources numerically, but
+  the 30k CIFAR-10 units (composition, β = 0) were trained before commit
+  `02fa55e` changed the final-stage multiview term and every 45k unit
+  after it. A five-epoch rerun of both splits under each code shows the
+  term, not the split, decides the retained-rank branch. Any draft
+  sentence that reads the 45k deficit as a data-size effect is wrong;
+  the truncated ablation table (draft Table on objective ablations)
+  mixes the two terms (full, β = 0 old; α = 0, T = 2 new).
+  `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
+- **Baseline rows for SimCLR, Barlow Twins, VICReg and MoCo v2 are
+  replaced** by runs at learning rates selected on a holdout under a
+  frozen criterion (0.1, 0.1, 0.3, 0.3). Draft Table `sslres:baselines`
+  and its caption change; the stage-4 sentence "exceeds Barlow Twins by
+  0.90" is false under the new rows — FMCA-AV (ridge) is below VICReg
+  (88.23–88.61), Barlow Twins (87.40–87.72) and SimCLR (86.05–86.36) at
+  stage 4, above all at stages 2 (by 9.27) and 3 (by 0.42).
+  `BASELINE_LR_SELECTION_RESULTS_20260915.md`.
+- Affected `.tex`: `results_reorganized_20260914.tex` (baseline table,
+  its caption, the stage-4 sentence, the 45k paragraph, the ablation
+  table note). Not edited here.

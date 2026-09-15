@@ -6,6 +6,15 @@ server in raw form; sources are named per block. Ranges are minimum–
 maximum over seeds and are not confidence intervals. All GPU work is
 finished; nothing here is provisional.
 
+**Revised 2026-09-15.** §3: the rows for SimCLR, Barlow Twins, VICReg
+and MoCo v2 are replaced by runs at per-method learning rates selected
+under `BASELINE_LR_SELECTION_PREREG_FROZEN_20260914`; the stage-4
+comparison changes sign. §6–§9: the truncated arms are annotated with
+the multiview-term code version (`02fa55e`), which — not the data
+split — decides the retained-rank branch
+(`BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`). One wave (ridge β = 0
+with epoch-20 checkpoints) is still running and is not in this file.
+
 Terminology follows the 14 September reorganization: **FMCA-AV (ridge)**
 is the practical method (`product_endpoint`: ridge-normalized pairwise
 scores, shared Cholesky composition coordinates, exponentially averaged
@@ -92,36 +101,48 @@ CIFAR-100 SGD 55.44–56.19, stage 2 54.82–55.35, stage 4 55.72–56.26).
 
 ## 3. Comparison with external methods — CIFAR-10, 45,000 images, 200 epochs
 
-Source: `results/baseline_layerwise/ref_*` (reference recipes: BatchNorm
-in projector/predictor, method-specified projector widths and
-constants; optimizer held at SGD lr 0.03 for all six, see §10). Three
-seeds each. Same stagewise evaluator as §2.
+Source: `results/baseline_layerwise/ref_*` (FastSiam, SimSiam, BYOL at
+SGD lr 0.03) and `reflr_*` (SimCLR and Barlow Twins at lr 0.1, VICReg
+and MoCo v2 at lr 0.3). Reference recipes: BatchNorm in projector/
+predictor, method-specified projector widths and constants. The four
+learning rates were selected per method from {0.03, 0.1, 0.3} on seed 1
+by the stage 2–4 mean of the stagewise probe scored on a 5,000-image
+holdout of the training pool, criterion frozen before any run
+(`BASELINE_LR_SELECTION_PREREG_FROZEN_20260914`,
+`BASELINE_LR_SELECTION_RESULTS_20260915.md`); the test set was not
+consulted; seeds 2–3 were then run at the selected rate. Three seeds
+each. Same stagewise evaluator as §2.
 
 **Epoch 200**
 
     method          stage 1        stage 2        stage 3        stage 4
     FMCA-AV (ridge) 57.23–59.50    77.72–80.69    83.96–85.61    83.80–85.58
-    Barlow Twins    55.60–56.85    68.04–68.29    79.14–79.57    82.43–82.90
-    VICReg          57.21–57.65    68.26–68.70    78.64–79.15    81.68–82.19
-    SimCLR          55.77–56.33    67.31–67.86    78.50–78.79    81.80–81.88
-    MoCo v2         54.71–54.89    64.55–65.28    73.73–74.03    77.68–78.45
+    VICReg (0.3)    55.67–56.46    67.00–67.86    82.84–83.54    88.23–88.61
+    Barlow (0.1)    55.30–56.63    67.31–68.25    82.43–82.56    87.40–87.72
+    SimCLR (0.1)    54.77–55.32    67.45–68.45    81.81–82.24    86.05–86.36
+    MoCo v2 (0.3)   53.80–55.40    64.60–64.89    78.30–78.45    83.42–83.84
     FastSiam        55.49–55.58    64.62–65.42    72.62–72.78    75.35–75.58
     SimSiam         55.19–55.44    64.22–64.87    71.73–72.55    74.11–74.75
     BYOL            54.65–55.24    63.15–63.94    69.89–70.23    72.91–73.95
 
 At stage 2 FMCA-AV's lower bound (77.72) exceeds every method's upper
-bound (best 68.70, VICReg) by 9.0 points. At stage 4 it exceeds Barlow
-Twins' upper bound by 0.90 points. These compare complete training
-systems; they do not isolate the composition penalty (§5).
+bound (best 68.45, SimCLR) by 9.27 points. At stage 3 it exceeds
+VICReg's upper bound by 0.42. At stage 4 FMCA-AV (83.80–85.58) is
+**below** VICReg, Barlow Twins and SimCLR with disjoint ranges (2.65,
+1.82 and 0.47 at the nearest edges) and overlaps MoCo v2. The lr-0.03
+rows (`SSL_REFERENCE_RECIPES_RESULTS_20260914.md`) had FMCA-AV 0.90
+above Barlow Twins at stage 4; that ordering does not survive the
+per-method learning rates. These compare complete training systems;
+they do not isolate the composition penalty (§5).
 
 **Epoch 20**
 
     method          stage 1        stage 2        stage 3        stage 4
     FMCA-AV (ridge) 52.25–54.34    61.77–68.09    67.05–70.88    67.62–70.83
-    Barlow Twins    52.35–53.61    60.78–61.31    68.20–68.33    70.36–70.95
-    VICReg          53.29–54.65    62.27–62.72    68.59–69.20    70.90–71.73
-    SimCLR          53.63–54.74    61.78–62.26    68.10–69.35    69.98–70.30
-    MoCo v2         48.95–50.96    55.78–55.88    60.11–60.35    62.45–63.02
+    VICReg (0.3)    52.78–54.32    63.82–64.45    74.29–74.93    77.45–77.89
+    Barlow (0.1)    53.80–54.41    64.06–64.53    73.54–73.97    76.06–76.98
+    SimCLR (0.1)    52.88–54.55    62.70–64.76    71.22–71.65    73.96–74.84
+    MoCo v2 (0.3)   49.99–50.68    57.25–57.62    62.15–62.84    63.90–64.92
     FastSiam        51.23–51.51    56.38–57.23    59.11–59.78    58.46–59.84
     SimSiam         50.65–51.57    55.59–56.45    57.92–58.36    56.32–57.38
     BYOL            48.94–50.40    53.64–53.99    55.33–56.18    54.41–55.86
@@ -190,10 +211,16 @@ Sources: `gate1_20260910_paper_probe`, `gate1_20260910_paper_v1` (30k);
 
 **Final-stage SGD probe**
 
-    formulation                 pretraining images   CIFAR-10          CIFAR-100
-    ridge (n = 5)               45,000               83.63–85.56       55.44–56.19
-    truncated (n = 3)           30,000               82.43–82.84       44.66–45.91
-    truncated (n = 3)           45,000               78.32–78.47       42.48–44.48
+    formulation                 pretraining images   multiview term     CIFAR-10          CIFAR-100
+    ridge (n = 5)               45,000               ridge (V7)         83.63–85.56       55.44–56.19
+    truncated (n = 3)           30,000               pre-02fa55e / current  82.43–82.84   44.66–45.91
+    truncated (n = 3)           45,000               current            78.32–78.47       42.48–44.48
+
+"Multiview term": commit `02fa55e` (11 Sep, 01:52) replaced the
+final-stage multiview term of the truncated formulation (ridge-1e-3
+trace score on the mean of views → truncated whiteners on pair-specific
+Grams, Supplement §1.3). The CIFAR-10 30k units started before it; the
+CIFAR-100 30k units and every 45k unit started after it.
 
 **Truncated, 45,000 images, stage-end taps**
 
@@ -202,7 +229,8 @@ Sources: `gate1_20260910_paper_probe`, `gate1_20260910_paper_v1` (30k);
     CIFAR-100  epoch 200   st2 50.10–50.94   st3 52.16–52.45   st4 48.62–50.32
 
 At epoch 200 the truncated 45k arm is above every external method at
-stage 2 and below Barlow Twins, VICReg and SimCLR at stage 4.
+stage 2 and below VICReg, Barlow Twins, SimCLR and MoCo v2 at stage 4
+(rows of §3, per-method learning rates).
 
 **Training-time retained projected rank** (`train/retained_min`, of 128)
 
@@ -210,9 +238,14 @@ stage 2 and below Barlow Twins, VICReg and SimCLR at stage 4.
     CIFAR-10   45k   34–48 (ep 0) → 17–20 (ep 2) → 18–21 (ep 5–199)
     CIFAR-100  both  34–47 (ep 0) → 17–19 (ep 2) → 18–20 (ep 5–199)
 
-The 45k training set is a strict superset of the 30k set for the same
-seed; method hyperparameters are unchanged; steps per epoch are 176 vs
-117. The trajectories alone do not identify the cause.
+The branch is decided by the multiview-term code version, not by the
+split. Under the current term, per-step logging shows the endpoint
+level of every 30k and every 45k seed falling from 56–102 to 16–21
+about 30 steps into epoch 2 (levels 0 and 1 unchanged); under the
+pre-`02fa55e` term the same six units hold 37–48 through epoch 5 on
+both splits, matching the archived 30k runs. The 30k-vs-45k rows above
+therefore compare two implementations, not two data sizes
+(`BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`).
 
 **Frozen-coordinate operator diagnostics** (retained ranks per state;
 endpoint Frobenius norm; relative composition error)
@@ -236,6 +269,15 @@ an unresolved operator-estimation result.
 
 Source: frozen extraction `results_audit_20260912`, reproduced in
 `results_reorganized_20260914.tex`; mean ± sample SD, completed runs only.
+
+**Code-version note (2026-09-15).** This table mixes two multiview
+terms: "full truncated" and "β = 0" trained before `02fa55e`; "α = 0"
+and "two-state chain" after it; "without final-stage multiview" has no
+such term under either. The full-vs-β = 0 row pair and the full-vs-no-
+multiview pair are within one implementation; full-vs-α = 0 and
+full-vs-two-state are confounded by the code change, as are the
+four-state, K = 256 and parallel-children rows of the configuration
+checks against the nested K = 128 row.
 
     setting                          stage 1       stage 2       stage 3       stage 4
     full truncated                   59.02±0.99    79.81±0.42    82.78±0.13    82.61±0.22
@@ -282,9 +324,9 @@ covariance-scale growth.
     ridge, n = 5                45,000    55.78 (55.44–56.19)            33.50 / 55.07 / 58.91 / 56.06
     ridge β = 0, n = 3          45,000    55.24 (54.79–55.55)            33.55 / 53.70 / 58.30 / 55.07
     final-stage only, n = 5     45,000    61.34 (61.12–61.96)            30.84 / 43.91 / 60.35 / 61.14
-    truncated, n = 3            30,000    45.29 (44.66–45.91)
-    truncated β = 0, n = 3      30,000    (45.40–50.14)                  stage 2 47.5–50.9 vs full 49.6–49.9
-    truncated, n = 3            45,000    43.30 (42.48–44.48)
+    truncated, n = 3            30,000    45.29 (44.66–45.91)            current multiview term
+    truncated β = 0, n = 3      30,000    (45.40–50.14)                  stage 2 47.5–50.9 vs full 49.6–49.9; current term
+    truncated, n = 3            45,000    43.30 (42.48–44.48)            current multiview term
 
 kNN for ridge: 50.04 (49.81–50.38). The highest ridge stage mean is stage
 3, not the final stage.
@@ -295,11 +337,13 @@ kNN for ridge: 50.04 (49.81–50.38). The highest ridge stage mean is stage
 
     claim                                                    evidence                        status
     ridge FMCA-AV learns useful intermediate/final features  §2, five seeds, two datasets    supported
-    stagewise ranges exceed the six refreshed baselines      §3, same evaluator, same budget  supported at stage 2 (9.0 pts) and stage 4 (0.9 pt)
+    stagewise ranges exceed the seven external baselines     §3, same evaluator, same budget  supported at stage 2 (9.3 pts) and stage 3 (0.4 pt);
+                                                                                              NOT at stage 4: VICReg, Barlow Twins, SimCLR above (disjoint)
     best at the final readout                                §4 control is higher             not claimed
     composition penalty causes the stage-2 advantage         §5 β = 0 inside full's range     not supported on CIFAR-10
-    truncated 45k combines lower accuracy and low rank       §6 trajectories                  association, not causation
-    composition changes operator agreement (truncated 30k)   §7                               supported for that implementation
+    truncated 45k is lower because of the data size          §6                               refuted: the 30k and 45k arms ran different multiview
+                                                                                              terms; same term → same branch on both splits
+    composition changes operator agreement (truncated 30k)   §7                               supported for that implementation (pre-02fa55e term)
     ridge intrinsically superior to Gram normalization       recipes differ in several ways   not claimed
     archived ridge numbers reproduce                         §2 replication, six ranges       supported
 
@@ -314,11 +358,13 @@ kNN for ridge: 50.04 (49.81–50.38). The highest ridge stage mean is stage
   normalization and width and each method's own constants (MoCo
   momentum 0.999, temperature 0.2, queue 4096; SimCLR temperature 0.5;
   Barlow λ 0.0051; VICReg 25/25/1; SimSiam/FastSiam predictor 512).
-- The optimizer (SGD lr 0.03, batch 256, cosine) was **not** tuned per
-  method. Against the old template, Barlow Twins and VICReg improved
-  (disjoint), SimCLR and MoCo v2 were 0.02–0.9 lower. SimCLR, Barlow
-  Twins and VICReg are normally trained at higher learning rates and are
-  expected to be understated here.
+- The optimizer is SGD, batch 256, cosine with 10 warm-up epochs. The
+  learning rate is 0.03 for FastSiam, SimSiam and BYOL, and was selected
+  per method from {0.03, 0.1, 0.3} for SimCLR (0.1), Barlow Twins (0.1),
+  VICReg (0.3) and MoCo v2 (0.3) on a 5,000-image holdout with the
+  criterion frozen first; the test set was not consulted. At lr 0.03
+  (kept on record) the same four methods were 4.2–6.0 points lower at
+  stage 4. FMCA-AV's own learning rate (0.1) was not re-selected.
 - FastSiam was previously unimplemented (the pair loop computed
   independent SimSiam pairs); it now uses the mean-of-other-views target.
   SimSiam and FastSiam at two views coincide.

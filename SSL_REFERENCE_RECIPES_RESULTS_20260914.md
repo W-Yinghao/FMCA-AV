@@ -91,3 +91,14 @@ lower edge is 0.55 below; the wider reference projector did not improve
 BYOL at lr 0.03, consistent with the SimCLR and MoCo v2 outcome under
 P-R2. P-B5 carried no prediction: BYOL is seventh of seven at every
 stage.
+
+---
+
+## Addendum, 15 September — learning rates re-selected for four methods
+
+The simclr, barlow_twins, vicreg and moco_v2 rows above are the lr-0.03
+rows and stay on record. Under `BASELINE_LR_SELECTION_PREREG_FROZEN_20260914`
+the four methods were re-run at rates selected on a holdout (0.1, 0.1,
+0.3, 0.3) and those rows replace these in the manuscript tables:
+`BASELINE_LR_SELECTION_RESULTS_20260915.md`. Stage 4 at epoch 200 rises
+by 4.2–6.0 points for every one of the four.

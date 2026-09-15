@@ -18,16 +18,24 @@ same distribution (a strict superset, same seeds, same hyperparameters)
 moved the CIFAR-10 full model to the lower branch and cost 4 points at
 the final stage (82.43–82.84 → 78.32–78.47).
 
-Reading: the 82.7 headline of the truncated formulation was a regime,
-not a property of the method. The branch is decided in the first two
-epochs. Nothing on disk identifies what decides it (data order, steps
-per epoch at the warm-up learning rate, the truncation floor interacting
-with early Gram conditioning). A diagnostic wave on this question would
-be a legitimate preregistration; a hyperparameter search to recover the
-number would not, per the frozen grid.
+**Superseded 2026-09-15.** The branch is decided by the code version
+of the final-stage multiview term, not by the data. Commit `02fa55e`
+(11 Sep 01:52) replaced that term (ridge-1e-3 trace score → truncated
+whiteners on pair-specific Grams, Supplement §1.3). The CIFAR-10
+composition and β = 0 units — the only ones that ever reached 128 —
+started before it; every other truncated unit with a multiview term
+started after it. Under per-step logging the current term drops the
+endpoint level from 56–102 to 16–21 about 30 steps into epoch 2 on both
+splits and all six seeds, with levels 0 and 1 unchanged; the parent
+commit's code holds 37–48 through epoch 5 on both splits. The 45k arm's
+4-point deficit is therefore an implementation difference. Which term
+is the paper's is a manuscript decision; the 200-epoch result of the
+pre-`02fa55e` term at 45k does not exist. The prereg's P-D1 and P-D2
+were both refuted (P-D1's level-0/1 threshold was mis-set; the 30k
+split under the current code also crashes).
 
-Evidence: `MAJOR_45K_RESULTS_20260914.md`; `train/retained_min` in
-every truncated unit's `metrics.csv`.
+Evidence: `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`;
+`MAJOR_45K_RESULTS_20260914.md` (corrected); `git show 02fa55e`.
 
 ## 2. The ridge recipe does not depend on the composition penalty for its intermediate-stage advantage, and the star control is not worse
 
@@ -104,6 +112,14 @@ if the comparison is to carry weight beyond "same ruler".
 Evidence: `BYOL_COLLAPSE_DIAGNOSIS_20260913.md`;
 `SSL_REFERENCE_RECIPES_RESULTS_20260914.md`.
 
+**Update 2026-09-15.** The learning-rate wave ran (P-L1 confirmed:
+SimCLR 0.1, Barlow Twins 0.1, VICReg 0.3; MoCo v2 0.3). Stage 4 rose
+4.2–6.0 points for all four, and the understatement was large enough to
+flip the final-stage ordering: FMCA-AV (ridge) is now below VICReg,
+Barlow Twins and SimCLR at stage 4 with disjoint ranges, and above all
+seven only at stages 2 and 3. MoCo v2 at 83.4–83.8 is now in line with
+the user's earlier 83.8. Evidence: `BASELINE_LR_SELECTION_RESULTS_20260915.md`.
+
 ## 6. The manuscript's earlier "45,000 images" claim was false on our side
 
 Every `gate_paper` (truncated) unit trained on 30,000 images because the
@@ -143,6 +159,10 @@ overlap) or should be made at the 30,000-image split only.
     before reading
     descriptive only               T = 4, K = 256 (aggregates seen before any reading rule);
                                    ridge α = 0, M_end = 4, parallel (no prereg; profiles only)
+    added 15 September             bifurcation diagnostic (P-D1, P-D2 refuted; P-D3 arm withdrawn;
+                                   old-code check NOT preregistered); baseline learning rates
+                                   (P-L1 confirmed; P-L3 rows replaced); ridge β = 0 milestones
+                                   (P-C1, running)
 
 ## 10. Infrastructure facts that bear on the numbers
 
@@ -158,11 +178,13 @@ overlap) or should be made at the 30,000-image split only.
 
 ## 11. Open questions I would put compute against, in order
 
-1. What decides the epoch-2 branch in truncated training (item 1). Cheap
-   to instrument: log per-level retained rank per step for the first
-   five epochs across the existing seeds; no new training needed.
-2. Per-method learning rates for the three contrastive/decorrelation
-   baselines, criterion frozen first (item 5). ~15 GPU-hours.
-3. A ridge β = 0 with epoch-20 checkpoints, if the paper wants the early
-   depth profile of the matched ablation next to the full model's. ~40
-   GPU-hours.
+1. ~~What decides the epoch-2 branch~~ — done 15 September: the
+   multiview-term code version (item 1).
+2. ~~Per-method learning rates~~ — done 15 September (item 5).
+3. A ridge β = 0 with epoch-20 checkpoints — running 15 September
+   (`RIDGE_BETA0_MILESTONE_PREREG_FROZEN_20260914`).
+4. New, and a decision before compute: which multiview term the
+   manuscript's truncated formulation means. If the pre-`02fa55e`
+   term, its 45k/200-epoch result does not exist and would need its own
+   preregistration; if the current term, the CIFAR-10 30k rows are not
+   that formulation's result.

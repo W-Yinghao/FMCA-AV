@@ -22,6 +22,19 @@ stamps `"estimator": "truncated"`. `certificate_evaluation` inside
 `run_gate1_unit.py`, `chainspec.py` and `plugin_module.py` all compute
 under ridge.
 
+**Second discriminator, added 2026-09-15.** Commit `02fa55e`
+(2026-09-11 01:52) changed the final-stage multiview term of every
+`paper_*` arm with `leaf_reward_weight > 0`: before it,
+`trace_score(estimate_moments(f, leaf_views, centered=True), ridge=1e-3)`;
+after it, truncated whiteners on pair-specific Grams from individual
+view vectors (Supplement §1.3). Units are assigned to a term by job
+start time (`hparams.yaml` mtime); the retained-rank signature agrees
+on every unit. Pre-02fa55e: CIFAR-10 `paper_composition` s1-3 and
+`paper_beta0` s1-3 only. Current term: everything else with a multiview
+term (CIFAR-10 alpha0, T2, T4, K256, star; all CIFAR-100; both 45k
+runs). `paper_lambda0` and `paper_endpoint_only` have no multiview term
+under either code. Record: `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
+
 Corpus split: **26+ complete MAJOR units against 286 complete ridge
 units**, in cleanly separated result roots. The ridge corpus (V1–V7/V8)
 is a loss-form ladder under a different estimator and is not evidence
@@ -60,6 +73,11 @@ completed but before its numbers were viewed.
 
 eff_rank is the entropy effective rank of the encoder feature
 covariance out of 128; trace is that covariance's trace.
+
+Multiview term per row (see §0): composition, beta0 pre-02fa55e;
+alpha0, T2 current; lambda0, endpoint_only none. `train/retained_min`
+at epoch 200: composition 128/128/128; beta0 128/128/128; alpha0
+20/21/20; T2 17/18/16; lambda0 45/65 (s1, s3); endpoint_only 47/30/34.
 
 ### 1b. CIFAR-10 — per-tap probe accuracy (block granularity, 9 taps)
 
@@ -233,6 +251,12 @@ CIFAR-10 45k runs pin retained rank at 18-21 from epoch 2, as every
 CIFAR-100 run does; the CIFAR-10 30k runs are the only MAJOR runs on
 disk that reach 128.
 
+Added 2026-09-15: the 30k CIFAR-10 units ran the pre-02fa55e multiview
+term and the 45k units the current one (§0, second discriminator). Five
+epochs of both splits under each code: current term → endpoint level
+16-21 from epoch 2 on both splits; pre-02fa55e term → 37-48 through
+epoch 5 on both splits. `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
+
 ## 7. Preregistration status of every claim family
 
     experiment                     prereg                              status
@@ -245,6 +269,11 @@ disk that reach 128.
     star control                   same, P3                            preregistered
     T4, K256                       none                                descriptive only
     external baselines             matched-budget wave                 carried over
+    bifurcation diagnostic         BIFURCATION_DIAGNOSTIC_FROZEN_0914   preregistered (P-D1, P-D2
+                                                                       refuted; A2 withdrawn);
+                                                                       old-code check NOT prereg'd
+    baseline learning rates        BASELINE_LR_SELECTION_FROZEN_0914    preregistered (P-L1 confirmed)
+    ridge beta0 milestones         RIDGE_BETA0_MILESTONE_FROZEN_0914    preregistered, running
 
 ## 8. Completion state, 2026-09-12 22:30
 

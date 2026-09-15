@@ -1,5 +1,16 @@
 # The paper estimator on CIFAR-10 — adjudication, 2026-09-11
 
+> **Code-version confound, found 2026-09-15.** The `full` and `beta0`
+> units below were trained before commit `02fa55e` (11 Sep 01:52)
+> changed the final-stage multiview term; `alpha0` and `T2` were trained
+> after it; `lambda0` and `endpoint_only` have no such term. P1 (full vs
+> beta0) and the lambda0 comparison are within one implementation. P2
+> and P3 (full vs alpha0, full vs T2) compare two implementations and
+> are confounded. Under the current term the full arm itself pins its
+> endpoint retained rank at 16-21 from epoch 2 (the 45k run, and a
+> five-epoch rerun of this very split), so the 82.4-82.8 numbers are
+> the pre-02fa55e term's. See `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
+
 ## Naming
 
 The method this paper proposes is **MAJOR**: FMCA-AV's trace objective

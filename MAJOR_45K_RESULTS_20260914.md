@@ -3,6 +3,17 @@
 Against `MAJOR_45K_800EPOCH_PREREG_FROZEN_20260913` as amended by
 `MAJOR_45K_EPOCH_BUDGET_APPENDUM_20260913`. Record only.
 
+> **Corrected 2026-09-15.** The 30000-image arm this file compares
+> against ran the pre-`02fa55e` final-stage multiview term; the
+> 45000-image arm ran the current one. "Config diff … exactly
+> `n_calibration`, `n_val`, `checkpoint_milestones`" is true of the
+> configs and false of the code. The bifurcation under "The training
+> state" is decided by that term, not by the split: five epochs of both
+> splits under each code give 16-21 (current) and 37-48 (pre-02fa55e)
+> on both. P-M1 and P-M2 stay refuted as stated; every reading of the
+> refutation as a data-size effect is withdrawn.
+> `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.
+
 Six units, all complete, no failures. `paper_composition` under the
 truncated estimator, three disjoint seeds per dataset, 45000 training
 images (n_calibration 2500, n_val 2500), 200 epochs, checkpoints kept
@@ -114,4 +125,5 @@ that ever reach retained rank 128 of 128 are `paper_composition` and
 `paper_beta0` on CIFAR-10 at the 30000-image split. Every other run pins
 at 17-21 within the first two to five epochs. That bifurcation, and
 which branch a run lands on, is not something the frozen prereg
-predicted or explained, and it is not explained here.
+predicted or explained, and it is not explained here. **[2026-09-15:
+explained — multiview-term code version; see the banner above.]**

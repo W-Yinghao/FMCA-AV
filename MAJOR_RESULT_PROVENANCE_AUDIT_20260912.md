@@ -169,3 +169,18 @@ paper's own estimator.
 The ridge corpus keeps its value as a loss-form ladder and as the
 record of how the design was arrived at.  It should be cited that way
 and never as evidence for the method.
+
+## Addendum 2026-09-15 — a second discriminator the prefix does not see
+
+Commit `02fa55e` (2026-09-11 01:52) changed the final-stage multiview
+term of every `paper_*` arm with `leaf_reward_weight > 0` (ridge-1e-3
+trace score → truncated whiteners on pair-specific Grams). Two units
+with the same variant name, config and estimator can therefore differ
+in that term; the discriminator is the job start time against the
+commit, confirmed by the `train/retained_min` signature (pre: climbs to
+128 on CIFAR-10; current: pins at 15-21 from epoch 2). Only CIFAR-10
+`paper_composition` s1-3 and `paper_beta0` s1-3 are pre-02fa55e. Every
+"backed by MAJOR today" claim above that rests on the CIFAR-10 30k
+composition numbers rests on the pre-02fa55e term; everything else with
+a multiview term rests on the current one. Which term the manuscript
+means is undecided. `BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`.

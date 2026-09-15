@@ -8,6 +8,10 @@ any reading rule was written.  They are therefore reported
 DESCRIPTIVELY.  Nothing here is a preregistered test, nothing here may
 be quoted as a confirmed or refuted prediction, and the appropriate
 follow-up for any claim below is a frozen prereg and a fresh wave.
+Added 2026-09-15: the T=4 and K=256 units ran the current (post-
+`02fa55e`) multiview term; the "MAJOR composition" reference row ran
+the pre-`02fa55e` term. The comparison is confounded by that change
+(`BIFURCATION_DIAGNOSTIC_RESULTS_20260915.md`).
 
 ## What was measured
 
