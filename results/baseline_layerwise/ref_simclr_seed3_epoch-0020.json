@@ -1,0 +1,71 @@
+{
+  "profile_version": "baseline_layerwise_v1",
+  "method": "simclr",
+  "seed": 20260850,
+  "dataset": "cifar10",
+  "backbone_fingerprint": 204350.51206129405,
+  "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_simclr_seed3/checkpoints/epoch-0020.ckpt",
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "probe": {
+        "test_accuracy": 0.536799967288971,
+        "train_accuracy": 0.5447800159454346
+      },
+      "spectrum": {
+        "effective_rank": 8.125051498413086,
+        "normalized_effective_rank": 0.12695392966270447,
+        "top_eigenvalue_share": 0.4127327630326113,
+        "trace": 2.8610271411484267,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "probe": {
+        "test_accuracy": 0.6225999593734741,
+        "train_accuracy": 0.6308000087738037
+      },
+      "spectrum": {
+        "effective_rank": 11.648448944091797,
+        "normalized_effective_rank": 0.09100350737571716,
+        "top_eigenvalue_share": 0.30160850951133056,
+        "trace": 10.521806208830997,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "probe": {
+        "test_accuracy": 0.6934999823570251,
+        "train_accuracy": 0.7008399963378906
+      },
+      "spectrum": {
+        "effective_rank": 15.454574584960938,
+        "normalized_effective_rank": 0.06036943197250366,
+        "top_eigenvalue_share": 0.27513018069581824,
+        "trace": 57.57287983734879,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "probe": {
+        "test_accuracy": 0.703000009059906,
+        "train_accuracy": 0.73499995470047
+      },
+      "spectrum": {
+        "effective_rank": 19.81169891357422,
+        "normalized_effective_rank": 0.038694724440574646,
+        "top_eigenvalue_share": 0.25415729253523267,
+        "trace": 260.1190390501681,
+        "dimension": 512
+      }
+    }
+  ],
+  "status": "complete"
+}

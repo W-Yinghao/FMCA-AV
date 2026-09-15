@@ -1,0 +1,233 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "corruption": "defocus_blur",
+  "severities": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "samples": 8000,
+  "seed": 3,
+  "draw": [
+    16000,
+    24000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "measurement": {
+    "spec": {
+      "name": "resnet50/defocus_blur:clean->sev1->sev2->sev3->sev4->sev5",
+      "interpretation": "corruption_path",
+      "states": [
+        "clean",
+        "sev1",
+        "sev2",
+        "sev3",
+        "sev4",
+        "sev5"
+      ],
+      "deterministic_edges": false,
+      "coordinate_budget": 64,
+      "gram_bound": 0.05,
+      "coordinate_ridge": 0.001,
+      "retained_rank_rule": "tau=1e-3*lambda_max",
+      "notes": "ImageNet-C severity ladder, exact per-image pairing; parameterized severities, not recursive application; clean uses the standard eval transform, ImageNet-C ships pre-sized at 224"
+    },
+    "finite_sample": {
+      "edge_radii": [
+        {
+          "radius": 1.3676586390211884,
+          "samples": 4000,
+          "norm_bound": 479.733654009784,
+          "variance": 139.62586684225292,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.1785056208161107,
+          "samples": 4000,
+          "norm_bound": 364.66964691341855,
+          "variance": 125.42361276909786,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 1.0181959117568016,
+          "samples": 4000,
+          "norm_bound": 291.46081036254486,
+          "variance": 103.40254901656222,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 0.9409230281514107,
+          "samples": 4000,
+          "norm_bound": 242.99829570413488,
+          "variance": 98.94342140839356,
+          "clipped_samples": 0
+        },
+        {
+          "radius": 0.937017081581527,
+          "samples": 4000,
+          "norm_bound": 237.05056942663307,
+          "variance": 100.177408490299,
+          "clipped_samples": 0
+        }
+      ],
+      "endpoint_radius": {
+        "radius": 0.989019187848715,
+        "samples": 4000,
+        "norm_bound": 277.2314077352271,
+        "variance": 100.00081897903027,
+        "clipped_samples": 0
+      },
+      "path_radius": 38.136578745940724
+    },
+    "projection": {
+      "endpoint_top": 0.8785053586872777,
+      "endpoint_mass": 21.031016713724867,
+      "endpoint_effective_rank": 48.25592041015625,
+      "path_top": 1.889720532805152,
+      "path_mass": 23.565146503401984,
+      "delta_frobenius": 2.3862083823600773,
+      "delta_operator": 1.1630353164070948,
+      "alignment": 0.8450239741822803,
+      "certified_top": 0.7266852163980573
+    },
+    "surrogate": {
+      "endpoint_top": 0.8784681554074844,
+      "endpoint_mass": 21.028862319031106,
+      "endpoint_effective_rank": 48.25511169433594,
+      "path_top": 1.8891984134471291,
+      "path_mass": 23.5542442525626,
+      "delta_frobenius": 2.384962614164772,
+      "delta_operator": 1.1625024180063472,
+      "alignment": 0.8450419769073393,
+      "certified_top": 0.7266959954407819
+    },
+    "gram": {
+      "retained_ranks": [
+        64,
+        64,
+        64,
+        64,
+        64,
+        64
+      ],
+      "metric_deviation": [
+        0.00020278949972030172,
+        0.00021362823338344492,
+        0.00021476826173838498,
+        0.00022379899116464769,
+        0.00022476448242814137,
+        0.00022556956361441394
+      ],
+      "tau_relative": 0.001,
+      "dimensions": [
+        64,
+        64,
+        64,
+        64,
+        64,
+        64
+      ]
+    },
+    "interface_attribution": [
+      {
+        "interfaces_corrected": 0,
+        "delta_frobenius": 2.384962614164772,
+        "delta_operator": 1.1625024180063472,
+        "dir_frobenius": 3.245261042589895
+      },
+      {
+        "interfaces_corrected": 1,
+        "delta_frobenius": 2.3854604592204898,
+        "delta_operator": 1.1627006118203491,
+        "dir_frobenius": 3.2455484544888447
+      },
+      {
+        "interfaces_corrected": 2,
+        "delta_frobenius": 2.385717641461488,
+        "delta_operator": 1.1628128457407738,
+        "dir_frobenius": 3.2455484544888447
+      },
+      {
+        "interfaces_corrected": 3,
+        "delta_frobenius": 2.3859646939445716,
+        "delta_operator": 1.1629218785210027,
+        "dir_frobenius": 3.2455484544888447
+      },
+      {
+        "interfaces_corrected": 4,
+        "delta_frobenius": 2.3862083823600773,
+        "delta_operator": 1.1630353164070948,
+        "dir_frobenius": 3.2455484544888447
+      }
+    ],
+    "calibration_samples": 4000,
+    "evaluation_samples": 4000,
+    "dimensions": [
+      64,
+      64,
+      64,
+      64,
+      64,
+      64
+    ],
+    "native_dimensions": [
+      2048,
+      2048,
+      2048,
+      2048,
+      2048,
+      2048
+    ],
+    "budget_retained_variance": [
+      0.34290730126493835,
+      0.40038348357381576,
+      0.43929318599069056,
+      0.5185647151612207,
+      0.5706351238051308,
+      0.612225384176218
+    ]
+  },
+  "shuffled_null": {
+    "projection": {
+      "endpoint_top": 0.22900468824621242,
+      "endpoint_mass": 6.115168761925718,
+      "endpoint_effective_rank": 50.78997802734375,
+      "path_top": 0.23402860132282893,
+      "path_mass": 2.7442219359541733,
+      "delta_frobenius": 0.8524224815443577,
+      "delta_operator": 0.22356006304318976,
+      "alignment": 0.3981693690997819,
+      "certified_top": 0.010468538279639172
+    }
+  },
+  "state_probes": [
+    {
+      "state": "clean",
+      "probe_accuracy": 0.5325000286102295
+    },
+    {
+      "state": "sev1",
+      "probe_accuracy": 0.4155000150203705
+    },
+    {
+      "state": "sev2",
+      "probe_accuracy": 0.3460000157356262
+    },
+    {
+      "state": "sev3",
+      "probe_accuracy": 0.2345000058412552
+    },
+    {
+      "state": "sev4",
+      "probe_accuracy": 0.15400001406669617
+    },
+    {
+      "state": "sev5",
+      "probe_accuracy": 0.09450000524520874
+    }
+  ]
+}

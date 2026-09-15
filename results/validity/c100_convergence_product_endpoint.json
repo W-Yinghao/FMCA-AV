@@ -1,0 +1,44 @@
+{
+  "mode": "convergence",
+  "variant": "product_endpoint",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "clean_pool": 5000,
+  "curve": {
+    "625": {
+      "normalized_closure_defect": 3.4501615311740976,
+      "numerator_delta_frobenius": 63.400321037160104,
+      "denominator_dir_frobenius": 18.37604427047837,
+      "endpoint_top": 8.982260900386056,
+      "path_top": 59.61989808137361
+    },
+    "1250": {
+      "normalized_closure_defect": 0.7249618527939887,
+      "numerator_delta_frobenius": 8.309907736744075,
+      "denominator_dir_frobenius": 11.462544828692888,
+      "endpoint_top": 2.570770371236864,
+      "path_top": 7.747495546555986
+    },
+    "2500": {
+      "normalized_closure_defect": 0.3768024438016377,
+      "numerator_delta_frobenius": 3.87849548680678,
+      "denominator_dir_frobenius": 10.293180287461675,
+      "endpoint_top": 1.9182419195765146,
+      "path_top": 3.607001500031042
+    },
+    "5000": {
+      "normalized_closure_defect": 0.24802000568467344,
+      "numerator_delta_frobenius": 2.430196738165554,
+      "denominator_dir_frobenius": 9.798389978488261,
+      "endpoint_top": 1.4348892615883928,
+      "path_top": 2.280853985071511
+    }
+  },
+  "successive_change": {
+    "625->1250": 2.725199678380109,
+    "1250->2500": 0.34815940899235104,
+    "2500->5000": 0.12878243811696424
+  },
+  "status": "complete"
+}

@@ -1,0 +1,72 @@
+{
+  "profile_version": "baseline_layerwise_v1",
+  "score_set": "holdout-5000",
+  "method": "barlow_twins",
+  "seed": 20260850,
+  "dataset": "cifar10",
+  "backbone_fingerprint": 142369.99993186592,
+  "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_barlow_twins_seed1/checkpoints/epoch-0200.ckpt",
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "probe": {
+        "test_accuracy": 0.5591999888420105,
+        "train_accuracy": 0.5645555853843689
+      },
+      "spectrum": {
+        "effective_rank": 8.435446739196777,
+        "normalized_effective_rank": 0.13180385529994965,
+        "top_eigenvalue_share": 0.42696876646604326,
+        "trace": 1.3094259990209691,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "probe": {
+        "test_accuracy": 0.6823999881744385,
+        "train_accuracy": 0.6888666749000549
+      },
+      "spectrum": {
+        "effective_rank": 15.11532974243164,
+        "normalized_effective_rank": 0.11808851361274719,
+        "top_eigenvalue_share": 0.27475889506237294,
+        "trace": 5.500072619616045,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "probe": {
+        "test_accuracy": 0.790399968624115,
+        "train_accuracy": 0.8078666925430298
+      },
+      "spectrum": {
+        "effective_rank": 24.88899040222168,
+        "normalized_effective_rank": 0.09722261875867844,
+        "top_eigenvalue_share": 0.24161447272230596,
+        "trace": 18.884982608903087,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "probe": {
+        "test_accuracy": 0.8281999826431274,
+        "train_accuracy": 0.8569777607917786
+      },
+      "spectrum": {
+        "effective_rank": 42.359336853027344,
+        "normalized_effective_rank": 0.08273307979106903,
+        "top_eigenvalue_share": 0.1296732592916038,
+        "trace": 86.67884159250553,
+        "dimension": 512
+      }
+    }
+  ],
+  "status": "complete"
+}

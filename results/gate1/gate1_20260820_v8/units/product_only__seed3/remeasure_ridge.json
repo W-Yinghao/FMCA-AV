@@ -1,0 +1,26 @@
+{
+  "0.001": {
+    "normalized_closure_defect": 4.083247999545564,
+    "dir_frobenius": 1.3003848276545045,
+    "delta_operator": 5.294250670614297,
+    "certified_spectrum_top": 0.40641062298138664,
+    "path_top": 5.700661293595684,
+    "endpoint_top": 1.1296017531985478
+  },
+  "0.01": {
+    "normalized_closure_defect": 5.4597681284352175,
+    "dir_frobenius": 0.6014914857079916,
+    "delta_operator": 3.2803173542100375,
+    "certified_spectrum_top": 0.23014125687918252,
+    "path_top": 3.51045861108922,
+    "endpoint_top": 0.5614590684186523
+  },
+  "0.1": {
+    "normalized_closure_defect": 4.4124442583947285,
+    "dir_frobenius": 0.4363085704665451,
+    "delta_operator": 1.9247210715121057,
+    "certified_spectrum_top": 0.23541985431406753,
+    "path_top": 2.1601409258261732,
+    "endpoint_top": 0.4312900675838938
+  }
+}

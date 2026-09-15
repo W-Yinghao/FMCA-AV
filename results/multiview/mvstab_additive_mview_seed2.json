@@ -1,0 +1,57 @@
+{
+  "variant": "additive_mview",
+  "seed": 2,
+  "parents": 2000,
+  "resamples": 12,
+  "child_pool": 16,
+  "backbone_fingerprint": 81373.8483381916,
+  "gram_corrected": true,
+  "records": [
+    {
+      "views": 1,
+      "resamples": 12,
+      "dispersion_operator": 0.11113719245317245,
+      "dispersion_frobenius": 0.5821531373566128,
+      "mean_operator_norm": 0.9870131809346424,
+      "mean_frobenius_norm": 10.427843045493036,
+      "relative_dispersion": 0.055826802802543346
+    },
+    {
+      "views": 2,
+      "resamples": 12,
+      "dispersion_operator": 0.07295054081248604,
+      "dispersion_frobenius": 0.39346988166777513,
+      "mean_operator_norm": 0.9918335564023247,
+      "mean_frobenius_norm": 10.708454924630084,
+      "relative_dispersion": 0.036743851884997056
+    },
+    {
+      "views": 4,
+      "resamples": 12,
+      "dispersion_operator": 0.04735467237193039,
+      "dispersion_frobenius": 0.2574203604308933,
+      "mean_operator_norm": 0.9943089439509138,
+      "mean_frobenius_norm": 10.852722219094051,
+      "relative_dispersion": 0.023719427737493668
+    },
+    {
+      "views": 8,
+      "resamples": 12,
+      "dispersion_operator": 0.027929254241248213,
+      "dispersion_frobenius": 0.1496512233007727,
+      "mean_operator_norm": 0.9955097416737517,
+      "mean_frobenius_norm": 10.929553938466219,
+      "relative_dispersion": 0.013692345007244987
+    },
+    {
+      "views": 16,
+      "resamples": 12,
+      "dispersion_operator": 3.484468832905664e-16,
+      "dispersion_frobenius": 1.938678453072883e-15,
+      "mean_operator_norm": 0.9961764614874312,
+      "mean_frobenius_norm": 10.967833868187853,
+      "relative_dispersion": 1.7676037733357817e-16
+    }
+  ],
+  "loglog_slope": -7.955986464151608
+}

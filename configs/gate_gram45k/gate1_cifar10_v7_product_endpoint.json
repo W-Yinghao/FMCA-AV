@@ -1,0 +1,108 @@
+{
+  "experiment": {
+    "name": "gate1gram45k-cifar10-product_endpoint",
+    "family": "cifar_gate",
+    "status": "45000-image, 800-epoch retrain of the Gram full model: V7 (per-edge operator composition aligned against an independently estimated endpoint operator) with the Gram-corrected closure. The gate_v8_gram version trained on 30000 images for 200 epochs, because n_calibration=10000 and n_val=10000 take 20000 out of CIFAR-10's 50000; this restores the 45000 split that gate_v8 and the matched external baselines use, at the cost of a 2500-root Stage-B calibration sample. Checkpoints are kept at epochs 20, 200 and 800. Tests prereg/GRAM_45K_800EPOCH_PREREG_FROZEN_20260913."
+  },
+  "seed": 20260816,
+  "output_root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs",
+  "data": {
+    "dataset": "cifar10",
+    "root": "/projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10",
+    "n_calibration": 2500,
+    "n_val": 2500,
+    "batch_size": 256,
+    "num_workers": 4,
+    "view_tree": {
+      "mode": "nested",
+      "root": {
+        "min_scale": 0.95,
+        "max_scale": 1.0,
+        "size": 32
+      },
+      "edges": [
+        {
+          "kind": "crop",
+          "min_scale": 0.2,
+          "max_scale": 1.0,
+          "size": 32,
+          "color_jitter_probability": 0.8,
+          "color_jitter_strength": 0.5,
+          "color_jitter_hue": true,
+          "flip_probability": 0.5
+        },
+        {
+          "kind": "crop",
+          "min_scale": 0.4,
+          "max_scale": 1.0,
+          "size": 32,
+          "grayscale_probability": 0.2
+        }
+      ],
+      "children_per_edge": 4,
+      "endpoint_descendants": 8,
+      "flip_probability": 0.0
+    }
+  },
+  "model": {
+    "backbone_width": 64,
+    "level_stages": [
+      1,
+      2,
+      3
+    ],
+    "feature_dim": 128,
+    "head_hidden_dims": [
+      512
+    ],
+    "activation": "gelu"
+  },
+  "variant": "product_endpoint",
+  "loss": {
+    "alpha": 0.2,
+    "beta": 128.0,
+    "gamma": 1.0,
+    "epsilon": 1e-06,
+    "closure_stop_grad": false,
+    "flat_recipe": "faithful_trace",
+    "whitening_mode": "differentiable",
+    "ridge": 0.001,
+    "additive_recipe": "faithful_trace",
+    "product_recipe": "faithful_bootstrap",
+    "leaf_reward_weight": 1.0,
+    "ema_target_momentum": 0.99,
+    "gram_corrected_closure": true,
+    "gram_detach_metric": true,
+    "gram_tau": 0.1
+  },
+  "objective_note": "additive variants take their maximizing per-edge sign inside the module; alpha/beta here only affect product_endpoint",
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "weight_decay": 0.0001,
+    "scheduler": "cosine"
+  },
+  "trainer": {
+    "accelerator": "gpu",
+    "devices": 1,
+    "strategy": "auto",
+    "max_epochs": 800,
+    "precision": "32-true",
+    "deterministic": true,
+    "enable_progress_bar": false,
+    "checkpoint_milestones": [
+      20,
+      200,
+      800
+    ]
+  },
+  "probe": {
+    "n_val": 5000,
+    "batch_size": 256,
+    "num_workers": 4,
+    "learning_rate": 0.1,
+    "momentum": 0.9,
+    "epochs": 100
+  }
+}

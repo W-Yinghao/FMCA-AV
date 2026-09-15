@@ -1,0 +1,57 @@
+{
+  "g4_by_parents": {
+    "100000": {
+      "units": 480,
+      "violated": 17,
+      "max_violation": 5.15766831912616e-17
+    },
+    "10000": {
+      "units": 480,
+      "violated": 22,
+      "max_violation": 5.2909066017292616e-17
+    },
+    "1000": {
+      "units": 480,
+      "violated": 15,
+      "max_violation": 5.2909066017292616e-17
+    }
+  },
+  "determinism": {
+    "checked": 480,
+    "identical": 480
+  },
+  "accept_by_case": {
+    "closed_chain": {
+      "units": 180,
+      "accepts": 180
+    },
+    "hallucinated_path": {
+      "units": 180,
+      "accepts": 1
+    },
+    "isospectral_mismatch": {
+      "units": 180,
+      "accepts": 0
+    },
+    "leaky_interface": {
+      "units": 180,
+      "accepts": 0
+    },
+    "nilpotent_interface": {
+      "units": 180,
+      "accepts": 0
+    },
+    "zero_operator": {
+      "units": 180,
+      "accepts": 0
+    },
+    "full_orders": {
+      "units": 180,
+      "accepts": 180
+    },
+    "truncated": {
+      "units": 180,
+      "accepts": 180
+    }
+  }
+}

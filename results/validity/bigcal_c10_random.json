@@ -1,0 +1,15 @@
+{
+  "mode": "random",
+  "variant": "product_endpoint",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "backbone_fingerprint": 224327.8177198229,
+  "weights_loaded": false,
+  "normalized_closure_defect": 0.3303126330143252,
+  "numerator_delta_frobenius": 0.7256887266837156,
+  "denominator_dir_frobenius": 2.196975392860355,
+  "endpoint_top": 0.7802436509740761,
+  "path_top": 0.7770767846519092,
+  "status": "complete"
+}

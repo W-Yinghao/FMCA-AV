@@ -193,6 +193,7 @@ class BaselineSSL(L.LightningModule):
             "simclr", "barlow_twins", "vicreg", "spectral_contrastive",
             "fastsiam", "byol", "moco_v2", "dino", "dcca", "vamp2",
             "fastssl_barlow_twins", "fastssl_vicreg", "frossl", "hai_simsiam",
+            "simsiam",
         }
         if self.method not in supported:
             raise ValueError("unsupported baseline method: " + self.method)
@@ -229,6 +230,7 @@ class BaselineSSL(L.LightningModule):
                 projection_dim,
                 model.get("projection_hidden_dims", [2048, 2048]),
                 str(model.get("activation", "gelu")),
+                str(model.get("head_normalization", "none")),
             )
         self.online_classifier = None
         if self.method == "frossl" and bool(config["objective"].get("online_classifier", False)):
@@ -242,12 +244,13 @@ class BaselineSSL(L.LightningModule):
         self.predictor = None
         self.target_backbone = None
         self.target_projector = None
-        if self.method in {"fastsiam", "byol"}:
+        if self.method in {"fastsiam", "simsiam", "byol"}:
             self.predictor = MLP(
                 projection_dim,
                 projection_dim,
                 model.get("predictor_hidden_dims", [512]),
                 str(model.get("activation", "gelu")),
+                str(model.get("head_normalization", "none")),
             )
         if self.method in {"byol", "moco_v2", "dino"}:
             self.target_backbone = copy.deepcopy(self.backbone)
@@ -548,6 +551,30 @@ class BaselineSSL(L.LightningModule):
                             on_step=False, on_epoch=True, sync_dist=True,
                         )
             else:
+                if self.method == "fastsiam":
+                    # Each view's prediction against the MEAN of the OTHER
+                    # views' targets.  Computed once over all views rather
+                    # than inside the pair loop: pairing (0,1),(2,3),... and
+                    # averaging is a set of independent SimSiam pairs, which
+                    # is a different method, and running this inside that loop
+                    # would also recompute the same quantity once per pair.
+                    # At two views the two forms coincide, which is why the
+                    # difference was invisible until more views were asked for.
+                    count = projections.shape[1]
+                    terms = []
+                    for index in range(count):
+                        others = [j for j in range(count) if j != index]
+                        reference = projections[:, others].mean(dim=1)
+                        terms.append(self._negative_cosine(
+                            self.predictor(projections[:, index]), reference))
+                    loss = torch.stack(terms).mean()
+                    encoded_count = flattened.shape[0]
+                    self.log(f"{split}/loss", loss, on_step=False, on_epoch=True,
+                             prog_bar=True, sync_dist=True)
+                    if split == "val":
+                        self.log("val_score", -loss, on_step=False, on_epoch=True, sync_dist=True)
+                    return loss
+
                 target = None
                 if self.method == "byol":
                     with torch.no_grad():
@@ -568,7 +595,7 @@ class BaselineSSL(L.LightningModule):
                         pair_loss = self._spectral_contrastive(left, right)
                     elif self.method in {"dcca", "vamp2"}:
                         pair_loss = self._operator_objective(left, right)
-                    elif self.method == "fastsiam":
+                    elif self.method == "simsiam":
                         pair_loss = 0.5 * (
                             self._negative_cosine(self.predictor(left), right)
                             + self._negative_cosine(self.predictor(right), left)

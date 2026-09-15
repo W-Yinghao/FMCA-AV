@@ -1,0 +1,239 @@
+{
+  "mode": "convergence",
+  "variant": "final_mview",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "backbone_fingerprint": 100280.18398906871,
+  "weights_loaded": true,
+  "clean_pool": 5000,
+  "curve": {
+    "625": {
+      "normalized_closure_defect": 0.5837142529400767,
+      "numerator_delta_frobenius": 3.7072973606388633,
+      "denominator_dir_frobenius": 6.351219525590144,
+      "endpoint_top": 1.8952450888737051,
+      "path_top": 2.8700280816543406,
+      "gram": {
+        "surrogate": {
+          "numerator": 3.7072973606388633,
+          "denominator": 6.351219525590144,
+          "ratio": 0.5837142529401687,
+          "delta_operator": 1.2784542354377346
+        },
+        "projection": {
+          "numerator": 3.946439409945712,
+          "denominator": 6.6438457814181175,
+          "ratio": 0.5939992497994665,
+          "delta_operator": 1.3381180600272118
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.6092289411609226,
+            0.09789161844834912,
+            0.0065129329347397655
+          ],
+          "tau_relative": 0.001,
+          "dimensions": [
+            128,
+            128,
+            128
+          ]
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 3.7072973606388633,
+            "delta_operator": 1.2784542354377346,
+            "dir_frobenius": 6.351219525590144
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 3.946439409945712,
+            "delta_operator": 1.3381180600272118,
+            "dir_frobenius": 6.6438457814181175
+          }
+        ],
+        "calibration_samples": 625
+      }
+    },
+    "1250": {
+      "normalized_closure_defect": 0.4685615748693029,
+      "numerator_delta_frobenius": 2.457370903813059,
+      "denominator_dir_frobenius": 5.244499411839375,
+      "endpoint_top": 1.3720711568481498,
+      "path_top": 1.752438345825539,
+      "gram": {
+        "surrogate": {
+          "numerator": 2.457370903813059,
+          "denominator": 5.244499411839375,
+          "ratio": 0.46856157486939226,
+          "delta_operator": 0.6129337880890212
+        },
+        "projection": {
+          "numerator": 2.598521872355004,
+          "denominator": 5.417034703734454,
+          "ratio": 0.479694521905796,
+          "delta_operator": 0.6364655396141068
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.5616264687289998,
+            0.08814228063219055,
+            0.004723230639052013
+          ],
+          "tau_relative": 0.001,
+          "dimensions": [
+            128,
+            128,
+            128
+          ]
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 2.457370903813059,
+            "delta_operator": 0.6129337880890212,
+            "dir_frobenius": 5.244499411839375
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 2.598521872355004,
+            "delta_operator": 0.6364655396141068,
+            "dir_frobenius": 5.417034703734454
+          }
+        ],
+        "calibration_samples": 1250
+      }
+    },
+    "2500": {
+      "normalized_closure_defect": 0.44192167254488934,
+      "numerator_delta_frobenius": 2.11487080311625,
+      "denominator_dir_frobenius": 4.785623639901899,
+      "endpoint_top": 1.097799901774131,
+      "path_top": 1.2358246613317574,
+      "gram": {
+        "surrogate": {
+          "numerator": 2.11487080311625,
+          "denominator": 4.785623639901899,
+          "ratio": 0.44192167254498166,
+          "delta_operator": 0.46434493821040856
+        },
+        "projection": {
+          "numerator": 2.228119941115526,
+          "denominator": 4.913540470161181,
+          "ratio": 0.4534652669793591,
+          "delta_operator": 0.48714164240402424
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.5312967872469465,
+            0.08671723180997648,
+            0.003715036759511096
+          ],
+          "tau_relative": 0.001,
+          "dimensions": [
+            128,
+            128,
+            128
+          ]
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 2.11487080311625,
+            "delta_operator": 0.46434493821040856,
+            "dir_frobenius": 4.785623639901899
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 2.228119941115526,
+            "delta_operator": 0.48714164240402424,
+            "dir_frobenius": 4.913540470161181
+          }
+        ],
+        "calibration_samples": 2500
+      }
+    },
+    "5000": {
+      "normalized_closure_defect": 0.43481811132720416,
+      "numerator_delta_frobenius": 2.036910047411249,
+      "denominator_dir_frobenius": 4.68451059040184,
+      "endpoint_top": 1.0036202695976588,
+      "path_top": 1.133635902249753,
+      "gram": {
+        "surrogate": {
+          "numerator": 2.036910047411249,
+          "denominator": 4.68451059040184,
+          "ratio": 0.434818111327297,
+          "delta_operator": 0.44078909096212704
+        },
+        "projection": {
+          "numerator": 2.141618185583341,
+          "denominator": 4.799680810439456,
+          "ratio": 0.44620012666785136,
+          "delta_operator": 0.4595503823614556
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.5311785109355021,
+            0.08273762257110077,
+            0.003210859196226085
+          ],
+          "tau_relative": 0.001,
+          "dimensions": [
+            128,
+            128,
+            128
+          ]
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 2.036910047411249,
+            "delta_operator": 0.44078909096212704,
+            "dir_frobenius": 4.68451059040184
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 2.141618185583341,
+            "delta_operator": 0.4595503823614556,
+            "dir_frobenius": 4.799680810439456
+          }
+        ],
+        "calibration_samples": 5000
+      }
+    }
+  },
+  "successive_change": {
+    "625->1250": 0.11515267807077384,
+    "1250->2500": 0.026639902324413545,
+    "2500->5000": 0.007103561217685184
+  },
+  "successive_change_projection": {
+    "625->1250": 0.11430472789367052,
+    "1250->2500": 0.02622925492643685,
+    "2500->5000": 0.007265140311507767
+  },
+  "status": "complete"
+}

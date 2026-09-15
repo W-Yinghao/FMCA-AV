@@ -1,0 +1,14 @@
+{
+  "mode": "collapsed",
+  "variant": "product_endpoint",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "collapse_scale": 0.01,
+  "normalized_closure_defect": 166.5056475481235,
+  "numerator_delta_frobenius": 40365.81815267844,
+  "denominator_dir_frobenius": 242.42912325848727,
+  "endpoint_top": 142.99639153622078,
+  "path_top": 34032.64282876653,
+  "status": "complete"
+}

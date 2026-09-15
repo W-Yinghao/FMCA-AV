@@ -1,0 +1,732 @@
+"""Lightning module for the CIFAR structure gate (seven matched variants).
+
+Every variant consumes the SAME nested view-tree batch (same parents, same
+encoded views, same backbone/projector budget); only the loss assembly
+differs.  Variant names follow the frozen gate design:
+
+  final_2view       1. flat FMCA on the leaf level, two views
+  final_mview       2. flat FMCA on the leaf level, M views
+  additive_2view    3. per-edge scores summed, two views per edge
+  additive_mview    4. per-edge scores summed, M views (HAI/HFMCA family)
+  amdim_cross       5. selected cross-scale pair scores summed
+  product_only      6. ordered operator-product score, no endpoint closure
+  product_endpoint  7. product + endpoint closure (full frozen objective)
+
+Certificates reported from training batches are train-protocol diagnostics
+only; the paper-grade certificate always comes from the frozen Stage-B/C
+protocol on held-out data.
+"""
+
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import lightning as L
+import torch
+from torch import Tensor, nn
+
+from ..models import MLP
+from ..objectives import trace_score
+from ..operators import estimate_moments
+from .estimation import ChainFeatureBatch
+from .objective import (
+    truncated_whitener,
+    certificate_training_loss,
+    cholesky_whitener,
+    cross_pair_score,
+    identity_penalty,
+    normalized_score,
+    train_edge_operators,
+    train_endpoint_operator,
+    whiten_chain_batch,
+)
+from .stage_backbone import StageTappedCIFARResNet
+from .gram import (
+    build_correction,
+    corrected_composition,
+    corrected_endpoint,
+    gram_matrix,
+)
+from .triplet import compose_edge_operators
+
+GATE_VARIANTS = (
+    "paper_composition",
+    "paper_beta0",
+    "paper_lambda0",
+    "paper_alpha0",
+    "paper_T2",
+    "paper_endpoint_only",
+    "paper_T4",
+    "paper_K256",
+
+    "final_2view",
+    "final_mview",
+    "additive_2view",
+    "additive_mview",
+    "amdim_cross",
+    "product_only",
+    "product_endpoint",
+)
+
+
+class HierarchyCertificateModule(L.LightningModule):
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
+        self.save_hyperparameters({"config": config})
+        model = config["model"]
+        self.backbone = StageTappedCIFARResNet(
+            width=int(model.get("backbone_width", 64)), stem=str(model.get("stem", "cifar"))
+        )
+        # Locality test (E-A3): load a backbone another arm trained and freeze
+        # it bit-for-bit, so only the projectors and operator heads can move.
+        # If the defect still falls, it is a readout property, not a
+        # representation property.
+        self.frozen_backbone = bool(model.get("freeze_backbone", False))
+        backbone_source = str(model.get("backbone_checkpoint", ""))
+        if backbone_source:
+            payload = torch.load(backbone_source, map_location="cpu", weights_only=False)
+            state = {
+                key[len("backbone."):]: value
+                for key, value in payload["state_dict"].items()
+                if key.startswith("backbone.")
+            }
+            if not state:
+                raise ValueError(f"no backbone weights in {backbone_source}")
+            self.backbone.load_state_dict(state)
+        elif self.frozen_backbone:
+            raise ValueError("freeze_backbone needs backbone_checkpoint: freezing a "
+                             "random encoder measures nothing")
+        if self.frozen_backbone:
+            for parameter in self.backbone.parameters():
+                parameter.requires_grad_(False)
+        self.level_stages: List[int] = [int(stage) for stage in model["level_stages"]]
+        if any(late <= early for early, late in zip(self.level_stages, self.level_stages[1:])):
+            raise ValueError(
+                "level_stages must be strictly increasing: each edge advances one view "
+                "refinement AND one backbone stage"
+            )
+        feature_dim = model.get("feature_dim", 128)
+        dims = (
+            [int(feature_dim)] * len(self.level_stages)
+            if isinstance(feature_dim, int)
+            else [int(dim) for dim in feature_dim]
+        )
+        if len(dims) != len(self.level_stages):
+            raise ValueError("feature_dim must be scalar or one entry per level")
+        hidden = model.get("head_hidden_dims", [512])
+        activation = str(model.get("activation", "gelu"))
+        # One projector per LEVEL, shared by every edge touching the level.
+        self.projectors = nn.ModuleList(
+            [
+                MLP(self.backbone.stage_dims[stage], dims[level], hidden, activation)
+                for level, stage in enumerate(self.level_stages)
+            ]
+        )
+        self.variant = str(config.get("variant", "product_endpoint"))
+        if self.variant not in GATE_VARIANTS:
+            raise ValueError(f"variant must be one of {GATE_VARIANTS}")
+        loss = config.get("loss", {})
+        self.alpha = float(loss.get("alpha", 0.0))
+        self.beta = float(loss.get("beta", 1.0))
+        self.gamma = float(loss.get("gamma", 1.0))
+        self.epsilon = float(loss.get("epsilon", 1e-6))
+        self.ridge = float(loss.get("ridge", 0.1))
+        whitening_mode = str(loss.get("whitening_mode", "detached"))
+        if whitening_mode not in {"detached", "differentiable"}:
+            raise ValueError("loss.whitening_mode must be detached or differentiable")
+        self.detach_whitener = whitening_mode == "detached"
+        self.closure_stop_grad = bool(loss.get("closure_stop_grad", False))
+        # Gram-corrected closure: the ONLY thing this flag may change is the
+        # geometry the closure discrepancy is measured in.  Ridge whitening
+        # leaves G = W R W != I, so composing whitened cross-moments inserts
+        # F F* rather than an orthogonal projection; with the flag on, the
+        # closure term measures the corrected quantity the certificate
+        # reports instead of the surrogate the loss historically used.
+        self.gram_corrected_closure = bool(loss.get("gram_corrected_closure", False))
+        # The metric is treated as frozen within a step by default: the
+        # correction needs an eigendecomposition per batch, and
+        # backpropagating through eigenvectors of a near-degenerate Gram is
+        # where this would blow up rather than where the signal is.
+        self.gram_detach_metric = bool(loss.get("gram_detach_metric", True))
+        # Spectral floor for the training-time inverses.  Measured, not
+        # guessed: at initialisation the level-1 batch Gram has minimum
+        # eigenvalue ~0.03 and G^-1 amplifies by ~30x, while the CONVERGED
+        # model sits at ~0.25 and ~4x.  A floor that caps early
+        # amplification at the level the converged model shows naturally is
+        # inert once training is healthy (128/128 directions retained on the
+        # trained checkpoint) and active only where it is needed.
+        self.gram_tau = float(loss.get("gram_tau", 0.1))
+        # The paper arm: truncated symmetric inverse roots at relative cutoff
+        # tau, shared per level, with the plain product as the composition.
+        self.spectral_tau = float(loss.get("spectral_tau", 1e-3))
+        # Estimator and recipe are separate choices, and until now the
+        # truncated estimator was reachable ONLY through the paper_ prefix.
+        # That welded the paper's method to the paper's estimator -- the
+        # same conflation this wave exists to undo, running the other way:
+        # it made "the V8 recipe under the correct estimator" inexpressible,
+        # so the gap between the two corpora could not be split into a
+        # recipe part and an estimator part.  With no key present the prefix
+        # rule is reproduced exactly, so every config on disk resolves to
+        # what it resolved to before.
+        self.estimator = str(loss.get(
+            "estimator", "truncated" if self.variant.startswith("paper_") else "ridge"))
+        if self.estimator not in {"truncated", "ridge"}:
+            raise ValueError("loss.estimator must be truncated or ridge")
+        self.invalid_batches = 0
+        # Diagnostic: also log per-level retained ranks on every step.  The
+        # epoch-mean of the cross-level minimum cannot show which level drops
+        # first, or on which step -- the two things the bifurcation question
+        # needs -- and the branch is decided inside the first two epochs.
+        self.log_ranks_per_step = bool(config.get("trainer", {}).get("log_retained_per_step", False))
+        if self.variant.startswith("paper_"):
+            # "There is no stopped-gradient endpoint estimate or matrix
+            # exponential moving average", and gradients must reach the Gram
+            # transforms.  These are part of the method, so they are asserted
+            # here rather than left to a config that could drift.
+            if self.closure_stop_grad:
+                raise ValueError("paper_composition forbids closure_stop_grad")
+            if float(loss.get("ema_target_momentum", 0.0)) > 0:
+                raise ValueError("paper_composition forbids ema_target_momentum")
+            if self.detach_whitener:
+                raise ValueError(
+                    "paper_composition requires whitening_mode=differentiable: "
+                    "gradients propagate through the continuous Gram transforms")
+        if self.gram_corrected_closure and self.variant not in {"product_only", "product_endpoint"}:
+            raise ValueError(
+                f"gram_corrected_closure is defined only for the arms that COMPOSE "
+                f"operators (product_only, product_endpoint); variant {self.variant!r} "
+                f"scores single operators, where the interior-interface derivation "
+                f"does not apply and the flag would be an undeclared method change")
+        pairs = config.get("cross_pairs", None)
+        self.cross_pairs: Optional[List[Tuple[int, int]]] = (
+            [(int(a), int(b)) for a, b in pairs] if pairs is not None else None
+        )
+        # Flat-row recipe: "split_half_whitened" (gate v3/v4) or
+        # "faithful_trace" (gate v5+), which replicates the repo's formal
+        # flat FMCA-AV estimator: f = f_head(mean of projected views),
+        # differentiable-whitened trace score at ridge 1e-3 (the recipe
+        # behind the 85.4/89.4% historical rows).
+        self.flat_recipe = str(loss.get("flat_recipe", "split_half_whitened"))
+        if self.flat_recipe not in {"split_half_whitened", "faithful_trace"}:
+            raise ValueError("loss.flat_recipe must be split_half_whitened or faithful_trace")
+        # Additive-family recipe: "whitened" scores in shared pooled
+        # coordinates (v3-v6b) or "faithful_trace" per-operator FMCA scores
+        # (v6c+).  The additive/AMDIM baselines never used shared-interface
+        # whitening historically (per-stage losses whiten per stage), and a
+        # pure edge-score objective under a shared differentiable whitener
+        # farms the thin-subset estimation gap (guard trip at 5.03).  The
+        # compositional rows keep shared coordinates: composition semantics
+        # require one interior basis, and their loss has no per-edge score
+        # incentive (alpha = 0).
+        self.additive_recipe = str(loss.get("additive_recipe", "whitened"))
+        if self.additive_recipe not in {"whitened", "faithful_trace"}:
+            raise ValueError("loss.additive_recipe must be whitened or faithful_trace")
+        # Product-row recipe: "whitened" (v6b) or "faithful_bootstrap"
+        # (v6d+): faithful trace endpoint reward + small-alpha faithful
+        # per-edge bootstrap (the frozen algebra's "alpha small" clause)
+        # + the closure ratio in shared coordinates with beta rescaled to
+        # compete at trace magnitude.  Cures the composition cold-start
+        # (v6b: closure ratio pinned at 1, edges decaying to zero).
+        self.product_recipe = str(loss.get("product_recipe", "whitened"))
+        if self.product_recipe not in {"whitened", "faithful_bootstrap"}:
+            raise ValueError("loss.product_recipe must be whitened or faithful_bootstrap")
+        # alpha_schedule "cosine_to_zero" anneals the edge bootstrap away so
+        # the converged objective is the frozen algebra's alpha -> 0 form.
+        self.alpha_schedule = str(loss.get("alpha_schedule", "constant"))
+        if self.alpha_schedule not in {"constant", "cosine_to_zero"}:
+            raise ValueError("loss.alpha_schedule must be constant or cosine_to_zero")
+        # Optional leaf-level flat-style reward inside the bootstrap recipe:
+        # f_head(mean of endpoint views) vs views, all at the final stage --
+        # the engine behind the 84% flat anchor, added on top of the
+        # depth-aligned endpoint term ("flat objective + closure
+        # regularizer" form).
+        self.leaf_reward_weight = float(loss.get("leaf_reward_weight", 0.0))
+        # Curriculum: train the leaf (flat) term alone for the first N
+        # epochs, then switch on the full compositional objective
+        # ("closure fine-tuning" of a flat-quality representation).
+        self.curriculum_epochs = int(loss.get("curriculum_epochs", 0))
+        if self.curriculum_epochs > 0 and self.leaf_reward_weight <= 0:
+            raise ValueError("curriculum_epochs requires leaf_reward_weight > 0")
+        # Operator-level EMA closure target: the closure ratio chases a
+        # slowly-moving average of C_dir instead of the live batch operator
+        # (the target-network fix for the raw stop-grad crash).
+        self.ema_target_momentum = float(loss.get("ema_target_momentum", 0.0))
+        self.flat_f_head: Optional[MLP] = None
+        needs_flat_head = (
+            self.variant in {"final_2view", "final_mview"} and self.flat_recipe == "faithful_trace"
+        ) or (
+            self.variant == "product_endpoint"
+            and self.product_recipe == "faithful_bootstrap"
+            and self.leaf_reward_weight > 0
+        ) or (
+            # The paper's lambda_mv term (Eq. 25) needs the same aggregation
+            # head; setting lambda_mv = 0 removes both, as the paper states.
+            self.variant.startswith("paper_") and self.leaf_reward_weight > 0
+        )
+        if needs_flat_head:
+            self.flat_f_head = MLP(dims[-1], dims[-1], hidden, activation)
+        if self.ema_target_momentum > 0:
+            self.register_buffer("ema_c_dir", torch.zeros(dims[0], dims[-1]))
+            self.register_buffer("ema_initialized", torch.zeros(1))
+
+    def train(self, mode: bool = True):
+        """Keep a frozen backbone in eval mode so BatchNorm cannot drift."""
+
+        super().train(mode)
+        if getattr(self, "frozen_backbone", False):
+            self.backbone.eval()
+        return self
+
+    @property
+    def config(self) -> Dict[str, Any]:
+        return self.hparams["config"]
+
+    @property
+    def num_levels(self) -> int:
+        return len(self.level_stages)
+
+    def encode_level(self, images: Tensor, level: int) -> Tensor:
+        """Project level-l views through the backbone up to the level's stage."""
+
+        flat = images.flatten(0, -4)
+        pooled = self.backbone.forward_stages(flat, up_to=self.level_stages[level])[-1]
+        features = self.projectors[level](pooled)
+        return features.reshape(*images.shape[:-3], -1)
+
+    def feature_batch(self, batch: Dict[str, Any]) -> ChainFeatureBatch:
+        chain_images: Sequence[Tensor] = batch["chain"]
+        children_images: Sequence[Tensor] = batch["children"]
+        if len(chain_images) != self.num_levels or len(children_images) != self.num_levels - 1:
+            raise ValueError("batch levels do not match the configured hierarchy")
+        chain = [self.encode_level(images, level) for level, images in enumerate(chain_images)]
+        children = [
+            self.encode_level(images, edge + 1) for edge, images in enumerate(children_images)
+        ]
+        endpoint = batch.get("endpoint")
+        endpoint_features = (
+            self.encode_level(endpoint, self.num_levels - 1) if endpoint is not None else None
+        )
+        return ChainFeatureBatch(
+            chain=chain, children=children, endpoint_descendants=endpoint_features
+        )
+
+    @staticmethod
+    def _truncate_views(features: ChainFeatureBatch, views: int) -> ChainFeatureBatch:
+        return ChainFeatureBatch(
+            chain=features.chain,
+            children=[descendants[:, :views] for descendants in features.children],
+            endpoint_descendants=features.endpoint_descendants,
+        )
+
+    def _whitening_penalty(self, moments: List[Tensor], levels: Sequence[int]) -> Tensor:
+        return torch.stack([identity_penalty(moments[level]) for level in levels]).sum()
+
+    def _flat_leaf_loss(self, features: ChainFeatureBatch, views: int) -> Tuple[Tensor, Dict[str, float]]:
+        """Flat FMCA row: independent full-path descendants of the root are
+        the star p(Y|X0) views of the classical flat method.
+
+        faithful_trace (gate v5+): the repo's formal flat FMCA-AV estimator
+        (f = f_head(mean of projected views), whitened trace at ridge 1e-3).
+        split_half_whitened (v3/v4): parent = conditional mean of the first
+        half of the views, g = the disjoint second half."""
+
+        if features.endpoint_descendants is None:
+            raise ValueError(
+                "flat variants require endpoint descendants: independent full-path "
+                "views of the root (configure endpoint_descendants >= 2)"
+            )
+        leaf = features.endpoint_descendants[:, :views]
+        if leaf.shape[1] < 2:
+            raise ValueError("flat variants need at least two independent root views")
+        if self.flat_recipe == "faithful_trace":
+            assert self.flat_f_head is not None
+            f_features = self.flat_f_head(leaf.mean(dim=1))
+            moments = estimate_moments(f_features, leaf, centered=True)
+            score = trace_score(moments, ridge=1e-3)
+            total = -score
+            return total, {"flat_trace_score": float(score.detach())}
+        half = leaf.shape[1] // 2
+        mean = leaf.flatten(0, 1).mean(dim=0, keepdim=True)
+        centered = leaf - mean.unsqueeze(0)
+        pooled = centered.flatten(0, 1)
+        moment = pooled.transpose(0, 1) @ pooled / pooled.shape[0]
+        # Leaf-level terms only: the flat control must not train the unused
+        # non-leaf projectors through shared penalties.
+        white = centered @ cholesky_whitener(moment.detach(), self.ridge)
+        f_side = white[:, :half].mean(dim=1)
+        g_side = white[:, half:]
+        cross = f_side.transpose(0, 1) @ g_side.mean(dim=1) / f_side.shape[0]
+        score = normalized_score(cross)
+        whitening = identity_penalty(moment)
+        total = -score + self.gamma * whitening
+        return total, {"leaf_score": float(score.detach()), "whitening": float(whitening.detach())}
+
+    def _gram_correction(self, whitened, last_state):
+        """Per-level Gram correction for a composed operator.
+
+        Only the arms that COMPOSE need this: the derivation is about the
+        interior interfaces, where multiplying ridge-whitened cross-matrices
+        inserts F F* instead of an orthogonal projection.  A single-operator
+        score has no interior interface, so the correction has no argument
+        behind it there and is deliberately not offered.
+        """
+
+        level_states = list(whitened.chain[: self.num_levels - 1]) + [last_state]
+        if self.gram_detach_metric:
+            level_states = [state.detach() for state in level_states]
+        return build_correction([gram_matrix(state) for state in level_states],
+                                tau_relative=self.gram_tau)
+
+    def _whiten(self, features: ChainFeatureBatch):
+        """The one place that knows which estimator this arm runs under.
+
+        Returns (None, moments, ranks) when a level's retained set is
+        empty -- possible under truncated only -- and every caller must
+        treat that as "flag the batch, take no update" rather than let a
+        None reach an operator builder.
+        """
+
+        return whiten_chain_batch(
+            features, ridge=self.ridge, detach_whitener=self.detach_whitener,
+            mode=self.estimator, tau=self.spectral_tau)
+
+    def _paper_composition_loss(self, features: ChainFeatureBatch):
+        """Supplement Eq. (9)-(10) and section Eq. (25), implemented literally.
+
+        Every score uses the SAME shared truncated coordinates -- the paper
+        is explicit that the trace scores use "these same coordinates", so a
+        pair-specific ridge trace here would be a different estimator.  The
+        composition is the plain ordered product, which is already the
+        projected composition because truncated whitening is exactly
+        idempotent (W R W = Pi).  No Gram inverse is inserted anywhere.
+
+        Returns ``None`` when a level's retained set is empty: the supplement
+        says the batch is flagged and no parameter update is taken.
+        """
+
+        if features.endpoint_descendants is None:
+            raise ValueError("paper_composition requires endpoint descendants")
+        whitened, moments, retained = self._whiten(features)
+        if whitened is None:
+            return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+
+        edges = train_edge_operators(whitened)
+        c_comp = compose_edge_operators(edges)
+        c_dir = train_endpoint_operator(whitened)
+
+        # r_hat = ||C||_F^2 in the shared retained coordinates (Eq. 10).
+        reward_dir = c_dir.square().sum()
+        edge_sum = torch.stack([edge.square().sum() for edge in edges]).sum()
+        closure = (c_dir - c_comp).square().sum() / (c_dir.square().sum() + self.epsilon)
+        whitening = self._whitening_penalty(moments, range(self.num_levels))
+
+        total = -reward_dir - self.alpha * edge_sum + self.beta * closure + self.gamma * whitening
+        # These are trace-scale quantities: the paper's r_hat = ||C||_F^2 has
+        # no 1/K normalisation, so each operator is bounded by K = 128 modes,
+        # not by 1.  They therefore carry the TRACE metric names, whose guard
+        # bounds are already calibrated for that scale.  Logging them under
+        # the normalized-score names would have applied a bound meant for a
+        # different quantity -- which is what the first probe caught.
+        metrics = {"dir_trace": float(reward_dir.detach()),
+                   "edge_trace_sum": float(edge_sum.detach()),
+                   "closure_ratio": float(closure.detach()),
+                   "whitening": float(whitening.detach()),
+                   "retained_min": float(min(retained)),
+                   **{f"retained_l{i}": float(r) for i, r in enumerate(retained)},
+                   "invalid_batch": 0.0}
+
+        if self.leaf_reward_weight > 0:
+            assert self.flat_f_head is not None
+            # Supplement §1.3: the multiview term uses pair-specific Grams with
+            # the SAME cutoff, not a ridge.  Eq. (13)-(14) take the marginals
+            # from INDIVIDUAL vectors -- the Gram of finite averages would
+            # measure their covariance instead -- and Eq. (15) pairs f against
+            # the endpoint mean.  These coordinates serve this score only and
+            # are never substituted into the chain operators.
+            leaf_views = features.endpoint_descendants
+            f_features = self.flat_f_head(leaf_views.mean(dim=1))
+            f_centered = f_features - f_features.mean(dim=0, keepdim=True)
+            g_flat = leaf_views.flatten(0, 1)
+            g_centered = leaf_views - g_flat.mean(dim=0, keepdim=True)
+            gram_f = f_centered.transpose(0, 1) @ f_centered / f_centered.shape[0]
+            g_pool = g_centered.flatten(0, 1)
+            gram_g = g_pool.transpose(0, 1) @ g_pool / g_pool.shape[0]
+            w_f, rank_f = truncated_whitener(
+                gram_f.detach() if self.gram_detach_metric else gram_f, self.spectral_tau)
+            w_g, rank_g = truncated_whitener(
+                gram_g.detach() if self.gram_detach_metric else gram_g, self.spectral_tau)
+            if w_f is None or w_g is None:
+                # "empty retained support in either auxiliary Gram matrix also
+                # invalidates the batch"
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            cross = f_centered.transpose(0, 1) @ g_centered.mean(dim=1) / f_centered.shape[0]
+            leaf_reward = (w_f @ cross @ w_g).square().sum()
+            total = total - self.leaf_reward_weight * leaf_reward
+            metrics["leaf_trace"] = float(leaf_reward.detach())
+            metrics["mv_retained_min"] = float(min(rank_f, rank_g))
+        return total, metrics
+
+    def _variant_loss(self, features: ChainFeatureBatch) -> Tuple[Tensor, Dict[str, float]]:
+        if self.variant.startswith("paper_"):
+            return self._paper_composition_loss(features)
+        if self.variant == "final_2view":
+            return self._flat_leaf_loss(features, views=2)
+        if self.variant == "final_mview":
+            if features.endpoint_descendants is None:
+                raise ValueError("final_mview requires endpoint descendants")
+            return self._flat_leaf_loss(features, views=features.endpoint_descendants.shape[1])
+        if self.variant == "additive_2view":
+            features = self._truncate_views(features, views=2)
+        if self.variant in {"additive_2view", "additive_mview"}:
+            if self.additive_recipe == "faithful_trace":
+                scores = [
+                    trace_score(
+                        estimate_moments(features.chain[edge], features.children[edge], centered=True),
+                        ridge=1e-3,
+                    )
+                    for edge in range(self.num_levels - 1)
+                ]
+                score = torch.stack(scores).sum()
+                return -score, {"edge_trace_sum": float(score.detach())}
+            whitened, moments, ranks = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            edges = train_edge_operators(whitened)
+            score = torch.stack([normalized_score(edge) for edge in edges]).sum()
+            whitening = self._whitening_penalty(moments, range(self.num_levels))
+            total = -score + self.gamma * whitening
+            return total, {"edge_score_sum": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "retained_min": float(min(ranks))}
+        if self.variant == "amdim_cross":
+            pairs = self.cross_pairs or [
+                (i, j) for i in range(self.num_levels) for j in range(1, self.num_levels) if i < j
+            ]
+            if self.additive_recipe == "faithful_trace":
+                scores = [
+                    trace_score(
+                        estimate_moments(features.chain[i], features.children[j - 1], centered=True),
+                        ridge=1e-3,
+                    )
+                    for i, j in pairs
+                ]
+                score = torch.stack(scores).sum()
+                return -score, {"cross_trace_sum": float(score.detach())}
+            whitened, moments, ranks = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            scores = [cross_pair_score(whitened, None, i, j) for i, j in pairs]
+            score = torch.stack(scores).sum()
+            whitening = self._whitening_penalty(moments, range(self.num_levels))
+            total = -score + self.gamma * whitening
+            return total, {"cross_score_sum": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "retained_min": float(min(ranks))}
+        if self.variant == "product_endpoint" and self.product_recipe == "faithful_bootstrap":
+            if features.endpoint_descendants is None:
+                raise ValueError("product_endpoint requires endpoint descendants")
+            alpha = self.alpha
+            if self.alpha_schedule == "cosine_to_zero":
+                try:
+                    progress = min(self.current_epoch / max(self.trainer.max_epochs, 1), 1.0)
+                except RuntimeError:
+                    progress = 0.0
+                import math
+
+                alpha = self.alpha * 0.5 * (1.0 + math.cos(math.pi * progress))
+            reward_dir = trace_score(
+                estimate_moments(features.chain[0], features.endpoint_descendants, centered=True),
+                ridge=1e-3,
+            )
+            edge_traces = [
+                trace_score(
+                    estimate_moments(features.chain[edge], features.children[edge], centered=True),
+                    ridge=1e-3,
+                )
+                for edge in range(self.num_levels - 1)
+            ]
+            edge_sum = torch.stack(edge_traces).sum()
+            whitened, moments, ranks = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            shared_edges = train_edge_operators(whitened)
+            c_comp = compose_edge_operators(shared_edges)
+            c_dir = train_endpoint_operator(whitened)
+            if self.gram_corrected_closure:
+                # The endpoint metric comes from the same object c_dir's right
+                # factor uses, so both ends of both operators carry the SAME
+                # G_0 and G_L.
+                correction = self._gram_correction(
+                    whitened, whitened.endpoint_descendants.mean(dim=1))
+                c_comp = corrected_composition(shared_edges, correction)
+                c_dir = corrected_endpoint(c_dir, correction)
+            closure_target = c_dir.detach() if self.closure_stop_grad else c_dir
+            closure_denominator = (
+                c_dir.detach().square().sum() if self.closure_stop_grad else c_dir.square().sum()
+            )
+            closure = (closure_target - c_comp).square().sum() / (closure_denominator + self.epsilon)
+            whitening = self._whitening_penalty(moments, range(self.num_levels))
+            leaf_reward = None
+            if self.leaf_reward_weight > 0:
+                assert self.flat_f_head is not None
+                leaf_views = features.endpoint_descendants
+                f_features = self.flat_f_head(leaf_views.mean(dim=1))
+                leaf_reward = trace_score(
+                    estimate_moments(f_features, leaf_views, centered=True), ridge=1e-3
+                )
+            if self.ema_target_momentum > 0:
+                with torch.no_grad():
+                    momentum = self.ema_target_momentum
+                    if float(self.ema_initialized) == 0.0:
+                        self.ema_c_dir.copy_(c_dir)
+                        self.ema_initialized.fill_(1.0)
+                    else:
+                        self.ema_c_dir.mul_(momentum).add_(c_dir, alpha=1.0 - momentum)
+                closure = (self.ema_c_dir - c_comp).square().sum() / (
+                    self.ema_c_dir.square().sum() + self.epsilon
+                )
+            in_warmup_phase = False
+            try:
+                in_warmup_phase = (
+                    self.curriculum_epochs > 0 and self.current_epoch < self.curriculum_epochs
+                )
+            except RuntimeError:
+                pass
+            if in_warmup_phase:
+                total = -self.leaf_reward_weight * leaf_reward + self.gamma * whitening
+            else:
+                total = (
+                    -reward_dir
+                    - alpha * edge_sum
+                    + self.beta * closure
+                    + self.gamma * whitening
+                )
+                if leaf_reward is not None:
+                    total = total - self.leaf_reward_weight * leaf_reward
+            metrics = {
+                "dir_trace": float(reward_dir.detach()),
+                "edge_trace_sum": float(edge_sum.detach()),
+                "closure_ratio": float(closure.detach()),
+                "whitening": float(whitening.detach()),
+                "alpha_effective": float(alpha),
+                "gram_corrected_closure": float(self.gram_corrected_closure),
+                "gram_retained_min": (float(min(correction.retained_ranks))
+                                      if self.gram_corrected_closure else -1.0),
+                # How much the ESTIMATOR discarded, which is a different
+                # question from the Gram correction's sentinel above and the
+                # only way to see truncation biting on a non-paper arm.
+                "retained_min": float(min(ranks)),
+            }
+            if leaf_reward is not None:
+                metrics["leaf_trace"] = float(leaf_reward.detach())
+            return total, metrics
+        if self.variant == "product_only":
+            whitened, moments, ranks = self._whiten(features)
+            if whitened is None:
+                return None, {"invalid_batch": 1.0, "retained_min": 0.0}
+            edges = train_edge_operators(whitened)
+            retained = -1.0  # sentinel: correction off, nothing truncated
+            if self.gram_corrected_closure:
+                # V6 composes too, so the same correction applies -- and here
+                # it lands on the scored operator itself rather than on a
+                # closure term, which is the cleanest place to see it.
+                correction = self._gram_correction(
+                    whitened, whitened.children[-1].mean(dim=1))
+                composed = corrected_composition(edges, correction)
+                retained = float(min(correction.retained_ranks))
+            else:
+                composed = compose_edge_operators(edges)
+            score = normalized_score(composed)
+            whitening = self._whitening_penalty(moments, range(self.num_levels))
+            total = -score + self.gamma * whitening
+            return total, {"product_score": float(score.detach()),
+                           "whitening": float(whitening.detach()),
+                           "gram_corrected_closure": float(self.gram_corrected_closure),
+                           "gram_retained_min": retained,
+                           "retained_min": float(min(ranks))}
+        terms = certificate_training_loss(
+            features,
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+            epsilon=self.epsilon,
+            closure_stop_grad=self.closure_stop_grad,
+            ridge=self.ridge,
+            detach_whitener=self.detach_whitener,
+        )
+        return terms.total, terms.as_metrics()
+
+    def _shared_step(self, batch: Dict[str, Any], split: str) -> Tensor:
+        features = self.feature_batch(batch)
+        total, metrics = self._variant_loss(features)
+        if total is None:
+            # Supplement: a level with an empty retained set flags the batch
+            # and no parameter update is taken.  Returning None is how
+            # Lightning skips the step; the flag is counted, not swallowed,
+            # so a run that silently stops learning is visible in the log.
+            self.invalid_batches += 1
+            self.log(f"{split}/invalid_batches", float(self.invalid_batches),
+                     on_step=False, on_epoch=True)
+            return None
+        self.log(f"{split}/loss", total, on_step=False, on_epoch=True, prog_bar=True)
+        for name, value in metrics.items():
+            self.log(f"{split}/{name}", value, on_step=False, on_epoch=True)
+            if self.log_ranks_per_step and split == "train" and name.startswith("retained_"):
+                self.log(f"step/{name}", value, on_step=True, on_epoch=False)
+        if split == "val":
+            with torch.no_grad():
+                whitened, _, _ = whiten_chain_batch(
+                    features, ridge=self.ridge, detach_whitener=True,
+                    mode=self.estimator, tau=self.spectral_tau)
+                if whitened is None:
+                    return total
+                edges = train_edge_operators(whitened)
+                c_dir = train_endpoint_operator(whitened)
+                c_comp = compose_edge_operators(edges)
+                # Train-protocol diagnostic only; not the Stage-B/C certificate.
+                self.log("val/closure_defect_frobenius", torch.linalg.matrix_norm(c_dir - c_comp))
+                self.log("val_score", -total)
+        return total
+
+    def training_step(self, batch: Dict[str, Any], batch_index: int) -> Tensor:
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch: Dict[str, Any], batch_index: int) -> None:
+        self._shared_step(batch, "val")
+
+    def configure_optimizers(self) -> object:
+        trainable = [p for p in self.parameters() if p.requires_grad]
+        config = self.config["optimizer"]
+        name = str(config.get("name", "adamw"))
+        if name == "adamw":
+            optimizer: torch.optim.Optimizer = torch.optim.AdamW(
+                trainable,
+                lr=float(config["learning_rate"]),
+                weight_decay=float(config.get("weight_decay", 0.0)),
+            )
+        elif name == "sgd":
+            optimizer = torch.optim.SGD(
+                trainable,
+                lr=float(config["learning_rate"]),
+                momentum=float(config.get("momentum", 0.9)),
+                weight_decay=float(config.get("weight_decay", 0.0)),
+            )
+        else:
+            raise ValueError("optimizer.name must be adamw or sgd")
+        if str(config.get("scheduler", "none")) == "cosine":
+            total_epochs = int(config.get("scheduler_t_max", self.config["trainer"]["max_epochs"]))
+            warmup_epochs = min(int(config.get("warmup_epochs", 10)), max(total_epochs - 1, 1))
+            cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=max(total_epochs - warmup_epochs, 1)
+            )
+            if warmup_epochs > 0:
+                warmup = torch.optim.lr_scheduler.LinearLR(
+                    optimizer, start_factor=0.01, total_iters=warmup_epochs
+                )
+                scheduler: torch.optim.lr_scheduler.LRScheduler = (
+                    torch.optim.lr_scheduler.SequentialLR(
+                        optimizer, [warmup, cosine], milestones=[warmup_epochs]
+                    )
+                )
+            else:
+                scheduler = cosine
+            return {"optimizer": optimizer, "lr_scheduler": scheduler}
+        return optimizer

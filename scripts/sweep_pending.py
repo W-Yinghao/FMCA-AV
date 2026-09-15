@@ -1,0 +1,396 @@
+"""Emit the sbatch lines that SHOULD be running right now.
+
+Derived entirely from target state -- what exists on disk against what
+the wave table declares -- so it is idempotent, and a unit that failed
+becomes eligible again the moment its job leaves the queue.  That is the
+difference between this and a submitter's ledger: nothing here records
+"submitted", only "in flight right now", and an in-flight entry whose
+job has left squeue is dropped rather than believed.
+
+Ordering is deliberate: training first (it is the long pole and the
+thing everything else gates on), then certificates, then profiles, which
+take about thirty seconds each and would otherwise starve behind nothing.
+"""
+
+import argparse
+import json
+import subprocess
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+INFLIGHT = REPO / "runs" / "inflight.tsv"     # key<TAB>jobid, appended by the submitter
+ATTEMPTS = REPO / "runs" / "attempts.tsv"     # key<TAB>jobid, never pruned
+# A target that keeps coming back is a broken target, not an unlucky one.
+# Without a cap the sweep would resubmit it every cycle for as long as the
+# fleet runs, which is the 15h crash-loop in a new costume.
+MAX_ATTEMPTS = 2
+
+GENERIC = "sbatch scripts/launch_gate1_generic.sbatch"
+ANALYSIS = "sbatch scripts/launch_analysis_gpu.sbatch"
+
+# (config_dir, output_root, variant, probe_seed, replicate_seeds)
+# Replicates are held until the probe seed's unit.json reads complete:
+# a refilling babysitter in front of an unproven runner is how 15h once
+# disappeared, and two of these arms have never run in any form.
+#
+# probe_seed None means UNGATED -- every seed in the tuple is submitted and
+# resumed independently.  Only for an arm whose runner is already proven,
+# and it matters for more than the launch: a gated replicate whose probe is
+# not yet complete is also not RESUMED by the sweep, so an 800-epoch seed
+# launched by hand behind a gate would stall at its first walltime kill.
+WAVE = [
+    # --- bifurcation diagnostic (5-epoch, per-step ranks) + warm-up-aligned 45k ---
+    ("configs/gate_bifurc_30k",     "results/gate1/gate1_20260914_bifurc_30k",     "paper_composition", None, (1, 2, 3)),
+    ("configs/gate_bifurc_45k",     "results/gate1/gate1_20260914_bifurc_45k",     "paper_composition", None, (1, 2, 3)),
+    # gate_bifurc_45k_wu7 withdrawn 2026-09-15: its premise (warm-up steps decide
+    # the branch) was overtaken by the finding that the branch follows the
+    # multiview-term implementation (commit 02fa55e), and its 3 x 9h were
+    # blocking the 1-GPU-hour old-code check that settles that question.
+    # --- ridge beta0 replicated with epoch-20/200 checkpoints -----------
+    ("configs/gate_ridge_ms_beta0",      "results/gate1/gate1_20260914_ridge_ms_beta0",      "product_endpoint", None, (1, 2, 3)),
+    ("configs/gate_ridge_ms_beta0_c100", "results/gate1/gate1_20260914_ridge_ms_beta0_c100", "product_endpoint", None, (1, 2, 3)),
+    # --- ridge full model replicated with epoch-20/200 checkpoints ------
+    ("configs/gate_ridge_ms",      "results/gate1/gate1_20260914_ridge_ms",
+     "product_endpoint", None, (1, 2, 3)),
+    ("configs/gate_ridge_ms_c100", "results/gate1/gate1_20260914_ridge_ms_c100",
+     "product_endpoint", None, (1, 2, 3)),
+    # --- MAJOR main run, frozen 2026-09-13: 45000 images, 800 epochs ----
+    # Ungated: seed 1 of each dataset cleared 12 epochs cleanly on the same
+    # runner that trained this arm at 200 epochs, so the gate has nothing
+    # left to catch, and every seed needs the sweep to resume it across the
+    # 24h partition cap.
+    ("configs/gate_major45k",      "results/gate1/gate1_20260913_major45k",
+     "paper_composition", None, (1, 2, 3)),
+    ("configs/gate_major45k_c100", "results/gate1/gate1_20260913_major45k_c100",
+     "paper_composition", None, (1, 2, 3)),
+    # --- MAJOR completion wave, frozen 2026-09-12 -----------------------
+    ("configs/gate_x_v8trunc",    "results/gate1/gate1_20260912_x2x2",
+     "product_endpoint",  1, (2, 3)),
+    ("configs/gate_x_paperridge", "results/gate1/gate1_20260912_x2x2",
+     "paper_composition", 1, (2, 3)),
+    ("configs/gate_x_star",       "results/gate1/gate1_20260912_star",
+     "paper_composition", 1, (2, 3)),
+    # --- robustness axes already in flight -------------------------------
+    ("configs/gate_paper", "results/gate1/gate1_20260911_paper_probe2",
+     "paper_T4",   1, ()),
+    ("configs/gate_paper", "results/gate1/gate1_20260911_paper_probe2",
+     "paper_K256", 1, ()),
+]
+
+# Replicate seeds for the two robustness axes land in their own root, so
+# they are declared separately against the probe that gates them.
+GATED_ELSEWHERE = [
+    ("configs/gate_paper", "results/gate1/gate1_20260911_paper_robust",
+     "paper_T4", (2, 3), "results/gate1/gate1_20260911_paper_probe2/units/paper_T4__seed1"),
+    ("configs/gate_paper", "results/gate1/gate1_20260911_paper_robust",
+     "paper_K256", (2, 3), "results/gate1/gate1_20260911_paper_probe2/units/paper_K256__seed1"),
+]
+
+# Roots swept for derived artefacts (profiles, certificates).
+DERIVED_ROOTS = {
+    "results/gate1/gate1_20260910_paper_probe": "configs/gate_paper",
+    "results/gate1/gate1_20260910_paper_v1":    "configs/gate_paper",
+    "results/gate1/gate1_20260911_paper_c100":  "configs/gate_paper_c100",
+    "results/gate1/gate1_20260911_paper_probe2": "configs/gate_paper",
+    "results/gate1/gate1_20260911_paper_robust": "configs/gate_paper",
+    "results/gate1/gate1_20260912_x2x2":        None,   # per-variant, below
+    "results/gate1/gate1_20260912_star":        "configs/gate_x_star",
+    "results/gate1/gate1_20260913_major45k":      "configs/gate_major45k",
+    "results/gate1/gate1_20260913_major45k_c100": "configs/gate_major45k_c100",
+    "results/gate1/gate1_20260914_ridge_ms":       "configs/gate_ridge_ms",
+    "results/gate1/gate1_20260914_ridge_ms_c100":  "configs/gate_ridge_ms_c100",
+    "results/gate1/gate1_20260914_bifurc_30k":      "configs/gate_bifurc_30k",
+    "results/gate1/gate1_20260914_bifurc_45k":      "configs/gate_bifurc_45k",
+    "results/gate1/gate1_20260914_bifurc_45k_wu7":  "configs/gate_bifurc_45k_wu7",
+    "results/gate1/gate1_20260914_ridge_ms_beta0":      "configs/gate_ridge_ms_beta0",
+    "results/gate1/gate1_20260914_ridge_ms_beta0_c100": "configs/gate_ridge_ms_beta0_c100",
+}
+X2X2_CONFIG = {
+    "product_endpoint":  "configs/gate_x_v8trunc",
+    "paper_composition": "configs/gate_x_paperridge",
+}
+
+# Certificate filenames.  The two original MAJOR roots keep the bare
+# variant_seedN name that 12 files already on disk use; every other root
+# must carry a tag, because the 2x2 runs paper_composition too and an
+# untagged name would have silently OVERWRITTEN a MAJOR certificate with
+# one measured on a ridge-trained arm.
+ROOT_TAG = {
+    "results/gate1/gate1_20260910_paper_probe": "",
+    "results/gate1/gate1_20260910_paper_v1": "",
+    "results/gate1/gate1_20260911_paper_c100": "_c100",
+    "results/gate1/gate1_20260911_paper_probe2": "_probe2",
+    "results/gate1/gate1_20260911_paper_robust": "_robust",
+    "results/gate1/gate1_20260912_x2x2": "_x2x2",
+    "results/gate1/gate1_20260912_star": "_star",
+    "results/gate1/gate1_20260913_major45k": "_45k",
+    "results/gate1/gate1_20260913_major45k_c100": "_45k_c100",
+    "results/gate1/gate1_20260914_ridge_ms": "_ridge_ms",
+    "results/gate1/gate1_20260914_ridge_ms_c100": "_ridge_ms_c100",
+    "results/gate1/gate1_20260914_bifurc_30k": "_bifurc30k",
+    "results/gate1/gate1_20260914_bifurc_45k": "_bifurc45k",
+    "results/gate1/gate1_20260914_bifurc_45k_wu7": "_bifurc45kwu7",
+    "results/gate1/gate1_20260914_ridge_ms_beta0": "_ridge_ms_beta0",
+    "results/gate1/gate1_20260914_ridge_ms_beta0_c100": "_ridge_ms_beta0_c100",
+}
+
+
+def resolved_estimator(config_dir: str, variant: str) -> str:
+    """The same rule HierarchyCertificateModule applies, read from JSON.
+
+    Duplicated rather than imported so a sweep does not pay for torch on
+    every cycle; tests/test_sweep_pending.py asserts the two agree on
+    every config on disk.
+    """
+
+    from run_gate1_unit import VARIANT_TAGS  # cheap: no torch at import
+    path = Path(REPO, config_dir, f"gate1_cifar10_{VARIANT_TAGS[variant]}.json")
+    declared = json.loads(path.read_text()).get("loss", {}).get("estimator")
+    return declared or ("truncated" if variant.startswith("paper_") else "ridge")
+
+
+def status(unit_dir: Path) -> str:
+    record = unit_dir / "unit.json"
+    if not record.is_file():
+        return "absent"
+    try:
+        return json.loads(record.read_text()).get("status", "absent")
+    except Exception:
+        return "absent"
+
+
+def live_jobs() -> set:
+    out = subprocess.run(["squeue", "-u", "yinwang", "-h", "-o", "%i"],
+                         capture_output=True, text=True)
+    return {line.strip() for line in out.stdout.splitlines() if line.strip()}
+
+
+def _read_pairs(path: Path):
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text().splitlines():
+        key, _, job = line.partition("\t")
+        if key and job:
+            rows.append((key.strip(), job.strip()))
+    return rows
+
+
+def load_inflight() -> set:
+    """Targets whose job is STILL in the queue.  Stale entries self-clear.
+
+    This is not a record of what was submitted -- that kind of ledger once
+    left eleven failed lines un-retryable.  An entry survives only while
+    squeue still lists its job; once the job leaves, the target is judged
+    on its own state again.
+    """
+
+    rows = _read_pairs(INFLIGHT)
+    if not rows:
+        return set()
+    alive = live_jobs()
+    kept = [(key, job) for key, job in rows if job in alive]
+    if len(kept) != len(rows):
+        INFLIGHT.write_text("".join(f"{k}\t{j}\n" for k, j in kept))
+    return {key for key, _ in kept}
+
+
+def _progress_epoch(key: str) -> int:
+    """Last epoch this training target has on disk, or -1 if it is not one."""
+    if not key.startswith("train:"):
+        return -1
+    try:
+        _, root, variant, seed = key.split(":")
+    except ValueError:
+        return -1
+    logs = Path(REPO, root, "units", f"{variant}__seed{seed}", "train_logs")
+    best = -1
+    for metrics in logs.glob("version_*/metrics.csv"):
+        try:
+            rows = metrics.read_text().splitlines()
+        except OSError:
+            continue
+        for line in reversed(rows[1:]):
+            head = line.split(",", 1)[0]
+            if head.isdigit():
+                best = max(best, int(head))
+                break
+    return best
+
+
+def exhausted() -> dict:
+    """Targets that have burned their attempts and must not be resubmitted.
+
+    An attempt that made PROGRESS is not a failure.  An 800-epoch unit
+    outlives the 24h cap on every GPU partition here, so it is killed and
+    resumed by design, and a naive count would block it on the second
+    walltime kill -- turning the retry cap, which exists to stop
+    crash-loops, into the thing that stops the wave.  Progress is recorded
+    next to the attempt and an attempt that advanced the last logged epoch
+    does not count against the cap.
+    """
+
+    counts = {}
+    for key, marker in _read_pairs(ATTEMPTS):
+        # marker is "<jobid>" (legacy) or "<jobid>@<epoch reached before it)"
+        epoch = None
+        if "@" in marker:
+            _, _, tail = marker.partition("@")
+            if tail.lstrip("-").isdigit():
+                epoch = int(tail)
+        counts.setdefault(key, []).append(epoch)
+    spent = {}
+    for key, markers in counts.items():
+        reached = _progress_epoch(key)
+        # Count only attempts that started at the epoch we are still at.
+        stalled = [e for e in markers if e is None or e >= reached]
+        if len(stalled) >= MAX_ATTEMPTS:
+            spent[key] = len(stalled)
+    return spent
+
+
+def config_for(root: str, variant: str) -> str:
+    declared = DERIVED_ROOTS.get(root)
+    return declared if declared else X2X2_CONFIG[variant]
+
+
+def sweep(report_blocked=False):
+    busy = load_inflight()
+    spent = exhausted()
+    lines, blocked = [], []
+
+    def emit(key, command):
+        if key in busy:
+            return
+        if key in spent:
+            blocked.append((key, spent[key]))
+            return
+        lines.append((key, command))
+
+    # 1. training -- probe seeds unconditionally, replicates behind them
+    for config_dir, root, variant, probe_seed, replicates in WAVE:
+        if probe_seed is None:
+            for seed in replicates:
+                if status(Path(REPO, root, "units", f"{variant}__seed{seed}")) != "complete":
+                    emit(f"train:{root}:{variant}:{seed}",
+                         f"{GENERIC} {config_dir} {root} {variant} {seed}")
+            continue
+        unit = Path(REPO, root, "units", f"{variant}__seed{probe_seed}")
+        if status(unit) != "complete":
+            emit(f"train:{root}:{variant}:{probe_seed}",
+                 f"{GENERIC} {config_dir} {root} {variant} {probe_seed}")
+            continue
+        for seed in replicates:
+            if status(Path(REPO, root, "units", f"{variant}__seed{seed}")) != "complete":
+                emit(f"train:{root}:{variant}:{seed}",
+                     f"{GENERIC} {config_dir} {root} {variant} {seed}")
+
+    for config_dir, root, variant, seeds, gate in GATED_ELSEWHERE:
+        if status(Path(REPO, gate)) != "complete":
+            continue
+        for seed in seeds:
+            if status(Path(REPO, root, "units", f"{variant}__seed{seed}")) != "complete":
+                emit(f"train:{root}:{variant}:{seed}",
+                     f"{GENERIC} {config_dir} {root} {variant} {seed}")
+
+    # 2. certificates -- MAJOR arms only, and only from the truncated script
+    certificates = Path(REPO, "results", "paper_certificate")
+    for root in DERIVED_ROOTS:
+        units = Path(REPO, root, "units")
+        if not units.is_dir():
+            continue
+        for unit in sorted(units.glob("*__seed*")):
+            variant, seed = unit.name.split("__seed")
+            if status(unit) != "complete":
+                continue
+            # run_paper_certificate builds TRUNCATED transforms.  Pointing it
+            # at a ridge-trained arm would stamp "estimator": "truncated" on a
+            # measurement of something else, which is the exact provenance
+            # confusion this whole wave exists to undo.  So the test is the
+            # ESTIMATOR, not the variant name: gating on a paper_ prefix also
+            # excluded the 2x2's truncated cell, whose variant is
+            # product_endpoint but whose coordinates are the paper's, and for
+            # which the instrument is perfectly valid.
+            if resolved_estimator(config_for(root, variant), variant) != "truncated":
+                continue
+            out = certificates / f"{variant}{ROOT_TAG[root]}_seed{seed}.json"
+            if out.is_file():
+                continue
+            emit(f"cert:{root}:{variant}:{seed}",
+                 f"{ANALYSIS} scripts/run_paper_certificate.py "
+                 f"--config-dir {config_for(root, variant)} --output-root {root} "
+                 f"--variant {variant} --seed {seed} --out {out.relative_to(REPO)}")
+
+    # 3. milestone evaluations -- the epoch 20/200/800 checkpoints are only
+    #    SAVED by the runner; the unit's own probe and certificate describe
+    #    the final model alone.  A saved checkpoint nobody evaluates is not a
+    #    result, so each milestone gets its own profile and certificate.
+    for root in DERIVED_ROOTS:
+        units = Path(REPO, root, "units")
+        if not units.is_dir():
+            continue
+        for unit in sorted(units.glob("*__seed*")):
+            variant, seed = unit.name.split("__seed")
+            if status(unit) != "complete":
+                continue
+            config_dir = config_for(root, variant)
+            for ckpt in sorted((unit / "checkpoints").glob("epoch-*.ckpt")):
+                stem = ckpt.stem
+                prof = unit / f"blockwise_profile_{stem}.json"
+                if not prof.is_file():
+                    emit(f"mprof:{root}:{variant}:{seed}:{stem}",
+                         f"{ANALYSIS} scripts/run_layerwise_profile.py "
+                         f"--config-dir {config_dir} --output-root {root} "
+                         f"--variant {variant} --seed {seed} --granularity block "
+                         f"--checkpoint {ckpt.relative_to(REPO)}")
+                if not variant.startswith("paper_"):
+                    continue
+                if resolved_estimator(config_dir, variant) != "truncated":
+                    continue
+                out = certificates / f"{variant}{ROOT_TAG[root]}_seed{seed}_{stem}.json"
+                if not out.is_file():
+                    emit(f"mcert:{root}:{variant}:{seed}:{stem}",
+                         f"{ANALYSIS} scripts/run_paper_certificate.py "
+                         f"--config-dir {config_dir} --output-root {root} "
+                         f"--variant {variant} --seed {seed} "
+                         f"--checkpoint {ckpt.relative_to(REPO)} "
+                         f"--out {out.relative_to(REPO)}")
+
+    # 4. block profiles -- cheap, so they go last and never block a training
+    for root in DERIVED_ROOTS:
+        units = Path(REPO, root, "units")
+        if not units.is_dir():
+            continue
+        for unit in sorted(units.glob("*__seed*")):
+            variant, seed = unit.name.split("__seed")
+            if status(unit) != "complete":
+                continue
+            if (unit / "blockwise_profile.json").is_file():
+                continue
+            if not (unit / "checkpoints" / "last.ckpt").is_file():
+                continue
+            emit(f"prof:{root}:{variant}:{seed}",
+                 f"{ANALYSIS} scripts/run_layerwise_profile.py "
+                 f"--config-dir {config_for(root, variant)} --output-root {root} "
+                 f"--variant {variant} --seed {seed} --granularity block")
+    return (lines, blocked) if report_blocked else lines
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--with-keys", action="store_true",
+                        help="print KEY\\tCOMMAND so a submitter can record in-flight")
+    parser.add_argument("--blocked", action="store_true",
+                        help="instead list targets that exhausted their attempts")
+    arguments = parser.parse_args()
+    lines, blocked = sweep(report_blocked=True)
+    if arguments.blocked:
+        for key, count in blocked:
+            print(f"{key}\tattempts={count}")
+        return
+    for key, command in lines:
+        print(f"{key}\t{command}" if arguments.with_keys else command)
+
+
+if __name__ == "__main__":
+    main()

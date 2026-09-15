@@ -1,0 +1,99 @@
+
+====================================================================
+CIFAR-10
+====================================================================
+
+-- probe accuracy, points --
+  product_endpoint   s0:  57.49  s1:  78.60  s2:  85.44  s3:  85.46
+  additive_mview     s0:  59.14  s1:  76.33  s2:  78.35  s3:  78.39
+  final_mview        s0:  55.92  s1:  68.53  s2:  84.81  s3:  88.77
+
+-- effective rank --
+  product_endpoint   s0:  11.11  s1:  26.70  s2:  40.01  s3:  56.73
+  additive_mview     s0:  12.55  s1:  26.15  s2:  38.31  s3:  52.91
+  final_mview        s0:   9.42  s1:  22.47  s2:  51.96  s3:  98.32
+
+-- preregistered contrasts --
+  V7 - flat (probe points)
+    stage 0: D =   +1.57   per seed  +1.55  +1.55  +1.62
+    stage 1: D =  +10.07   per seed +11.05  +9.87  +9.29
+    stage 2: D =   +0.63   per seed  +0.98  +0.73  +0.19  <- interior interface
+    stage 3: D =   -3.31   per seed  -3.19  -3.10  -3.65  <- endpoint
+  additive - flat (probe points)
+    stage 0: D =   +3.23   per seed  +3.99  +2.93  +2.76
+    stage 1: D =   +7.79   per seed  +7.66  +7.78  +7.94
+    stage 2: D =   -6.46   per seed  -6.67  -6.32  -6.39  <- interior interface
+    stage 3: D =  -10.38   per seed -10.34 -10.64 -10.16  <- endpoint
+  V7 - flat (effective rank)
+    stage 0: D =   +1.69   per seed  +2.31  +1.62  +1.15
+    stage 1: D =   +4.24   per seed  +5.06  +2.82  +4.84
+    stage 2: D =  -11.95   per seed -13.58 -12.45  -9.82  <- interior interface
+    stage 3: D =  -41.59   per seed -38.30 -42.84 -43.62  <- endpoint
+  additive - flat (effective rank)
+    stage 0: D =   +3.13   per seed  +3.33  +2.63  +3.44
+    stage 1: D =   +3.69   per seed  +3.94  +4.21  +2.90
+    stage 2: D =  -13.64   per seed -15.27 -12.59 -13.07  <- interior interface
+    stage 3: D =  -45.41   per seed -44.88 -45.18 -46.17  <- endpoint
+
+-- verdicts --
+  P1 interior redistribution: D(2)=+0.63 vs D(3)=-3.31 -> PASS (seed ranges disjoint)
+     strong form D(2)>0: yes (min per seed +0.19)
+  P2 anti-compression: D_rank(2)=-11.95 (<=0), vs D_rank(3)=-41.59 -> REFUTED
+  P4 mechanism specificity (probe): V7 +0.63 vs additive -6.46 at the interior -> specific
+  P4 mechanism specificity (rank): V7 -11.95 vs additive -13.64 at the interior -> NOT specific to composition
+
+-- P3 interface retention (mean top-8 canonical correlation) --
+  product_endpoint   0->1: 0.985  1->2: 0.990  2->3: 0.994
+  additive_mview     0->1: 0.970  1->2: 0.994  2->3: 0.999
+  final_mview        0->1: 0.989  1->2: 0.981  2->3: 0.946
+
+====================================================================
+CIFAR-100
+====================================================================
+
+-- probe accuracy, points --
+  product_endpoint   s0:  33.40  s1:  54.97  s2:  58.73  s3:  56.06
+  additive_mview     s0:  33.70  s1:  49.04  s2:  49.76  s3:  49.18
+  final_mview        s0:  30.70  s1:  43.84  s2:  60.42  s3:  61.17
+
+-- effective rank --
+  product_endpoint   s0:  11.85  s1:  28.03  s2:  39.70  s3:  71.22
+  additive_mview     s0:  13.72  s1:  28.14  s2:  41.54  s3:  54.38
+  final_mview        s0:   9.65  s1:  23.76  s2:  55.16  s3: 112.48
+
+-- preregistered contrasts --
+  V7 - flat (probe points)
+    stage 0: D =   +2.70   per seed  +2.56  +3.48  +2.07
+    stage 1: D =  +11.13   per seed +11.28 +10.74 +11.37
+    stage 2: D =   -1.69   per seed  -1.81  -1.43  -1.83  <- interior interface
+    stage 3: D =   -5.11   per seed  -5.20  -4.44  -5.68  <- endpoint
+  additive - flat (probe points)
+    stage 0: D =   +3.00   per seed  +3.48  +2.91  +2.62
+    stage 1: D =   +5.19   per seed  +4.70  +5.26  +5.62
+    stage 2: D =  -10.66   per seed -11.59  -9.82 -10.56  <- interior interface
+    stage 3: D =  -11.99   per seed -12.30 -11.21 -12.46  <- endpoint
+  V7 - flat (effective rank)
+    stage 0: D =   +2.19   per seed  +2.51  +1.68  +2.39
+    stage 1: D =   +4.27   per seed  +4.56  +3.92  +4.32
+    stage 2: D =  -15.46   per seed -15.35 -14.45 -16.57  <- interior interface
+    stage 3: D =  -41.26   per seed -40.51 -41.57 -41.69  <- endpoint
+  additive - flat (effective rank)
+    stage 0: D =   +4.07   per seed  +3.93  +3.08  +5.19
+    stage 1: D =   +4.38   per seed  +4.60  +4.20  +4.34
+    stage 2: D =  -13.62   per seed -14.10 -11.96 -14.80  <- interior interface
+    stage 3: D =  -58.10   per seed -57.22 -57.90 -59.18  <- endpoint
+
+-- verdicts --
+  P1 interior redistribution: D(2)=-1.69 vs D(3)=-5.11 -> PASS (seed ranges disjoint)
+     strong form D(2)>0: no (min per seed -1.83)
+  P2 anti-compression: D_rank(2)=-15.46 (<=0), vs D_rank(3)=-41.26 -> REFUTED
+  P4 mechanism specificity (probe): V7 -1.69 vs additive -10.66 at the interior -> specific
+  P4 mechanism specificity (rank): V7 -15.46 vs additive -13.62 at the interior -> NOT specific to composition
+
+-- P3 interface retention (mean top-8 canonical correlation) --
+  product_endpoint   0->1: 0.973  1->2: 0.995  2->3: 0.993
+  additive_mview     0->1: 0.968  1->2: 0.995  2->3: 0.999
+  final_mview        0->1: 0.991  1->2: 0.983  2->3: 0.944
+
+Evidence standard (frozen): separation claimed only on disjoint
+three-seed ranges; overlapping ranges are reported as trends.

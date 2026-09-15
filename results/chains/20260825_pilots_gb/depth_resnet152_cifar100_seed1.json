@@ -1,0 +1,254 @@
+{
+  "model": "resnet152",
+  "weights": "IMAGENET1K_V2",
+  "dataset": "cifar100",
+  "samples": 8000,
+  "seed": 1,
+  "draw": [
+    0,
+    8000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "chains": [
+    {
+      "start": "stem",
+      "states": [
+        "stem",
+        "layer1",
+        "layer2",
+        "layer3",
+        "layer4"
+      ],
+      "projection": {
+        "endpoint_top": 0.8464964948584581,
+        "endpoint_mass": 7.224988883181631,
+        "endpoint_effective_rank": 11.385483741760254,
+        "path_top": 1.4254830308423858,
+        "path_mass": 9.10105956412555,
+        "delta_frobenius": 1.2572423576549614,
+        "delta_operator": 0.7286150027500846,
+        "alignment": 0.915151879351741,
+        "certified_top": 0.6968680280923012
+      },
+      "surrogate": {
+        "endpoint_top": 0.8455508476070491,
+        "endpoint_mass": 7.201926655124705,
+        "endpoint_effective_rank": 11.37916088104248,
+        "path_top": 1.4218698242105539,
+        "path_mass": 9.053930057384543,
+        "delta_frobenius": 1.2485907709232222,
+        "delta_operator": 0.7253762868401097,
+        "alignment": 0.9154342480843114,
+        "certified_top": 0.6964935373704442
+      },
+      "null_endpoint_top": 0.15924103987258964,
+      "null_delta_operator": 0.15797449082102108,
+      "gram": {
+        "retained_ranks": [
+          12,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.023637950463274555,
+          0.04303903546435938,
+          0.002161995199974731,
+          0.00031611001827835944,
+          0.00018369351261016134
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          12,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "dimensions": [
+        12,
+        64,
+        64,
+        64,
+        64
+      ],
+      "native_dimensions": [
+        64,
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "budget_retained_variance": [
+        0.9983570232554037,
+        0.9971323334320273,
+        0.9573033278020564,
+        0.6320025605825282,
+        0.5612680093227499
+      ]
+    },
+    {
+      "start": "layer1",
+      "states": [
+        "layer1",
+        "layer2",
+        "layer3",
+        "layer4"
+      ],
+      "projection": {
+        "endpoint_top": 0.9475758694310249,
+        "endpoint_mass": 21.38132147718148,
+        "endpoint_effective_rank": 45.38355255126953,
+        "path_top": 1.4130794367687902,
+        "path_mass": 20.281487453381636,
+        "delta_frobenius": 1.8634858397530931,
+        "delta_operator": 0.6061605850015968,
+        "alignment": 0.8733380142385986,
+        "certified_top": 0.8069188517671935
+      },
+      "surrogate": {
+        "endpoint_top": 0.9469038003162398,
+        "endpoint_mass": 21.291395587955485,
+        "endpoint_effective_rank": 45.32154083251953,
+        "path_top": 1.4099193582543732,
+        "path_mass": 20.203279044569825,
+        "delta_frobenius": 1.8521225036174704,
+        "delta_operator": 0.6037076630700305,
+        "alignment": 0.874177978401555,
+        "certified_top": 0.8062116951843427
+      },
+      "null_endpoint_top": 0.2406103049096997,
+      "null_delta_operator": 0.2207620520378881,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04303903546435938,
+          0.002161995199974731,
+          0.00031611001827835944,
+          0.00018369351261016134
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "dimensions": [
+        64,
+        64,
+        64,
+        64
+      ],
+      "native_dimensions": [
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "budget_retained_variance": [
+        0.9971323334320273,
+        0.9573033278020564,
+        0.6320025605825282,
+        0.5612680093227499
+      ]
+    },
+    {
+      "start": "layer2",
+      "states": [
+        "layer2",
+        "layer3",
+        "layer4"
+      ],
+      "projection": {
+        "endpoint_top": 1.0155108637956878,
+        "endpoint_mass": 24.318254692601702,
+        "endpoint_effective_rank": 47.0228385925293,
+        "path_top": 1.2416363179252046,
+        "path_mass": 25.17362100172636,
+        "delta_frobenius": 1.2854019277703272,
+        "delta_operator": 0.3561683090568855,
+        "alignment": 0.9511187243744508,
+        "certified_top": 0.8854680088683191
+      },
+      "surrogate": {
+        "endpoint_top": 1.0153737567970913,
+        "endpoint_mass": 24.309891157908705,
+        "endpoint_effective_rank": 47.018924713134766,
+        "path_top": 1.2412619944900742,
+        "path_mass": 25.1622400977706,
+        "delta_frobenius": 1.284579437190485,
+        "delta_operator": 0.35596615152526156,
+        "alignment": 0.951142982397535,
+        "certified_top": 0.8852958429648127
+      },
+      "null_endpoint_top": 0.2567276750301296,
+      "null_delta_operator": 0.22119504686994707,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.002161995199974731,
+          0.00031611001827835944,
+          0.00018369351261016134
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      },
+      "dimensions": [
+        64,
+        64,
+        64
+      ],
+      "native_dimensions": [
+        512,
+        1024,
+        2048
+      ],
+      "budget_retained_variance": [
+        0.9573033278020564,
+        0.6320025605825282,
+        0.5612680093227499
+      ]
+    }
+  ],
+  "layer_probes": [
+    {
+      "stage": "stem",
+      "probe_accuracy": 0.15200001001358032
+    },
+    {
+      "stage": "layer1",
+      "probe_accuracy": 0.20800000429153442
+    },
+    {
+      "stage": "layer2",
+      "probe_accuracy": 0.31950002908706665
+    },
+    {
+      "stage": "layer3",
+      "probe_accuracy": 0.6580000519752502
+    },
+    {
+      "stage": "layer4",
+      "probe_accuracy": 0.6775000095367432
+    }
+  ],
+  "best_probe_stage": "layer4"
+}

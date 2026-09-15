@@ -1,0 +1,659 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "dataset": "cifar100",
+  "samples": 8000,
+  "seed": 2,
+  "draw": [
+    8000,
+    16000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "records": [
+    {
+      "edges": 2,
+      "taps": [
+        0,
+        8,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9298066742331794,
+        "endpoint_mass": 8.580936326442346,
+        "endpoint_effective_rank": 12.936738967895508,
+        "path_top": 1.1624072017945968,
+        "path_mass": 9.07974028289307,
+        "delta_frobenius": 0.5919760466645382,
+        "delta_operator": 0.32466208938989566,
+        "alignment": 0.9755136792686764,
+        "certified_top": 0.8377451124047011
+      },
+      "surrogate": {
+        "endpoint_top": 0.9290484140831983,
+        "endpoint_mass": 8.539553168702865,
+        "endpoint_effective_rank": 12.919413566589355,
+        "path_top": 1.1602563954421097,
+        "path_mass": 9.036283010688134,
+        "delta_frobenius": 0.5876440378949546,
+        "delta_operator": 0.3230950453989421,
+        "alignment": 0.9757135833789499,
+        "certified_top": 0.8371613500431676
+      },
+      "gram": {
+        "retained_ranks": [
+          14,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.048032121615234055,
+          0.0009122895445569104,
+          0.00020709085091563662
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          14,
+          64,
+          64
+        ]
+      },
+      "finite_sample": {
+        "edge_radii": [
+          {
+            "radius": 1.9216500003414636,
+            "samples": 4000,
+            "norm_bound": 739.7644581733682,
+            "variance": 280.3162279328163,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 0.994198926977645,
+            "samples": 4000,
+            "norm_bound": 248.09758933268253,
+            "variance": 114.29861757806823,
+            "clipped_samples": 0
+          }
+        ],
+        "endpoint_radius": {
+          "radius": 1.0011377269656252,
+          "samples": 4000,
+          "norm_bound": 318.31408544704124,
+          "variance": 101.57464058419549,
+          "clipped_samples": 0
+        },
+        "path_radius": 4.826351295685183
+      },
+      "null_delta_operator": 0.13890608459516768,
+      "null_endpoint_top": 0.1825184542452772
+    },
+    {
+      "edges": 3,
+      "taps": [
+        0,
+        1,
+        15,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9298066742331794,
+        "endpoint_mass": 8.580936326442346,
+        "endpoint_effective_rank": 12.936738967895508,
+        "path_top": 1.5843838878406264,
+        "path_mass": 10.721209691929056,
+        "delta_frobenius": 1.1876554398096877,
+        "delta_operator": 0.768712614379497,
+        "alignment": 0.9418954917675729,
+        "certified_top": 0.8156712734611294
+      },
+      "surrogate": {
+        "endpoint_top": 0.9290484140831983,
+        "endpoint_mass": 8.539553168702865,
+        "endpoint_effective_rank": 12.919413566589355,
+        "path_top": 1.5780982218406008,
+        "path_mass": 10.649646831950488,
+        "delta_frobenius": 1.1751924247160457,
+        "delta_operator": 0.7630287811653506,
+        "alignment": 0.9424055331091065,
+        "certified_top": 0.8150694406752502
+      },
+      "gram": {
+        "retained_ranks": [
+          14,
+          61,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.048032121615234055,
+          0.04844743522314088,
+          0.0002110334535930791,
+          0.00020709085091563662
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          14,
+          61,
+          64,
+          64
+        ]
+      },
+      "finite_sample": {
+        "edge_radii": [
+          {
+            "radius": 4.825872612162428,
+            "samples": 4000,
+            "norm_bound": 2156.1273124329705,
+            "variance": 1321.0247116964308,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.740793807849062,
+            "samples": 4000,
+            "norm_bound": 641.5171711667142,
+            "variance": 209.01435409026953,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 0.9620962989205714,
+            "samples": 4000,
+            "norm_bound": 264.81208790888877,
+            "variance": 96.62030266877487,
+            "clipped_samples": 0
+          }
+        ],
+        "endpoint_radius": {
+          "radius": 1.0011377269656252,
+          "samples": 4000,
+          "norm_bound": 318.31408544704124,
+          "variance": 101.57464058419549,
+          "clipped_samples": 0
+        },
+        "path_radius": 30.32980322391125
+      },
+      "null_delta_operator": 0.16813826013769284,
+      "null_endpoint_top": 0.1825184542452772
+    },
+    {
+      "edges": 5,
+      "taps": [
+        0,
+        1,
+        6,
+        10,
+        15,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9298066742331794,
+        "endpoint_mass": 8.580936326442346,
+        "endpoint_effective_rank": 12.936738967895508,
+        "path_top": 3.1221029304769776,
+        "path_mass": 13.96852966645072,
+        "delta_frobenius": 3.029518412904588,
+        "delta_operator": 2.3527875834709637,
+        "alignment": 0.8103812958177796,
+        "certified_top": 0.7693153470060139
+      },
+      "surrogate": {
+        "endpoint_top": 0.9290484140831983,
+        "endpoint_mass": 8.539553168702865,
+        "endpoint_effective_rank": 12.919413566589355,
+        "path_top": 3.1002373035072366,
+        "path_mass": 13.868510983624192,
+        "delta_frobenius": 3.000093619552299,
+        "delta_operator": 2.330767991716411,
+        "alignment": 0.8117011582259109,
+        "certified_top": 0.7694693117908256
+      },
+      "gram": {
+        "retained_ranks": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.048032121615234055,
+          0.04844743522314088,
+          0.0025925641374625603,
+          0.0005511993775156875,
+          0.0002110334535930791,
+          0.00020709085091563662
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "finite_sample": {
+        "edge_radii": [
+          {
+            "radius": 4.825872612162428,
+            "samples": 4000,
+            "norm_bound": 2156.1273124329705,
+            "variance": 1321.0247116964308,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 4.246472165657961,
+            "samples": 4000,
+            "norm_bound": 1757.1085168245058,
+            "variance": 977.1836068704215,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.9470263692973742,
+            "samples": 4000,
+            "norm_bound": 754.2831521132373,
+            "variance": 235.0916226675343,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.0662917638961598,
+            "samples": 4000,
+            "norm_bound": 280.1436882739111,
+            "variance": 124.83172954753208,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 0.9620962989205714,
+            "samples": 4000,
+            "norm_bound": 264.81208790888877,
+            "variance": 96.62030266877487,
+            "clipped_samples": 0
+          }
+        ],
+        "endpoint_radius": {
+          "radius": 1.0011377269656252,
+          "samples": 4000,
+          "norm_bound": 318.31408544704124,
+          "variance": 101.57464058419549,
+          "clipped_samples": 0
+        },
+        "path_radius": 364.19459593377235
+      },
+      "null_delta_operator": 0.3319847097619503,
+      "null_endpoint_top": 0.1825184542452772
+    },
+    {
+      "edges": 9,
+      "taps": [
+        0,
+        1,
+        3,
+        5,
+        7,
+        9,
+        11,
+        13,
+        15,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9298066742331794,
+        "endpoint_mass": 8.580936326442346,
+        "endpoint_effective_rank": 12.936738967895508,
+        "path_top": 14.871899719000385,
+        "path_mass": 37.8389595855049,
+        "delta_frobenius": 16.257845541558062,
+        "delta_operator": 14.138904719649638,
+        "alignment": 0.5468335110341245,
+        "certified_top": 0.7329949993507476
+      },
+      "surrogate": {
+        "endpoint_top": 0.9290484140831983,
+        "endpoint_mass": 8.539553168702865,
+        "endpoint_effective_rank": 12.919413566589355,
+        "path_top": 14.702798496297216,
+        "path_mass": 37.41424244271201,
+        "delta_frobenius": 16.05879996491678,
+        "delta_operator": 13.969664042011436,
+        "alignment": 0.5485695644092038,
+        "certified_top": 0.7331344542857803
+      },
+      "gram": {
+        "retained_ranks": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.048032121615234055,
+          0.04844743522314088,
+          0.02433203041213671,
+          0.003572779939849057,
+          0.002152665626511951,
+          0.0006585388753879151,
+          0.000470346570179303,
+          0.00040783687273804304,
+          0.0002110334535930791,
+          0.00020709085091563662
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "finite_sample": {
+        "edge_radii": [
+          {
+            "radius": 4.825872612162428,
+            "samples": 4000,
+            "norm_bound": 2156.1273124329705,
+            "variance": 1321.0247116964308,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 6.569487389751827,
+            "samples": 4000,
+            "norm_bound": 2878.02046794908,
+            "variance": 2027.805624803594,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 4.0146152552418295,
+            "samples": 4000,
+            "norm_bound": 1739.2107503808945,
+            "variance": 771.4024453966202,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 2.670519489234259,
+            "samples": 4000,
+            "norm_bound": 1131.5085110591835,
+            "variance": 361.2270393776533,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.8784636980951528,
+            "samples": 4000,
+            "norm_bound": 723.5075976019334,
+            "variance": 221.43717232142336,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.7387161587106008,
+            "samples": 4000,
+            "norm_bound": 654.0434641643565,
+            "variance": 198.81748427616876,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.4037159507548616,
+            "samples": 4000,
+            "norm_bound": 453.74796942343096,
+            "variance": 167.30251085414628,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.0905572423253276,
+            "samples": 4000,
+            "norm_bound": 303.37750207402905,
+            "variance": 122.65689965096891,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 0.9620962989205714,
+            "samples": 4000,
+            "norm_bound": 264.81208790888877,
+            "variance": 96.62030266877487,
+            "clipped_samples": 0
+          }
+        ],
+        "endpoint_radius": {
+          "radius": 1.0011377269656252,
+          "samples": 4000,
+          "norm_bound": 318.31408544704124,
+          "variance": 101.57464058419549,
+          "clipped_samples": 0
+        },
+        "path_radius": 63089.782568018745
+      },
+      "null_delta_operator": 1.868754020408185,
+      "null_endpoint_top": 0.1825184542452772
+    },
+    {
+      "edges": 15,
+      "taps": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9298066742331794,
+        "endpoint_mass": 8.580936326442346,
+        "endpoint_effective_rank": 12.936738967895508,
+        "path_top": 169.45231457163504,
+        "path_mass": 287.7379389943078,
+        "delta_frobenius": 182.091845415453,
+        "delta_operator": 168.7855670454881,
+        "alignment": 0.3687858656106986,
+        "certified_top": 0.6667475261469349
+      },
+      "surrogate": {
+        "endpoint_top": 0.9290484140831983,
+        "endpoint_mass": 8.539553168702865,
+        "endpoint_effective_rank": 12.919413566589355,
+        "path_top": 166.13681229974833,
+        "path_mass": 282.20599050276115,
+        "delta_frobenius": 178.51337275672057,
+        "delta_operator": 165.4688340376362,
+        "alignment": 0.3704602786504965,
+        "certified_top": 0.6679782621121149
+      },
+      "gram": {
+        "retained_ranks": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.048032121615234055,
+          0.04844743522314088,
+          0.028305798763657807,
+          0.02433203041213671,
+          0.010804468801311362,
+          0.003572779939849057,
+          0.0025925641374625603,
+          0.002152665626511951,
+          0.0006585388753879151,
+          0.0005511993775156875,
+          0.000470346570179303,
+          0.00043327450888774866,
+          0.00040783687273804304,
+          0.00021446133543778784,
+          0.0002110334535930791,
+          0.00020709085091563662
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          14,
+          61,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "finite_sample": {
+        "edge_radii": [
+          {
+            "radius": 4.825872612162428,
+            "samples": 4000,
+            "norm_bound": 2156.1273124329705,
+            "variance": 1321.0247116964308,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 6.8009173656784725,
+            "samples": 4000,
+            "norm_bound": 2986.5249768261756,
+            "variance": 2159.3799372120675,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 6.077434937086583,
+            "samples": 4000,
+            "norm_bound": 2712.412298395634,
+            "variance": 1630.889690182159,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 4.425576087331787,
+            "samples": 4000,
+            "norm_bound": 1929.8536936941314,
+            "variance": 921.367465584694,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 3.1054143164367245,
+            "samples": 4000,
+            "norm_bound": 1300.414836700759,
+            "variance": 502.7382886185,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 2.8793883002396576,
+            "samples": 4000,
+            "norm_bound": 1225.5227233347618,
+            "variance": 415.23490537479506,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 2.5847751969529438,
+            "samples": 4000,
+            "norm_bound": 1105.7027345527385,
+            "variance": 330.3663605845695,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.8784636980951528,
+            "samples": 4000,
+            "norm_bound": 723.5075976019334,
+            "variance": 221.43717232142336,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.6647776110537924,
+            "samples": 4000,
+            "norm_bound": 624.6234712692916,
+            "variance": 183.17477694716464,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.5780824234571447,
+            "samples": 4000,
+            "norm_bound": 569.6749888985175,
+            "variance": 176.82470834643485,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.4934888309694263,
+            "samples": 4000,
+            "norm_bound": 524.6464213285877,
+            "variance": 166.08254934672766,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.342316485890203,
+            "samples": 4000,
+            "norm_bound": 425.20254771860385,
+            "variance": 157.51259585558049,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.3085688979121786,
+            "samples": 4000,
+            "norm_bound": 398.14154368505393,
+            "variance": 158.17330974866707,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 1.0934721826645966,
+            "samples": 4000,
+            "norm_bound": 323.58823712541766,
+            "variance": 114.48113069920751,
+            "clipped_samples": 0
+          },
+          {
+            "radius": 0.9620962989205714,
+            "samples": 4000,
+            "norm_bound": 264.81208790888877,
+            "variance": 96.62030266877487,
+            "clipped_samples": 0
+          }
+        ],
+        "endpoint_radius": {
+          "radius": 1.0011377269656252,
+          "samples": 4000,
+          "norm_bound": 318.31408544704124,
+          "variance": 101.57464058419549,
+          "clipped_samples": 0
+        },
+        "path_radius": 109122034.14172682
+      },
+      "null_delta_operator": 21.690920398300403,
+      "null_endpoint_top": 0.1825184542452772
+    }
+  ]
+}

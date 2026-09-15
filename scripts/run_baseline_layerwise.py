@@ -1,0 +1,151 @@
+"""Q2: per-stage probe curve for an EXTERNAL SSL baseline.
+
+The comparison this exists to make is "our stage k against their stage
+k".  It is legitimate here because the baseline stack and the gate
+stack instantiate the same backbone class (fmca_av/resnet.py
+CIFARResNet, width 64), so the stages being compared are the same
+objects; this script only reads them, it changes no network.
+
+Probe protocol is copied from run_layerwise_profile so the two sides
+are scored identically: pooled features after each stage under the
+deterministic probe transform, convex multinomial probe (LBFGS from
+zeros, so there is no probe seed), same weight decay, same iterations.
+
+Spectrum diagnostics ride along because a probe number alone cannot
+distinguish "informative" from "one direction carries the label".
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from fmca_av.baselines import BaselineSSL
+from run_gate1_unit import _plain_loaders, dataset_classes
+from run_layerwise_profile import convex_probe, spectrum_statistics
+
+STAGE_NAMES = ["layer1", "layer2", "layer3", "layer4"]
+
+
+@torch.no_grad()
+def stage_features(backbone, loader, device):
+    """Pooled features after each of the four stages, plus labels."""
+
+    backbone.eval()
+    collected = [[] for _ in STAGE_NAMES]
+    labels = []
+    for images, targets in loader:
+        values = backbone.stem(images.to(device))
+        for index, name in enumerate(STAGE_NAMES):
+            values = getattr(backbone, name)(values)
+            collected[index].append(backbone.pool(values).flatten(1).float().cpu())
+        labels.append(targets)
+    return [torch.cat(parts) for parts in collected], torch.cat(labels)
+
+
+def require_accelerator(allow_cpu: bool) -> "torch.device":
+    """Pick the device, and refuse a silent CPU fallback.
+
+    These runners encode every sample through the backbone; the matrix
+    algebra around it is 128x128 and free.  Landing on the CPU therefore
+    costs two orders of magnitude and looks exactly like a slow job rather
+    than a misplaced one -- five sweeps reached N=2500 of 20000 in eight
+    and a half hours before that was noticed.  Opting into CPU is fine;
+    doing it by accident is not.
+    """
+
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if allow_cpu:
+        print("WARNING: running the encoder on CPU because --allow-cpu was given")
+        return torch.device("cpu")
+    raise SystemExit(
+        "no CUDA device: this runner encodes through the backbone and is "
+        "orders of magnitude slower on CPU. Submit it with a --gres=gpu:1 "
+        "partition (scripts/launch_analysis_gpu.sbatch), or pass --allow-cpu "
+        "if you really mean it."
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--allow-cpu", action="store_true",
+                        help="opt in to CPU; the encoder is far slower there")
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--probe-subsample", type=int, default=0)
+    parser.add_argument("--holdout", type=int, default=0,
+                        help="score on this many training images held out by a fixed "
+                             "seed-0 permutation, fitting on the rest; the test set is "
+                             "never touched.  For hyperparameter SELECTION only.")
+    arguments = parser.parse_args()
+
+    config = json.loads(Path(arguments.config).read_text())
+    device = require_accelerator(arguments.allow_cpu)
+
+    module = BaselineSSL(config)
+    payload = torch.load(arguments.checkpoint, map_location="cpu", weights_only=False)
+    missing, unexpected = module.load_state_dict(payload["state_dict"], strict=False)
+    # Loud, not silent: a checkpoint whose backbone did not land is a
+    # random encoder wearing a method's name -- the exact failure the
+    # validity gate caught once already.
+    backbone_missing = [k for k in missing if k.startswith("backbone.")]
+    if backbone_missing:
+        raise SystemExit(f"checkpoint did not supply {len(backbone_missing)} backbone tensors")
+    backbone = module.backbone.to(device).eval()
+    fingerprint = float(sum(float(p.detach().double().abs().sum()) for p in backbone.parameters()))
+    print(f"backbone fingerprint {fingerprint:.6f} (unexpected keys: {len(unexpected)})")
+
+    train_loader, test_loader = _plain_loaders(config["data"])
+    if arguments.holdout:
+        # Selection must not see the test set.  Carve a fixed holdout out of
+        # the training pool with a seed-0 permutation, fit on the rest, score
+        # on the holdout, and say so in the record.
+        from torch.utils.data import DataLoader, Subset
+        base = train_loader.dataset
+        order = torch.randperm(len(base), generator=torch.Generator().manual_seed(0)).tolist()
+        held, kept = order[:arguments.holdout], order[arguments.holdout:]
+        train_loader = DataLoader(Subset(base, kept), batch_size=512, num_workers=4, shuffle=False)
+        test_loader = DataLoader(Subset(base, held), batch_size=512, num_workers=4, shuffle=False)
+    train_features, train_labels = stage_features(backbone, train_loader, device)
+    test_features, test_labels = stage_features(backbone, test_loader, device)
+    classes = dataset_classes(config)
+
+    if arguments.probe_subsample:
+        limit = arguments.probe_subsample
+        train_features = [f[:limit] for f in train_features]
+        train_labels = train_labels[:limit]
+
+    stages = []
+    for index, name in enumerate(STAGE_NAMES):
+        probe = convex_probe(train_features[index], train_labels,
+                             test_features[index], test_labels, classes, device)
+        stages.append({"stage": index, "backbone_layer": name, "probe": probe,
+                       "spectrum": spectrum_statistics(test_features[index])})
+        print(f"  {name}: {probe['test_accuracy']*100:.2f}%  "
+              f"eff_rank {stages[-1]['spectrum']['effective_rank']:.1f}")
+
+    out = Path(arguments.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "profile_version": "baseline_layerwise_v1",
+        "score_set": f"holdout-{arguments.holdout}" if arguments.holdout else "test",
+        "method": config["experiment"].get("method"),
+        "seed": config.get("seed"),
+        "dataset": config["data"].get("dataset"),
+        "backbone_fingerprint": fingerprint,
+        "checkpoint": str(arguments.checkpoint),
+        "stages": stages, "status": "complete",
+    }, indent=2))
+    print(f"wrote {out}")
+
+
+if __name__ == "__main__":
+    main()

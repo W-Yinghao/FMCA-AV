@@ -1,0 +1,89 @@
+config:
+  data:
+    batch_size: 256
+    dataset: cifar10
+    n_calibration: 10000
+    n_val: 10000
+    num_workers: 4
+    root: /projects/EEG-foundation-model/yinghao/FMCA-AV/cifar10
+    view_tree:
+      children_per_edge: 4
+      edges:
+      - color_jitter_hue: true
+        color_jitter_probability: 0.8
+        color_jitter_strength: 0.5
+        flip_probability: 0.5
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.2
+        size: 32
+      - grayscale_probability: 0.2
+        kind: crop
+        max_scale: 1.0
+        min_scale: 0.4
+        size: 32
+      endpoint_descendants: 8
+      flip_probability: 0.0
+      mode: nested
+      root:
+        max_scale: 1.0
+        min_scale: 0.95
+        size: 32
+  experiment:
+    family: cifar_gate
+    name: gate1paper-cifar10-beta0
+    status: 'The paper''s SSL estimator (supplement Eq. 6-10, section Eq. 25): shared
+      truncated inverse roots at tau=1e-3, plain ordered product as the composition,
+      all trace scores in those same coordinates, no EMA, no stopped-gradient endpoint,
+      gradients through the Gram transforms, empty retained set flags the batch. beta=0:
+      the paper''s own no-composition control -- ''retains only the dependence objectives
+      and covariance regularization''.'
+  loss:
+    additive_recipe: faithful_trace
+    alpha: 0.2
+    beta: 0.0
+    closure_stop_grad: false
+    ema_target_momentum: 0.0
+    epsilon: 1.0e-06
+    flat_recipe: faithful_trace
+    gamma: 1.0
+    leaf_reward_weight: 1.0
+    ridge: 0.001
+    spectral_tau: 0.001
+    whitening_mode: differentiable
+  model:
+    activation: gelu
+    backbone_width: 64
+    feature_dim: 128
+    head_hidden_dims:
+    - 512
+    level_stages:
+    - 1
+    - 2
+    - 3
+  objective_note: additive variants take their maximizing per-edge sign inside the
+    module; alpha/beta here only affect product_endpoint
+  optimizer:
+    learning_rate: 0.1
+    momentum: 0.9
+    name: sgd
+    scheduler: cosine
+    weight_decay: 0.0001
+  output_root: /projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs
+  probe:
+    batch_size: 256
+    epochs: 100
+    learning_rate: 0.1
+    momentum: 0.9
+    n_val: 5000
+    num_workers: 4
+  seed: 3
+  trainer:
+    accelerator: gpu
+    deterministic: true
+    devices: 1
+    enable_progress_bar: false
+    max_epochs: 200
+    precision: 32-true
+    strategy: auto
+  variant: paper_composition

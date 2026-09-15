@@ -1,0 +1,71 @@
+{
+  "profile_version": "baseline_layerwise_v1",
+  "method": "barlow_twins",
+  "seed": 20260850,
+  "dataset": "cifar10",
+  "backbone_fingerprint": 142369.99993186592,
+  "checkpoint": "/projects/EEG-foundation-model/yinghao/FMCA-AV/experiment_runs/sslref_barlow_twins_seed1/checkpoints/epoch-0200.ckpt",
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "probe": {
+        "test_accuracy": 0.5559999942779541,
+        "train_accuracy": 0.5637800097465515
+      },
+      "spectrum": {
+        "effective_rank": 8.273140907287598,
+        "normalized_effective_rank": 0.1292678266763687,
+        "top_eigenvalue_share": 0.4376721760411079,
+        "trace": 1.3248495963755302,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "probe": {
+        "test_accuracy": 0.6803999543190002,
+        "train_accuracy": 0.6875199675559998
+      },
+      "spectrum": {
+        "effective_rank": 14.835587501525879,
+        "normalized_effective_rank": 0.11590302735567093,
+        "top_eigenvalue_share": 0.28127022451858463,
+        "trace": 5.60023436348887,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "probe": {
+        "test_accuracy": 0.7920999526977539,
+        "train_accuracy": 0.8059200048446655
+      },
+      "spectrum": {
+        "effective_rank": 24.47730255126953,
+        "normalized_effective_rank": 0.0956144630908966,
+        "top_eigenvalue_share": 0.2461915842486529,
+        "trace": 18.95271362027532,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "probe": {
+        "test_accuracy": 0.8242999911308289,
+        "train_accuracy": 0.8555399775505066
+      },
+      "spectrum": {
+        "effective_rank": 41.71348571777344,
+        "normalized_effective_rank": 0.08147165179252625,
+        "top_eigenvalue_share": 0.13370269313557945,
+        "trace": 84.68163646586831,
+        "dimension": 512
+      }
+    }
+  ],
+  "status": "complete"
+}

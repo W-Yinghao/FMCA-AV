@@ -1,0 +1,41 @@
+{
+  "variant": "paper_T2",
+  "seed": 1,
+  "backbone_fingerprint": 109720.76802091552,
+  "estimator": "truncated",
+  "tau": 0.001,
+  "retained_ranks": [
+    24,
+    17
+  ],
+  "calibration_roots": 10000,
+  "evaluation_roots": 10000,
+  "children_per_edge": 4,
+  "endpoint_descendants": 8,
+  "endpoint_norm_frobenius": 3.9505331312203387,
+  "closure_residual_frobenius": 0.023074250920426784,
+  "relative_closure_error": 0.005840794179923518,
+  "composed_norm_frobenius": 3.9530403801435465,
+  "endpoint_operator_norm": 1.1316471599350924,
+  "endpoint_singular_values": [
+    1.1316471599350924,
+    1.0453577318623877,
+    1.0269962412808042,
+    1.0191606358498522,
+    1.002672632825293,
+    0.9901776216496138,
+    0.9854913409860042,
+    0.9559417558431514,
+    0.9414679401666244,
+    0.9358552180936941,
+    0.9165555179516953,
+    0.9142151994330098,
+    0.9092680840502139,
+    0.8931136079646699,
+    0.8850582962698897,
+    0.8546124272875045
+  ],
+  "edge_operator_norms": [
+    1.1357082885589134
+  ]
+}

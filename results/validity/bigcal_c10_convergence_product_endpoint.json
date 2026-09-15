@@ -1,0 +1,327 @@
+{
+  "mode": "convergence",
+  "variant": "product_endpoint",
+  "seed": 1,
+  "device": "cpu",
+  "ridge": 0.001,
+  "backbone_fingerprint": 112136.81733358698,
+  "weights_loaded": true,
+  "clean_pool": 20000,
+  "curve": {
+    "625": {
+      "normalized_closure_defect": 1.1711934165425826,
+      "numerator_delta_frobenius": 15.314784290359958,
+      "denominator_dir_frobenius": 13.076221291926949,
+      "endpoint_top": 3.580860178062399,
+      "path_top": 12.991742400065885,
+      "gram": {
+        "surrogate": {
+          "numerator": 15.314784290359958,
+          "denominator": 13.076221291926949,
+          "ratio": 1.1711934165426723,
+          "delta_operator": 9.450010114991185
+        },
+        "projection": {
+          "numerator": 15.773164701605086,
+          "denominator": 13.163416084131022,
+          "ratio": 1.198257701556681,
+          "delta_operator": 9.784376668828848
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.029042482203733764,
+            0.02456241445126331,
+            0.011299282342436967
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 15.314784290359958,
+            "delta_operator": 9.450010114991185,
+            "dir_frobenius": 13.076221291926949
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 15.773164701605086,
+            "delta_operator": 9.784376668828848,
+            "dir_frobenius": 13.163416084131022
+          }
+        ],
+        "calibration_samples": 625
+      }
+    },
+    "1250": {
+      "normalized_closure_defect": 0.501901850870761,
+      "numerator_delta_frobenius": 5.234301738814864,
+      "denominator_dir_frobenius": 10.428934919712393,
+      "endpoint_top": 2.1282729671897664,
+      "path_top": 4.799228297737888,
+      "gram": {
+        "surrogate": {
+          "numerator": 5.234301738814864,
+          "denominator": 10.428934919712393,
+          "ratio": 0.5019018508708092,
+          "delta_operator": 2.7002952737639636
+        },
+        "projection": {
+          "numerator": 5.365579732731176,
+          "denominator": 10.475669609974355,
+          "ratio": 0.5121944403078889,
+          "delta_operator": 2.7690631023921597
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.02100008469535506,
+            0.019734265212951838,
+            0.008635932663943137
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 5.234301738814864,
+            "delta_operator": 2.7002952737639636,
+            "dir_frobenius": 10.428934919712393
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 5.365579732731176,
+            "delta_operator": 2.7690631023921597,
+            "dir_frobenius": 10.475669609974355
+          }
+        ],
+        "calibration_samples": 1250
+      }
+    },
+    "2500": {
+      "normalized_closure_defect": 0.30526636221450726,
+      "numerator_delta_frobenius": 2.9645366543572,
+      "denominator_dir_frobenius": 9.711311239309582,
+      "endpoint_top": 1.5695470701383205,
+      "path_top": 2.6344603357551653,
+      "gram": {
+        "surrogate": {
+          "numerator": 2.9645366543572,
+          "denominator": 9.711311239309582,
+          "ratio": 0.30526636221453873,
+          "delta_operator": 1.0897251251314275
+        },
+        "projection": {
+          "numerator": 3.0302070409639037,
+          "denominator": 9.74843037099302,
+          "ratio": 0.31084050720415957,
+          "delta_operator": 1.1137773476780142
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.01771049682836188,
+            0.018485303545377474,
+            0.008028996419040353
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 2.9645366543572,
+            "delta_operator": 1.0897251251314275,
+            "dir_frobenius": 9.711311239309582
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 3.0302070409639037,
+            "delta_operator": 1.1137773476780142,
+            "dir_frobenius": 9.74843037099302
+          }
+        ],
+        "calibration_samples": 2500
+      }
+    },
+    "5000": {
+      "normalized_closure_defect": 0.22230409485762384,
+      "numerator_delta_frobenius": 2.0916337675897436,
+      "denominator_dir_frobenius": 9.408885468030277,
+      "endpoint_top": 1.4073049097165418,
+      "path_top": 2.0479329842832885,
+      "gram": {
+        "surrogate": {
+          "numerator": 2.0916337675897436,
+          "denominator": 9.408885468030277,
+          "ratio": 0.22230409485764746,
+          "delta_operator": 0.6668807570466107
+        },
+        "projection": {
+          "numerator": 2.131813940960155,
+          "denominator": 9.442315868503016,
+          "ratio": 0.22577236036672987,
+          "delta_operator": 0.6845051877482268
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.016765392399103244,
+            0.017530210114307766,
+            0.007525467180120673
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 2.0916337675897436,
+            "delta_operator": 0.6668807570466107,
+            "dir_frobenius": 9.408885468030277
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 2.131813940960155,
+            "delta_operator": 0.6845051877482268,
+            "dir_frobenius": 9.442315868503016
+          }
+        ],
+        "calibration_samples": 5000
+      }
+    },
+    "10000": {
+      "normalized_closure_defect": 0.18457616623652515,
+      "numerator_delta_frobenius": 1.7144102822153933,
+      "denominator_dir_frobenius": 9.288362182245553,
+      "endpoint_top": 1.3016966582015466,
+      "path_top": 1.79718758269766,
+      "gram": {
+        "surrogate": {
+          "numerator": 1.7144102822153933,
+          "denominator": 9.288362182245553,
+          "ratio": 0.18457616623654502,
+          "delta_operator": 0.51419379006705
+        },
+        "projection": {
+          "numerator": 1.7412837886564028,
+          "denominator": 9.319624017717501,
+          "ratio": 0.18684056195250526,
+          "delta_operator": 0.5261426754394419
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.01603967927407271,
+            0.016652299387355775,
+            0.007348054117871507
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 1.7144102822153933,
+            "delta_operator": 0.51419379006705,
+            "dir_frobenius": 9.288362182245553
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 1.7412837886564028,
+            "delta_operator": 0.5261426754394419,
+            "dir_frobenius": 9.319624017717501
+          }
+        ],
+        "calibration_samples": 10000
+      }
+    },
+    "20000": {
+      "normalized_closure_defect": 0.1595767772661951,
+      "numerator_delta_frobenius": 1.4711710606490414,
+      "denominator_dir_frobenius": 9.219205236829508,
+      "endpoint_top": 1.2441477879958007,
+      "path_top": 1.6315737954828913,
+      "gram": {
+        "surrogate": {
+          "numerator": 1.4711710606490414,
+          "denominator": 9.219205236829508,
+          "ratio": 0.15957677726621242,
+          "delta_operator": 0.40635183164473077
+        },
+        "projection": {
+          "numerator": 1.4892818895120503,
+          "denominator": 9.249549096666183,
+          "ratio": 0.16101129622078902,
+          "delta_operator": 0.41349852877124094
+        },
+        "gram": {
+          "retained_ranks": [
+            128,
+            128,
+            128
+          ],
+          "metric_deviation": [
+            0.015612308421873932,
+            0.016497711660463862,
+            0.007151402960805319
+          ],
+          "tau_relative": 0.001,
+          "dimension": 128
+        },
+        "interface_attribution": [
+          {
+            "interfaces_corrected": 0,
+            "delta_frobenius": 1.4711710606490414,
+            "delta_operator": 0.40635183164473077,
+            "dir_frobenius": 9.219205236829508
+          },
+          {
+            "interfaces_corrected": 1,
+            "delta_frobenius": 1.4892818895120503,
+            "delta_operator": 0.41349852877124094,
+            "dir_frobenius": 9.249549096666183
+          }
+        ],
+        "calibration_samples": 20000
+      }
+    }
+  },
+  "successive_change": {
+    "625->1250": 0.6692915656718216,
+    "1250->2500": 0.19663548865625374,
+    "2500->5000": 0.08296226735688342,
+    "5000->10000": 0.037727928621098694,
+    "10000->20000": 0.02499938897033005
+  },
+  "successive_change_projection": {
+    "625->1250": 0.6860632612487922,
+    "1250->2500": 0.2013539331037293,
+    "2500->5000": 0.08506814683742969,
+    "5000->10000": 0.038931798414224617,
+    "10000->20000": 0.025829265731716233
+  },
+  "status": "complete"
+}

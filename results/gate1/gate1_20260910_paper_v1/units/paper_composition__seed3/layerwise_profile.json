@@ -1,0 +1,107 @@
+{
+  "profile_version": "layerwise_profile_20260823_v1",
+  "variant": "paper_composition",
+  "seed": 3,
+  "dataset": "cifar10",
+  "level_stages": [
+    1,
+    2,
+    3
+  ],
+  "stages": [
+    {
+      "stage": 0,
+      "backbone_layer": "layer1",
+      "level_role": "below all taps",
+      "probe": {
+        "test_accuracy": 0.6003000140190125,
+        "train_accuracy": 0.6053400039672852
+      },
+      "spectrum": {
+        "effective_rank": 9.224672317504883,
+        "normalized_effective_rank": 0.1441355049610138,
+        "top_eigenvalue_share": 0.41863325947359337,
+        "trace": 0.8005267174104639,
+        "dimension": 64
+      }
+    },
+    {
+      "stage": 1,
+      "backbone_layer": "layer2",
+      "level_role": "root tap (level 0)",
+      "probe": {
+        "test_accuracy": 0.795699954032898,
+        "train_accuracy": 0.8143199682235718
+      },
+      "spectrum": {
+        "effective_rank": 25.16744613647461,
+        "normalized_effective_rank": 0.19662067294120789,
+        "top_eigenvalue_share": 0.236350433442058,
+        "trace": 4.9476012443370365,
+        "dimension": 128
+      }
+    },
+    {
+      "stage": 2,
+      "backbone_layer": "layer3",
+      "level_role": "interior interface (level 1)",
+      "probe": {
+        "test_accuracy": 0.8262999653816223,
+        "train_accuracy": 0.8468599915504456
+      },
+      "spectrum": {
+        "effective_rank": 39.148223876953125,
+        "normalized_effective_rank": 0.15292274951934814,
+        "top_eigenvalue_share": 0.16602987465863342,
+        "trace": 11.8770468980866,
+        "dimension": 256
+      }
+    },
+    {
+      "stage": 3,
+      "backbone_layer": "layer4",
+      "level_role": "endpoint tap (level 2)",
+      "probe": {
+        "test_accuracy": 0.8235999941825867,
+        "train_accuracy": 0.854479968547821
+      },
+      "spectrum": {
+        "effective_rank": 78.74462127685547,
+        "normalized_effective_rank": 0.15379808843135834,
+        "top_eigenvalue_share": 0.09269733469213387,
+        "trace": 68.90660582146936,
+        "dimension": 512
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "interface": "stage0->stage1",
+      "canonical_correlations": {
+        "top": 0.9959342051754562,
+        "mean_top_k": 0.9778371942295955,
+        "sum": 40.55444335684055,
+        "count_above_half": 42
+      }
+    },
+    {
+      "interface": "stage1->stage2",
+      "canonical_correlations": {
+        "top": 0.9966342826467317,
+        "mean_top_k": 0.9905584195138104,
+        "sum": 86.54179151030331,
+        "count_above_half": 91
+      }
+    },
+    {
+      "interface": "stage2->stage3",
+      "canonical_correlations": {
+        "top": 0.9954721493822696,
+        "mean_top_k": 0.9897952989137243,
+        "sum": 157.52673228630607,
+        "count_above_half": 160
+      }
+    }
+  ],
+  "status": "complete"
+}

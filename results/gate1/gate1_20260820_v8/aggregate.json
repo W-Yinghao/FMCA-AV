@@ -1,0 +1,193 @@
+{
+  "rows": [
+    {
+      "variant": "final_2view",
+      "seeds": 3,
+      "probe_mean": 85.29000083605449,
+      "probe_per_seed": [
+        85.14000177383423,
+        85.61000227928162,
+        85.11999845504761
+      ],
+      "knn_mean": 83.74,
+      "knn_per_seed": [
+        83.49,
+        83.78,
+        83.95
+      ],
+      "defect_mean": 0.4532372203059833,
+      "defect_per_seed": [
+        0.4591722772400356,
+        0.45031397799287487,
+        0.4502254056850394
+      ],
+      "certified_top_mean": 0.758062816478099,
+      "effective_rank_mean": 101.82302856445312,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "final_mview",
+      "seeds": 3,
+      "probe_mean": 89.02333378791809,
+      "probe_per_seed": [
+        88.99000287055969,
+        89.19000029563904,
+        88.88999819755554
+      ],
+      "knn_mean": 87.94333333333333,
+      "knn_per_seed": [
+        87.87,
+        88.05,
+        87.91
+      ],
+      "defect_mean": 0.4848630240189312,
+      "defect_per_seed": [
+        0.4898730814571558,
+        0.4853632508682625,
+        0.4793527397313753
+      ],
+      "certified_top_mean": 0.6834302353318346,
+      "effective_rank_mean": 98.31642150878906,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "additive_2view",
+      "seeds": 3,
+      "probe_mean": 76.45000020662944,
+      "probe_per_seed": [
+        76.3700008392334,
+        76.52999758720398,
+        76.45000219345093
+      ],
+      "knn_mean": 72.65333333333334,
+      "knn_per_seed": [
+        72.89999999999999,
+        72.58,
+        72.48
+      ],
+      "defect_mean": 0.3642502806750461,
+      "defect_per_seed": [
+        0.3307846244707022,
+        0.3879272963208044,
+        0.37403892123363164
+      ],
+      "certified_top_mean": 1.4807581579008766,
+      "effective_rank_mean": 54.21250025431315,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "additive_mview",
+      "seeds": 3,
+      "probe_mean": 78.33666801452637,
+      "probe_per_seed": [
+        78.2800018787384,
+        78.06000113487244,
+        78.67000102996826
+      ],
+      "knn_mean": 73.70333333333333,
+      "knn_per_seed": [
+        73.53,
+        73.66,
+        73.92
+      ],
+      "defect_mean": 0.3624478846795189,
+      "defect_per_seed": [
+        0.3327673576294819,
+        0.39178593541069556,
+        0.3627903609983792
+      ],
+      "certified_top_mean": 1.4916758300256001,
+      "effective_rank_mean": 52.910814921061196,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "amdim_cross",
+      "seeds": 3,
+      "probe_mean": 78.24999888737996,
+      "probe_per_seed": [
+        77.9699981212616,
+        78.76999974250793,
+        78.00999879837036
+      ],
+      "knn_mean": 75.03666666666666,
+      "knn_per_seed": [
+        74.64,
+        75.71,
+        74.76
+      ],
+      "defect_mean": 0.36874422955364916,
+      "defect_per_seed": [
+        0.33180351879657033,
+        0.41039429064610267,
+        0.36403487921827454
+      ],
+      "certified_top_mean": 1.5375456389284727,
+      "effective_rank_mean": 56.28308359781901,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "product_only",
+      "seeds": 3,
+      "probe_mean": 57.02999830245972,
+      "probe_per_seed": [
+        53.609997034072876,
+        59.81000065803528,
+        57.669997215270996
+      ],
+      "knn_mean": 60.39666666666667,
+      "knn_per_seed": [
+        60.440000000000005,
+        62.2,
+        58.550000000000004
+      ],
+      "defect_mean": 1.57435706331581,
+      "defect_per_seed": [
+        0.30275554368221,
+        0.33706764671965594,
+        4.083247999545564
+      ],
+      "certified_top_mean": 0.5134914088583775,
+      "effective_rank_mean": 24.99523862202962,
+      "collapsed_units": 0
+    },
+    {
+      "variant": "product_endpoint",
+      "seeds": 3,
+      "probe_mean": 85.3599985440572,
+      "probe_per_seed": [
+        85.55999994277954,
+        85.29999852180481,
+        85.21999716758728
+      ],
+      "knn_mean": 83.15333333333334,
+      "knn_per_seed": [
+        83.52000000000001,
+        83.05,
+        82.89
+      ],
+      "defect_mean": 0.33776428162669764,
+      "defect_per_seed": [
+        0.31574542494437213,
+        0.36087438882872447,
+        0.3366730311069963
+      ],
+      "certified_top_mean": 1.1060561749375557,
+      "effective_rank_mean": 56.72667948404948,
+      "collapsed_units": 0
+    }
+  ],
+  "missing": [],
+  "verdicts": {
+    "E1_closure_defect": false,
+    "E1_pairwise_all_nine": true,
+    "E1_halving": false,
+    "E1_v7_defect_mean": 0.33776428162669764,
+    "E1_best_additive_defect_mean": 0.3624478846795189,
+    "E2_downstream_noninferior": false,
+    "E2_v7_probe_mean": 85.3599985440572,
+    "E2_best_other_probe_mean": 89.02333378791809,
+    "E2_v7_knn_mean": 83.15333333333334,
+    "E2_best_other_knn_mean": 87.94333333333333,
+    "E3_collapsed_rows": []
+  }
+}

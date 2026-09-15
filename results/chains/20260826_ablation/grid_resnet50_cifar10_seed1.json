@@ -1,0 +1,1076 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "dataset": "cifar10",
+  "samples": 8000,
+  "seed": 1,
+  "draw": [
+    0,
+    8000
+  ],
+  "coordinate_budget": 64,
+  "gram_bound": 0.05,
+  "boundaries": [
+    3,
+    7,
+    13,
+    16
+  ],
+  "state_names": [
+    "stem",
+    "block1",
+    "block2",
+    "block3",
+    "block4",
+    "block5",
+    "block6",
+    "block7",
+    "block8",
+    "block9",
+    "block10",
+    "block11",
+    "block12",
+    "block13",
+    "block14",
+    "block15",
+    "block16"
+  ],
+  "grid": [
+    {
+      "start": 0,
+      "end": 7,
+      "taps": [
+        0,
+        3,
+        7
+      ],
+      "projection": {
+        "endpoint_top": 1.3079115282212617,
+        "endpoint_mass": 11.578754233705098,
+        "endpoint_effective_rank": 12.603825569152832,
+        "path_top": 1.9290320305496484,
+        "path_mass": 13.105842033856884,
+        "delta_frobenius": 1.050820194112204,
+        "delta_operator": 0.6904950625520643,
+        "alignment": 0.970171994188955,
+        "certified_top": 1.2385369679975842
+      },
+      "null_delta_operator": 0.10769332464426665,
+      "gram": {
+        "retained_ranks": [
+          13,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04483966994490995,
+          0.023983605485544908,
+          0.002237976662064157
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          13,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 1,
+      "end": 7,
+      "taps": [
+        1,
+        3,
+        7
+      ],
+      "projection": {
+        "endpoint_top": 1.4728797809861007,
+        "endpoint_mass": 36.64077708769449,
+        "endpoint_effective_rank": 46.83967971801758,
+        "path_top": 2.35548035668031,
+        "path_mass": 38.78454441027161,
+        "delta_frobenius": 2.0425884034678092,
+        "delta_operator": 0.9444390398728428,
+        "alignment": 0.9492483873408903,
+        "certified_top": 1.4110413168074674
+      },
+      "null_delta_operator": 0.1880639271473148,
+      "gram": {
+        "retained_ranks": [
+          60,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04909038204056726,
+          0.023983605485544908,
+          0.002237976662064157
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          60,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 2,
+      "end": 7,
+      "taps": [
+        2,
+        3,
+        7
+      ],
+      "projection": {
+        "endpoint_top": 1.495969180548481,
+        "endpoint_mass": 42.116929502274274,
+        "endpoint_effective_rank": 51.660728454589844,
+        "path_top": 2.3950370411804625,
+        "path_mass": 44.27624776405699,
+        "delta_frobenius": 1.9990829484905903,
+        "delta_operator": 0.9685458860686138,
+        "alignment": 0.9594206849233762,
+        "certified_top": 1.4264911551118487
+      },
+      "null_delta_operator": 0.14641264820013064,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.03089296128824515,
+          0.023983605485544908,
+          0.002237976662064157
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 0,
+      "end": 13,
+      "taps": [
+        0,
+        3,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.1749660493203684,
+        "endpoint_mass": 10.374221356049896,
+        "endpoint_effective_rank": 12.440674781799316,
+        "path_top": 2.5965833605958815,
+        "path_mass": 12.991459635778623,
+        "delta_frobenius": 1.8984112158071056,
+        "delta_operator": 1.526331510115658,
+        "alignment": 0.907859350058791,
+        "certified_top": 1.0702518504802234
+      },
+      "null_delta_operator": 0.19537762969887787,
+      "gram": {
+        "retained_ranks": [
+          13,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04483966994490995,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          13,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 1,
+      "end": 13,
+      "taps": [
+        1,
+        3,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.3171250932890068,
+        "endpoint_mass": 30.209418501394858,
+        "endpoint_effective_rank": 44.29197311401367,
+        "path_top": 3.260970272202425,
+        "path_mass": 31.01139509766864,
+        "delta_frobenius": 3.207225571941979,
+        "delta_operator": 2.051048231833232,
+        "alignment": 0.8518725693566118,
+        "certified_top": 1.209922040369193
+      },
+      "null_delta_operator": 0.27535757414311374,
+      "gram": {
+        "retained_ranks": [
+          60,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04909038204056726,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          60,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 2,
+      "end": 13,
+      "taps": [
+        2,
+        3,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.3295446551623393,
+        "endpoint_mass": 32.989482621910085,
+        "endpoint_effective_rank": 46.846336364746094,
+        "path_top": 3.3278460569085633,
+        "path_mass": 34.36103430734448,
+        "delta_frobenius": 3.2652132384858645,
+        "delta_operator": 2.1008871360470924,
+        "alignment": 0.8656376411822231,
+        "certified_top": 1.2269589208614708
+      },
+      "null_delta_operator": 0.27792386876292385,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.03089296128824515,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 3,
+      "end": 13,
+      "taps": [
+        3,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.3616094968405736,
+        "endpoint_mass": 33.85751235704318,
+        "endpoint_effective_rank": 47.655391693115234,
+        "path_top": 2.2162688697262745,
+        "path_mass": 32.7950030111165,
+        "delta_frobenius": 1.9372452265725721,
+        "delta_operator": 0.9321353344082068,
+        "alignment": 0.9367375069594699,
+        "certified_top": 1.2841335353180676
+      },
+      "null_delta_operator": 0.19415587194715098,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 4,
+      "end": 13,
+      "taps": [
+        4,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.4195670517622585,
+        "endpoint_mass": 36.95037247917499,
+        "endpoint_effective_rank": 49.87626266479492,
+        "path_top": 2.3460686863064786,
+        "path_mass": 35.8823370018125,
+        "delta_frobenius": 2.022956168297886,
+        "delta_operator": 0.997684344179172,
+        "alignment": 0.9388437557298984,
+        "certified_top": 1.3483843421273067
+      },
+      "null_delta_operator": 0.17324446004899055,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.011656133842154805,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 5,
+      "end": 13,
+      "taps": [
+        5,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.436537839370787,
+        "endpoint_mass": 37.8023745997998,
+        "endpoint_effective_rank": 50.26498794555664,
+        "path_top": 2.423864564381095,
+        "path_mass": 38.16584686440343,
+        "delta_frobenius": 1.9502344287630438,
+        "delta_operator": 1.0544026011002026,
+        "alignment": 0.9478740574299566,
+        "certified_top": 1.3694619632808926
+      },
+      "null_delta_operator": 0.16583103127029752,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0038040049912071447,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 6,
+      "end": 13,
+      "taps": [
+        6,
+        7,
+        13
+      ],
+      "projection": {
+        "endpoint_top": 1.4310396918118273,
+        "endpoint_mass": 39.60207187412993,
+        "endpoint_effective_rank": 51.25695037841797,
+        "path_top": 2.4145828139575545,
+        "path_mass": 41.21552858309813,
+        "delta_frobenius": 1.8112926614299623,
+        "delta_operator": 1.0425631062366727,
+        "alignment": 0.960515303984218,
+        "certified_top": 1.3720197077208818
+      },
+      "null_delta_operator": 0.14708226949941458,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0028503121148947246,
+          0.002237976662064157,
+          0.0004182060380052422
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 0,
+      "end": 16,
+      "taps": [
+        0,
+        3,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 0.9271903722177331,
+        "endpoint_mass": 7.766922990640579,
+        "endpoint_effective_rank": 12.135467529296875,
+        "path_top": 2.338221800550035,
+        "path_mass": 10.490777299519685,
+        "delta_frobenius": 1.9410581192462595,
+        "delta_operator": 1.6012709429534975,
+        "alignment": 0.8564544203024488,
+        "certified_top": 0.7369508575965376
+      },
+      "null_delta_operator": 0.3203011715147074,
+      "gram": {
+        "retained_ranks": [
+          13,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04483966994490995,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          13,
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 1,
+      "end": 16,
+      "taps": [
+        1,
+        3,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0096246797474764,
+        "endpoint_mass": 21.50182443107789,
+        "endpoint_effective_rank": 43.030792236328125,
+        "path_top": 2.884070231798459,
+        "path_mass": 21.513442713563663,
+        "delta_frobenius": 3.0913040982702276,
+        "delta_operator": 2.1046636275491077,
+        "alignment": 0.7707238546155692,
+        "certified_top": 0.7794066042493513
+      },
+      "null_delta_operator": 0.43277247470573904,
+      "gram": {
+        "retained_ranks": [
+          60,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.04909038204056726,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          60,
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 2,
+      "end": 16,
+      "taps": [
+        2,
+        3,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0142554395278804,
+        "endpoint_mass": 22.639077075719246,
+        "endpoint_effective_rank": 44.93012619018555,
+        "path_top": 2.9474643797902425,
+        "path_mass": 23.512536964280844,
+        "delta_frobenius": 3.1631216177896735,
+        "delta_operator": 2.1421518473676437,
+        "alignment": 0.7883828303284007,
+        "certified_top": 0.8053125324225987
+      },
+      "null_delta_operator": 0.44249209206520373,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.03089296128824515,
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 3,
+      "end": 16,
+      "taps": [
+        3,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0226998333987856,
+        "endpoint_mass": 22.950637639534037,
+        "endpoint_effective_rank": 45.13705825805664,
+        "path_top": 1.9729968473647983,
+        "path_mass": 21.74321280527033,
+        "delta_frobenius": 2.118409190070588,
+        "delta_operator": 1.1300839163378422,
+        "alignment": 0.8667752176351026,
+        "certified_top": 0.8429129310269561
+      },
+      "null_delta_operator": 0.26101452518731644,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.023983605485544908,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 4,
+      "end": 16,
+      "taps": [
+        4,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0294298217599525,
+        "endpoint_mass": 24.412417723504888,
+        "endpoint_effective_rank": 46.1646842956543,
+        "path_top": 2.0514988394041853,
+        "path_mass": 23.543673994025635,
+        "delta_frobenius": 2.1972122974589388,
+        "delta_operator": 1.2064839544845936,
+        "alignment": 0.8702658305950719,
+        "certified_top": 0.8450148849195918
+      },
+      "null_delta_operator": 0.2791123509824171,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.011656133842154805,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 5,
+      "end": 16,
+      "taps": [
+        5,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.040658502655493,
+        "endpoint_mass": 24.425691273483654,
+        "endpoint_effective_rank": 45.75651550292969,
+        "path_top": 2.1084647972232897,
+        "path_mass": 24.67873340470487,
+        "delta_frobenius": 2.2001990580754316,
+        "delta_operator": 1.2482915124292595,
+        "alignment": 0.8777421618123606,
+        "certified_top": 0.8601732847940302
+      },
+      "null_delta_operator": 0.2800920879038742,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0038040049912071447,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 6,
+      "end": 16,
+      "taps": [
+        6,
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0371825113712567,
+        "endpoint_mass": 25.093714005247143,
+        "endpoint_effective_rank": 46.03486633300781,
+        "path_top": 2.1004988806785665,
+        "path_mass": 26.39874943573765,
+        "delta_frobenius": 2.186415971993899,
+        "delta_operator": 1.2470187588025097,
+        "alignment": 0.8917129141042636,
+        "certified_top": 0.8534801218760568
+      },
+      "null_delta_operator": 0.2827510295973483,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0028503121148947246,
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 7,
+      "end": 16,
+      "taps": [
+        7,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0384151835713404,
+        "endpoint_mass": 25.67264202206711,
+        "endpoint_effective_rank": 46.44852828979492,
+        "path_top": 1.3660222412255443,
+        "path_mass": 25.550374842805706,
+        "delta_frobenius": 1.3116012378459456,
+        "delta_operator": 0.45112649444834607,
+        "alignment": 0.9517727861633571,
+        "certified_top": 0.9148957467771982
+      },
+      "null_delta_operator": 0.19828507838540213,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.002237976662064157,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 8,
+      "end": 16,
+      "taps": [
+        8,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0366977576205547,
+        "endpoint_mass": 28.66924903556616,
+        "endpoint_effective_rank": 48.81987762451172,
+        "path_top": 1.3530483475823172,
+        "path_mass": 28.068361971672065,
+        "delta_frobenius": 1.4425156484306054,
+        "delta_operator": 0.4278109207041073,
+        "alignment": 0.9479534006611432,
+        "certified_top": 0.9252374268782099
+      },
+      "null_delta_operator": 0.19075581289847657,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0010199827671951715,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 9,
+      "end": 16,
+      "taps": [
+        9,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0568211822459639,
+        "endpoint_mass": 29.2497471858115,
+        "endpoint_effective_rank": 48.42643737792969,
+        "path_top": 1.3823657335688306,
+        "path_mass": 29.114984771881396,
+        "delta_frobenius": 1.4156641025174916,
+        "delta_operator": 0.4422808585376899,
+        "alignment": 0.9527200871084446,
+        "certified_top": 0.9400848750311408
+      },
+      "null_delta_operator": 0.18009896725378174,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0006790477554382557,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 10,
+      "end": 16,
+      "taps": [
+        10,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0750796058341041,
+        "endpoint_mass": 29.86021612853895,
+        "endpoint_effective_rank": 48.83688735961914,
+        "path_top": 1.4023995651980756,
+        "path_mass": 30.11015620330629,
+        "delta_frobenius": 1.3568169593669024,
+        "delta_operator": 0.43073086904101593,
+        "alignment": 0.9589056415446904,
+        "certified_top": 0.9716686961570598
+      },
+      "null_delta_operator": 0.18051860767277975,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0005802030815053039,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 11,
+      "end": 16,
+      "taps": [
+        11,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.0828567298572553,
+        "endpoint_mass": 31.751754078540266,
+        "endpoint_effective_rank": 49.82219696044922,
+        "path_top": 1.4224021043527932,
+        "path_mass": 32.173179807682246,
+        "delta_frobenius": 1.2766327776091875,
+        "delta_operator": 0.44424335291198186,
+        "alignment": 0.9673008329198742,
+        "certified_top": 0.9781587514408114
+      },
+      "null_delta_operator": 0.17114769775121558,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0004879605687120314,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    },
+    {
+      "start": 12,
+      "end": 16,
+      "taps": [
+        12,
+        13,
+        16
+      ],
+      "projection": {
+        "endpoint_top": 1.102239689055026,
+        "endpoint_mass": 33.288088919323805,
+        "endpoint_effective_rank": 51.25993347167969,
+        "path_top": 1.4521931572139297,
+        "path_mass": 34.134806266428285,
+        "delta_frobenius": 1.2191220973356465,
+        "delta_operator": 0.43702911013702084,
+        "alignment": 0.9730782925189706,
+        "certified_top": 1.015164047076909
+      },
+      "null_delta_operator": 0.15879558387030773,
+      "gram": {
+        "retained_ranks": [
+          64,
+          64,
+          64
+        ],
+        "metric_deviation": [
+          0.0004368583812961458,
+          0.0004182060380052422,
+          0.0002097872161315184
+        ],
+        "tau_relative": 0.001,
+        "dimensions": [
+          64,
+          64,
+          64
+        ]
+      }
+    }
+  ],
+  "block_probes": [
+    {
+      "state": "stem",
+      "index": 0,
+      "probe_accuracy": 0.45100003480911255
+    },
+    {
+      "state": "block1",
+      "index": 1,
+      "probe_accuracy": 0.534000039100647
+    },
+    {
+      "state": "block2",
+      "index": 2,
+      "probe_accuracy": 0.5485000014305115
+    },
+    {
+      "state": "block3",
+      "index": 3,
+      "probe_accuracy": 0.562000036239624
+    },
+    {
+      "state": "block4",
+      "index": 4,
+      "probe_accuracy": 0.5515000224113464
+    },
+    {
+      "state": "block5",
+      "index": 5,
+      "probe_accuracy": 0.5900000333786011
+    },
+    {
+      "state": "block6",
+      "index": 6,
+      "probe_accuracy": 0.6055000424385071
+    },
+    {
+      "state": "block7",
+      "index": 7,
+      "probe_accuracy": 0.6310000419616699
+    },
+    {
+      "state": "block8",
+      "index": 8,
+      "probe_accuracy": 0.7130000591278076
+    },
+    {
+      "state": "block9",
+      "index": 9,
+      "probe_accuracy": 0.7300000190734863
+    },
+    {
+      "state": "block10",
+      "index": 10,
+      "probe_accuracy": 0.7670000195503235
+    },
+    {
+      "state": "block11",
+      "index": 11,
+      "probe_accuracy": 0.7815000414848328
+    },
+    {
+      "state": "block12",
+      "index": 12,
+      "probe_accuracy": 0.8160000443458557
+    },
+    {
+      "state": "block13",
+      "index": 13,
+      "probe_accuracy": 0.8460000157356262
+    },
+    {
+      "state": "block14",
+      "index": 14,
+      "probe_accuracy": 0.8740000128746033
+    },
+    {
+      "state": "block15",
+      "index": 15,
+      "probe_accuracy": 0.8800000548362732
+    },
+    {
+      "state": "block16",
+      "index": 16,
+      "probe_accuracy": 0.8805000185966492
+    }
+  ]
+}

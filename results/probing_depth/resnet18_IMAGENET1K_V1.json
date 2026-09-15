@@ -1,0 +1,83 @@
+{
+  "model": "resnet18",
+  "weights": "IMAGENET1K_V1",
+  "levels": 9,
+  "certificate_curve": [
+    {
+      "prefix": 1,
+      "certified_top": 0.9882325961021381,
+      "certified_sum8": 6.075456694103049,
+      "endpoint_top": 0.9882325961021381,
+      "delta_op": 0.0,
+      "normalized_defect": 0.0
+    },
+    {
+      "prefix": 2,
+      "certified_top": 0.5097432220740519,
+      "certified_sum8": 1.6660887196908443,
+      "endpoint_top": 1.0174324482340495,
+      "delta_op": 0.38307868449790405,
+      "normalized_defect": 0.40388828887304246
+    },
+    {
+      "prefix": 3,
+      "certified_top": 0.08884099454677585,
+      "certified_sum8": 0.12020783259142942,
+      "endpoint_top": 1.021726821849111,
+      "delta_op": 0.6235291132258893,
+      "normalized_defect": 0.6034214993980633
+    },
+    {
+      "prefix": 4,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.0184056709795577,
+      "delta_op": 0.7238967944013073,
+      "normalized_defect": 0.713548742899868
+    },
+    {
+      "prefix": 5,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.01750428392595,
+      "delta_op": 0.7884339398566587,
+      "normalized_defect": 0.7899955706191469
+    },
+    {
+      "prefix": 6,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 1.017495516218437,
+      "delta_op": 0.8305382783109688,
+      "normalized_defect": 0.8282883512914627
+    },
+    {
+      "prefix": 7,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9846091680840616,
+      "delta_op": 0.837195999056105,
+      "normalized_defect": 0.8625628326581253
+    },
+    {
+      "prefix": 8,
+      "certified_top": 0.0,
+      "certified_sum8": 0.0,
+      "endpoint_top": 0.9062779626756393,
+      "delta_op": 0.7755147951234307,
+      "normalized_defect": 0.8864413538223225
+    }
+  ],
+  "layer_probe_accuracy": [
+    0.45,
+    0.492,
+    0.49933333333333335,
+    0.534,
+    0.5953333333333334,
+    0.6406666666666667,
+    0.7046666666666667,
+    0.7946666666666666,
+    0.818
+  ],
+  "best_probe_layer": 8
+}
